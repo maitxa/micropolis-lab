@@ -19,6 +19,7 @@ import { TileUtils } from './tileUtils.js';
 import * as TileValues from "./tileValues.ts";
 import { Traffic } from './traffic.js';
 import { ZoneUtils } from './zoneUtils.js';
+import { Policy } from './policy.js';
 
 // Residential tiles have 'populations' of 16, 24, 32 or 40, and value from 0 to 3. The tiles are laid out in
 // increasing order of land value, cycling through each population value
@@ -128,8 +129,9 @@ var growZone = function(map, x, y, blockMaps, population, lpValue, zonePower) {
       // Zone capacity not yet reached: build another house
       buildHouse(map, x, y, lpValue);
       ZoneUtils.incRateOfGrowth(blockMaps, x, y, 1);
-    } else if (blockMaps.populationDensityMap.worldGet(x, y) > 64) {
+    } else if (blockMaps.populationDensityMap.worldGet(x, y) > 64 && Policy.densityCap > 8) {
       // There is local demand for higher density housing
+      // POLICY LAB: unless the housing density law only allows single houses
       placeResidential(map, x, y, 0, lpValue, zonePower);
       ZoneUtils.incRateOfGrowth(blockMaps, x, y, 8);
     }
@@ -137,7 +139,8 @@ var growZone = function(map, x, y, blockMaps, population, lpValue, zonePower) {
     return;
   }
 
-  if (population < 40) {
+  // POLICY LAB: the housing density law can stop growth below the original maximum of 40
+  if (population < Math.min(40, Policy.densityCap)) {
     // Zone population not yet maxed out
     placeResidential(map, x, y, Math.floor(population / 8) - 1, lpValue, zonePower);
     ZoneUtils.incRateOfGrowth(blockMaps, x, y, 8);

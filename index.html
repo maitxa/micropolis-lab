@@ -80,6 +80,8 @@
                   <select id="pl_taxGrowth"><option value="1" selected>Strongly (original)</option><option value="0.5">Weakly</option><option value="0">Not at all</option></select></label>
                 <label class="policyRow"><span>Does regulation slow industry?</span>
                   <select id="pl_regulationGrowth"><option value="1" selected>Yes</option><option value="0">No</option></select></label>
+                <label class="policyRow"><span>Do business incentives attract business?</span>
+                  <select id="pl_incentiveGrowth"><option value="1" selected>Yes</option><option value="0">No</option></select></label>
               </fieldset>
               <fieldset>
                 <legend>Laws (fixed all game)</legend>
@@ -87,6 +89,14 @@
                   <select id="pl_nuclearAllowed"><option value="true" selected>Allowed (original)</option><option value="false">Banned</option></select></label>
                 <label class="policyRow"><span>Environmental rules on industry</span>
                   <select id="pl_regulation"><option value="none">None (more pollution)</option><option value="standard" selected>Standard (original)</option><option value="strict">Strict (half the pollution)</option></select></label>
+                <label class="policyRow"><span>Housing density</span>
+                  <select id="pl_densityCap"><option value="40" selected>No limit (original)</option><option value="24">Medium at most</option><option value="8">Single houses only</option></select></label>
+                <label class="policyRow"><span>Transportation priority</span>
+                  <select id="pl_transport"><option value="roads">Roads (cheap roads, pricey rail)</option><option value="balanced" selected>Balanced (original)</option><option value="transit">Transit (cheap rail, pricey roads)</option></select></label>
+                <label class="policyRow"><span>Business incentives</span>
+                  <select id="pl_incentives"><option value="none" selected>None (original)</option><option value="moderate">Moderate (zones half price, 10% tax break)</option><option value="strong">Strong (zones free, 20% tax break)</option></select></label>
+                <label class="policyRow"><span>Parks</span>
+                  <select id="pl_parks"><option value="standard" selected>Standard price (original)</option><option value="subsidized">Subsidized (half price)</option><option value="free">Free</option></select></label>
               </fieldset>
               <fieldset>
                 <legend>Budget (taxes and funding can change during play)</legend>

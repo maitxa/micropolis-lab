@@ -11,7 +11,10 @@ Before play, a setup screen separates two kinds of choices:
 
 - **World model**: assumptions about cause and effect, fixed for the whole game. Does poverty (cheap land) drive crime? Does
   density? How effective are police? Do social services reduce crime? Do high taxes slow growth? Does regulation slow industry?
-- **Laws**: structural policies, fixed for the whole game: nuclear power allowed or banned; environmental rules on industry.
+  Do business incentives attract business?
+- **Laws**: structural policies, fixed for the whole game: nuclear power allowed or banned; environmental rules on industry;
+  housing density cap; transportation priority (roads vs. transit costs); business incentives (cheaper zones, tax breaks);
+  park subsidies.
 - **Budget timing**: change the budget any time (original) or only in election years (every 4 years).
 
 During play, the Budget window has a new **Social services** line. Its effect on crime depends on the chosen world model.

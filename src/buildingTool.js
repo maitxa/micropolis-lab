@@ -101,7 +101,8 @@ BuildingTool.prototype.buildBuilding = function(x, y) {
   if (prepareResult !== this.TOOLRESULT_OK)
     return prepareResult;
 
-  this.addCost(this.toolCost);
+  // POLICY LAB: some buildings' prices depend on the laws (see gameTools.js); otherwise the original price
+  this.addCost(this.getCost ? this.getCost() : this.toolCost);
 
   this.putBuilding(x, y);
 

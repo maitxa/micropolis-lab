@@ -282,11 +282,14 @@ Budget.prototype.collectTax = function(gameLevel, census) {
   // POLICY LAB: social services scale with population
   this.socialMaintenanceBudget = Math.floor(census.totalPop * socialMaintenanceCostPerPop);
 
-  var roadCost = census.roadTotal * roadMaintenanceCost;
-  var railCost = census.railTotal * railMaintenanceCost;
+  // POLICY LAB: maintenance costs depend on the transportation priority law (original: road 1, rail 2)
+  var roadCost = census.roadTotal * Policy.transportCosts().roadMaintenance;
+  var railCost = census.railTotal * Policy.transportCosts().railMaintenance;
   this.roadMaintenanceBudget = Math.floor((roadCost + railCost) * RLevels[gameLevel]);
 
   this.taxFund = Math.floor(Math.floor(census.totalPop * census.landValueAverage / 120) * this.cityTax * FLevels[gameLevel]);
+  // POLICY LAB: business incentives (tax breaks) reduce the share of taxes the city collects (original: all of it)
+  this.taxFund = Math.floor(this.taxFund * Policy.taxShare());
 
   if (census.totalPop > 0) {
     this.cashFlow = this.taxFund - (this.policeMaintenanceBudget + this.fireMaintenanceBudget + this.roadMaintenanceBudget +

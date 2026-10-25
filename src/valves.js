@@ -135,6 +135,10 @@ Valves.prototype.setValves = function(gameLevel, census, budget) {
   // if the world model says regulation matters. Standard regulation = original game = no change.
   indRatio += Policy.industrialGrowthNudge();
 
+  // POLICY LAB: business incentives can speed up commercial and industrial growth, if the world model says so.
+  comRatio += Policy.businessGrowthNudge();
+  indRatio += Policy.businessGrowthNudge();
+
   this.resValve = MiscUtils.clamp(this.resValve + Math.round(resRatio), -RES_VALVE_RANGE, RES_VALVE_RANGE);
   this.comValve = MiscUtils.clamp(this.comValve + Math.round(comRatio), -COM_VALVE_RANGE, COM_VALVE_RANGE);
   this.indValve = MiscUtils.clamp(this.indValve + Math.round(indRatio), -IND_VALVE_RANGE, IND_VALVE_RANGE);

@@ -16,6 +16,7 @@ import { Random } from './random.ts';
 import { ANIMBIT, BULLBIT, BURNBIT, CONDBIT } from "./tileFlags.ts";
 import { TileUtils } from './tileUtils.js';
 import { DIRT, FOUNTAIN, WOODS2 } from "./tileValues.ts";
+import { Policy } from './policy.js';
 
 var makeTool = BaseTool.makeTool;
 var ParkTool = makeTool(function(map) {
@@ -41,7 +42,8 @@ ParkTool.prototype.doTool = function(x, y, blockMaps) {
   }
 
   this._worldEffects.setTile(x, y, tileValue, tileFlags);
-  this.addCost(10);
+  // POLICY LAB: park cost depends on the park subsidy law (original: $10)
+  this.addCost(Policy.parkCost());
   this.result = this.TOOLRESULT_OK;
 };
 

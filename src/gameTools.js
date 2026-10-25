@@ -22,6 +22,7 @@ import { RoadTool } from './roadTool.js';
 import { QueryTool } from './queryTool.js';
 import * as TileValues from "./tileValues.ts";
 import { WireTool } from './wireTool.js';
+import { Policy } from './policy.js';
 
 function GameTools(map) {
   var tools = EventEmitter({
@@ -42,6 +43,10 @@ function GameTools(map) {
     stadium: new BuildingTool(5000, TileValues.STADIUM, map, 4, false),
     wire: new WireTool(map),
   });
+
+  // POLICY LAB: business incentives change the price of commercial and industrial zones
+  tools.commercial.getCost = Policy.businessZoneCost;
+  tools.industrial.getCost = Policy.businessZoneCost;
 
   tools.query.addEventListener(QUERY_WINDOW_NEEDED, MiscUtils.reflectEvent.bind(tools, QUERY_WINDOW_NEEDED));
 

@@ -15,6 +15,7 @@ import { ConnectingTool } from './connectingTool.js';
 import { BULLBIT, BURNBIT, CONDBIT } from "./tileFlags.ts";
 import { TileUtils } from './tileUtils.js';
 import * as TileValues from "./tileValues.ts";
+import { Policy } from './policy.js';
 
 var RailTool = ConnectingTool(function(map) {
   this.init(20, map, true, true);
@@ -25,7 +26,8 @@ RailTool.prototype.layRail = function(x, y) {
   this.doAutoBulldoze(x, y);
   var tile = this._worldEffects.getTileValue(x, y);
   tile = TileUtils.normalizeRoad(tile);
-  var cost = this.toolCost;
+  // POLICY LAB: rail cost depends on the transportation priority law (original: $20, bridges $100)
+  var cost = Policy.transportCosts().rail;
 
   switch (tile) {
     case TileValues.DIRT:
@@ -35,7 +37,7 @@ RailTool.prototype.layRail = function(x, y) {
     case TileValues.RIVER:
     case TileValues.REDGE:
     case TileValues.CHANNEL:
-        cost = 100;
+        cost = Policy.transportCosts().rail * 5;
 
         if (x < this._map.width - 1) {
           tile = this._worldEffects.getTileValue(x + 1, y);

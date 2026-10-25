@@ -411,6 +411,14 @@ Game.prototype.applyPolicyToInterface = function() {
   if (!Policy.nuclearAllowed) {
     $('#nuclearButton').prop('disabled', true).addClass('bannedTool').text('Nuclear: banned');
   }
+
+  // Prices that depend on the laws
+  var transport = Policy.transportCosts();
+  $('#roadButton').text('Road $' + transport.road);
+  $('#railButton').text('Rail $' + transport.rail);
+  $('#commercialButton').text('Commercial $' + Policy.businessZoneCost());
+  $('#industrialButton').text('Industrial $' + Policy.businessZoneCost());
+  $('#parkButton').text('Park $' + Policy.parkCost());
 };
 
 

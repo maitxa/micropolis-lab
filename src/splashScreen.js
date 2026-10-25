@@ -163,7 +163,8 @@ var play = function(e) {
 
 // POLICY LAB: helpers for the setup screen
 var numberFields = ['povertyCrime', 'densityCrime', 'policeStrength', 'socialCrime', 'taxGrowth',
-                    'regulationGrowth', 'electionCycle'];
+                    'regulationGrowth', 'incentiveGrowth', 'densityCap', 'electionCycle'];
+var textFields = ['regulation', 'transport', 'incentives', 'parks'];
 
 var readPolicyForm = function() {
   var policy = {};
@@ -171,7 +172,9 @@ var readPolicyForm = function() {
     policy[key] = parseFloat($('#pl_' + key).val());
   });
   policy.nuclearAllowed = $('#pl_nuclearAllowed').val() === 'true';
-  policy.regulation = $('#pl_regulation').val();
+  textFields.forEach(function(key) {
+    policy[key] = $('#pl_' + key).val();
+  });
   return {policy: policy, socialStart: parseFloat($('#pl_socialStart').val()) || 0};
 };
 
@@ -183,7 +186,9 @@ var resetPolicyForm = function(e) {
     $('#pl_' + key).val(String(Policy.DEFAULTS[key]));
   });
   $('#pl_nuclearAllowed').val('true');
-  $('#pl_regulation').val('standard');
+  textFields.forEach(function(key) {
+    $('#pl_' + key).val(Policy.DEFAULTS[key]);
+  });
   $('#pl_socialStart').val('0');
 };
 

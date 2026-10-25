@@ -26,11 +26,21 @@ var DEFAULTS = {
   taxGrowth: 1,
   // Whether environmental regulation changes industrial growth. 1 = yes, 0 = no.
   regulationGrowth: 1,
+  // Whether business incentives attract commercial and industrial growth. 1 = yes, 0 = no.
+  incentiveGrowth: 1,
 
   // ---- Laws ----
   nuclearAllowed: true,
   // 'none' | 'standard' (original) | 'strict'
   regulation: 'standard',
+  // Highest residential density allowed: 40 = no limit (original), 24 = medium, 8 = single houses only
+  densityCap: 40,
+  // 'roads' | 'balanced' (original) | 'transit'
+  transport: 'balanced',
+  // 'none' (original) | 'moderate' | 'strong'
+  incentives: 'none',
+  // 'standard' (original) | 'subsidized' | 'free'
+  parks: 'standard',
 
   // ---- Budget timing ----
   // 0 = change the budget any time (original). 4 = only in election years (every 4 years).
@@ -42,6 +52,21 @@ var REGULATION_POLLUTION = {none: 1.5, standard: 1, strict: 0.5};
 // How much industrial growth is nudged under each regulation level (only if the world model says regulation matters).
 // For scale: the original tax table moves growth by about 10-50 points per 1% of tax.
 var REGULATION_GROWTH = {none: 40, standard: 0, strict: -80};
+
+// Building and yearly maintenance costs (per tile) under each transportation priority. 'balanced' = original.
+var TRANSPORT = {
+  roads:    {road: 5,  rail: 30, roadMaintenance: 1, railMaintenance: 3},
+  balanced: {road: 10, rail: 20, roadMaintenance: 1, railMaintenance: 2},
+  transit:  {road: 15, rail: 10, roadMaintenance: 2, railMaintenance: 1}
+};
+// Business incentives: cost of a commercial/industrial zone, share of tax revenue the city keeps, and growth nudge
+// (the nudge only applies if the world model says incentives attract business). 'none' = original.
+var INCENTIVES = {
+  none:     {zoneCost: 100, taxShare: 1,   growth: 0},
+  moderate: {zoneCost: 50,  taxShare: 0.9, growth: 30},
+  strong:   {zoneCost: 0,   taxShare: 0.8, growth: 60}
+};
+var PARK_COST = {standard: 10, subsidized: 5, free: 0};
 
 var Policy = Object.assign({}, DEFAULTS);
 
@@ -73,6 +98,27 @@ Policy.industrialPollutionFactor = function() {
 
 Policy.industrialGrowthNudge = function() {
   return (REGULATION_GROWTH[Policy.regulation] || 0) * Policy.regulationGrowth;
+};
+
+Policy.transportCosts = function() {
+  return TRANSPORT[Policy.transport] || TRANSPORT.balanced;
+};
+
+Policy.businessZoneCost = function() {
+  return (INCENTIVES[Policy.incentives] || INCENTIVES.none).zoneCost;
+};
+
+Policy.taxShare = function() {
+  return (INCENTIVES[Policy.incentives] || INCENTIVES.none).taxShare;
+};
+
+Policy.businessGrowthNudge = function() {
+  return (INCENTIVES[Policy.incentives] || INCENTIVES.none).growth * Policy.incentiveGrowth;
+};
+
+Policy.parkCost = function() {
+  var c = PARK_COST[Policy.parks];
+  return c === undefined ? 10 : c;
 };
 
 // Is this an election year (i.e. may the player change the budget)?
