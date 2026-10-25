@@ -314,6 +314,9 @@ var canvasClickHandler = function(e) {
 
 
 var toolButtonHandler = function(e) {
+  // POLICY LAB: buttons now contain an icon and labels; always use the button itself, not the inner element clicked
+  e = {target: e.currentTarget || e.target, preventDefault: e.preventDefault.bind(e)};
+
   // Remove highlight from last tool button
   $('.selected').each(function() {
     $(this).removeClass('selected');

@@ -19,6 +19,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, height=device-height, user-scalable=no">
     <meta name="description" content="Play micropolisJS and build a virtual city in your browser! micropolisJS is a handwritten HTML5/Javascript port of Micropolis, the open-source release of SimCity (the 1989 version).">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap">
     <link rel="stylesheet" media="screen" type="text/css" href="css/style.css">
     <title>Micropolis Policy Lab</title>
   </head>
@@ -108,7 +111,7 @@
                 <label class="policyRow"><span>Environmental rules on industry</span>
                   <select id="pl_regulation"><option value="none">None (more pollution)</option><option value="standard" selected>Standard (original)</option><option value="strict">Strict (half the pollution)</option></select></label>
                 <label class="policyRow"><span>Zoning principle</span>
-                  <select id="pl_zoning"><option value="exclusive" selected>Separate uses (U.S.-style, original)</option><option value="mixed">Mixed use (European-style: shops below apartments)</option></select></label>
+                  <select id="pl_zoning"><option value="exclusive" selected>Separate uses, U.S.-style (original)</option><option value="mixed">Mixed use (European-style: shops below apartments)</option></select></label>
                 <label class="policyRow"><span>Car-free downtown</span>
                   <select id="pl_pedestrian"><option value="0" selected>None (original)</option><option value="6">Small (6 tiles around the centre)</option><option value="12">Large (12 tiles around the centre)</option></select></label>
                 <label class="policyRow"><span>Green belt (protected ring of land)</span>
@@ -193,26 +196,55 @@
         <div id="controls" class="controlShadow mintcream z1 initialHidden rightedge open">
           <div id="toolInfo" class="alignCenter"><span id="toolOutput">Tools</span></div>
           <div id="buttons">
-            <button id="residentialButton" data-size="3" data-tool="residential" data-colour="lime" class="toolButton unselected">Residential $100</button>
-            <button id="nuclearButton" data-size="4" data-tool="nuclear" data-colour="mistyrose" class="toolButton unselected">Nuclear $5,000</button>
-            <button id="commercialButton" data-size="3" data-tool="commercial" data-colour="blue" class="toolButton unselected">Commercial $100</button>
-            <button id="coalButton" data-size="4" data-tool="coal" data-colour="gray" class="toolButton unselected">Coal $3,000</button>
-            <button id="industrialButton" data-size="3" data-tool="industrial" data-colour="yellow" class="toolButton unselected">Industrial $100</button>
-            <button id="policeButton" data-size="3" data-tool="police" data-colour="darkblue" class="toolButton unselected">Police $500</button>
-            <button id="roadButton" data-size="1" data-tool="road" data-colour="black" class="toolButton unselected">Road $10</button>
-            <button id="fireButton" data-size="3" data-tool="fire" data-colour="red" class="toolButton unselected">Fire $500</button>
-            <button id="railButton" data-size="1" data-tool="rail" data-colour="brown" class="toolButton unselected">Rail $20</button>
-            <button id="portButton" data-size="4" data-tool="port" data-colour="dodgerblue" class="toolButton unselected">Port $3,000</button>
-            <button id="wireButton" data-size="1" data-tool="wire" data-colour="khaki" class="toolButton unselected">Wire $5</button>
-            <button id="stadiumButton" data-size="4" data-tool="stadium" data-colour="indigo" class="toolButton unselected">Stadium $5,000</button>
-            <button id="bulldozerButton" data-size="1" data-tool="bulldozer" data-colour="salmon" class="toolButton unselected">Bulldozer $1</button>
-            <button id="airportButton" data-size="6" data-tool="airport" data-colour="violet" class="toolButton unselected">Airport $10,000</button>
-            <button id="queryButton" data-size="1" data-tool="query" data-colour="cyan" class="toolButton unselected">Query</button>
-            <button id="parkButton" data-size="1" data-tool="park" data-colour="darkgreen" class="toolButton unselected">Park $10</button>
-            <!-- POLICY LAB -->
-            <button id="depotButton" data-size="3" data-tool="depot" data-colour="sienna" class="toolButton unselected" title="Train depot: needs rail next to it (key T)">Train depot $1,000</button>
-            <button id="waterButton" data-size="3" data-tool="water" data-colour="deepskyblue" class="toolButton unselected" title="Water treatment plant: needs power (key U)">Water plant $2,000</button>
-            <button id="hospitalButton" data-size="3" data-tool="hospital" data-colour="white" class="toolButton unselected" title="Hospital: needs power; serves homes nearby (key M)">Hospital $3,000</button>
+            <div class="toolGroup toolGroup-zones" role="group" aria-label="Zones">
+              <div class="toolGroupLabel">Zones</div>
+              <div class="toolGrid">
+                <button id="residentialButton" data-size="3" data-tool="residential" data-colour="lime" class="toolButton unselected" title="Residential (key 1)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8 L8 3 L14 8"/><path d="M4 7 V13 H12 V7"/><path d="M7 13 V10 H9 V13"/></svg><span class="label">Residential</span><span class="price">$100</span></button>
+                <button id="commercialButton" data-size="3" data-tool="commercial" data-colour="blue" class="toolButton unselected" title="Commercial (key 2)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6 H14 L12.5 3 H3.5 Z"/><path d="M3 6 V13 H13 V6"/><path d="M6.5 13 V9.5 H9.5 V13"/></svg><span class="label">Commercial</span><span class="price">$100</span></button>
+                <button id="industrialButton" data-size="3" data-tool="industrial" data-colour="yellow" class="toolButton unselected" title="Industrial (key 3)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13.5 V7.5 L6 9.5 V7.5 L10 9.5 V3.5 H13 V13.5 Z"/></svg><span class="label">Industrial</span><span class="price">$100</span></button>
+              </div>
+            </div>
+            <div class="toolGroup toolGroup-transport" role="group" aria-label="Getting around">
+              <div class="toolGroupLabel">Getting around</div>
+              <div class="toolGrid">
+                <button id="roadButton" data-size="1" data-tool="road" data-colour="black" class="toolButton unselected" title="Road (key 4)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2 L3.5 14"/><path d="M11 2 L12.5 14"/><path d="M8 2.5 V4.5 M8 7 V9 M8 11.5 V13.5"/></svg><span class="label">Road</span><span class="price">$10</span></button>
+                <button id="railButton" data-size="1" data-tool="rail" data-colour="brown" class="toolButton unselected" title="Rail (key 5)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 2 V14 M10.5 2 V14"/><path d="M3.5 4 H12.5 M3.5 8 H12.5 M3.5 12 H12.5"/></svg><span class="label">Rail</span><span class="price">$20</span></button>
+                <button id="depotButton" data-size="3" data-tool="depot" data-colour="sienna" class="toolButton unselected" title="Train depot: must touch a rail line (key T)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="8" height="9.5" rx="2"/><path d="M4 7 H12"/><path d="M5.5 13 L4.5 14.5 M10.5 13 L11.5 14.5"/><circle cx="6" cy="9.3" r=".5"/><circle cx="10" cy="9.3" r=".5"/></svg><span class="label">Train depot</span><span class="price">$1,000</span></button>
+              </div>
+            </div>
+            <div class="toolGroup toolGroup-utilities" role="group" aria-label="Power and water">
+              <div class="toolGroupLabel">Power and water</div>
+              <div class="toolGrid">
+                <button id="wireButton" data-size="1" data-tool="wire" data-colour="khaki" class="toolButton unselected" title="Power line (key 6)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L4.5 14 M8 2 L11.5 14"/><path d="M5 5.5 H11 M4.5 9 H11.5"/></svg><span class="label">Power line</span><span class="price">$5</span></button>
+                <button id="coalButton" data-size="4" data-tool="coal" data-colour="gray" class="toolButton unselected" title="Coal plant"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 H14"/><path d="M3 14 V8.5 H7.5 V14"/><path d="M9 14 V5 H12 V14"/><path d="M10.5 3.2 C10.5 2.2 11.8 2.2 11.8 1"/></svg><span class="label">Coal plant</span><span class="price">$3,000</span></button>
+                <button id="nuclearButton" data-size="4" data-tool="nuclear" data-colour="mistyrose" class="toolButton unselected" title="Nuclear"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8" cy="8" rx="6" ry="2.3"/><ellipse cx="8" cy="8" rx="6" ry="2.3" transform="rotate(60 8 8)"/><ellipse cx="8" cy="8" rx="6" ry="2.3" transform="rotate(-60 8 8)"/></svg><span class="label">Nuclear</span><span class="price">$5,000</span></button>
+                <button id="waterButton" data-size="3" data-tool="water" data-colour="deepskyblue" class="toolButton unselected" title="Water treatment plant: needs power (key U)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 C8 2 3.5 7.5 3.5 10.2 A4.5 4.5 0 0 0 12.5 10.2 C12.5 7.5 8 2 8 2 Z"/></svg><span class="label">Water plant</span><span class="price">$2,000</span></button>
+              </div>
+            </div>
+            <div class="toolGroup toolGroup-services" role="group" aria-label="Services">
+              <div class="toolGroupLabel">Services</div>
+              <div class="toolGrid">
+                <button id="policeButton" data-size="3" data-tool="police" data-colour="darkblue" class="toolButton unselected" title="Police (key 8)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L13 4 V8 C13 11 10.5 13 8 14 C5.5 13 3 11 3 8 V4 Z"/></svg><span class="label">Police</span><span class="price">$500</span></button>
+                <button id="fireButton" data-size="3" data-tool="fire" data-colour="red" class="toolButton unselected" title="Fire (key 9)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14 C5.2 14 3.6 12.2 3.6 9.8 C3.6 7.3 6 5.8 6.4 3 C8 4.8 9 5.5 9.4 7.4 C10.1 6.6 10.5 6 10.8 5.2 C12 7 12.4 8.2 12.4 9.8 C12.4 12.2 10.8 14 8 14 Z"/></svg><span class="label">Fire</span><span class="price">$500</span></button>
+                <button id="hospitalButton" data-size="3" data-tool="hospital" data-colour="white" class="toolButton unselected" title="Hospital: needs power; serves homes nearby (key M)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M8 5 V11 M5 8 H11"/></svg><span class="label">Hospital</span><span class="price">$3,000</span></button>
+                <button id="parkButton" data-size="1" data-tool="park" data-colour="darkgreen" class="toolButton unselected" title="Park (key 7)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6.5" r="4"/><path d="M8 10.5 V14.5"/></svg><span class="label">Park</span><span class="price">$10</span></button>
+              </div>
+            </div>
+            <div class="toolGroup toolGroup-landmarks" role="group" aria-label="Landmarks">
+              <div class="toolGroupLabel">Landmarks</div>
+              <div class="toolGrid">
+                <button id="stadiumButton" data-size="4" data-tool="stadium" data-colour="indigo" class="toolButton unselected" title="Stadium"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8" cy="8" rx="6" ry="4.2"/><ellipse cx="8" cy="8" rx="3" ry="1.6"/></svg><span class="label">Stadium</span><span class="price">$5,000</span></button>
+                <button id="portButton" data-size="4" data-tool="port" data-colour="dodgerblue" class="toolButton unselected" title="Seaport: build on the shore"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="3.5" r="1.3"/><path d="M8 4.8 V14"/><path d="M5.5 7.5 H10.5"/><path d="M3 10 C3.5 13 8 14 8 14 C8 14 12.5 13 13 10"/></svg><span class="label">Seaport</span><span class="price">$3,000</span></button>
+                <button id="airportButton" data-size="6" data-tool="airport" data-colour="violet" class="toolButton unselected" title="Airport"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 V13.5"/><path d="M2.5 8.5 L8 6.5 L13.5 8.5"/><path d="M6 13.5 L8 12.5 L10 13.5"/></svg><span class="label">Airport</span><span class="price">$10,000</span></button>
+              </div>
+            </div>
+            <div class="toolGroup toolGroup-edit" role="group" aria-label="Change and inspect">
+              <div class="toolGroupLabel">Change and inspect</div>
+              <div class="toolGrid">
+                <button id="bulldozerButton" data-size="1" data-tool="bulldozer" data-colour="salmon" class="toolButton unselected" title="Bulldozer (key B)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11 V7 H5 V4.5 H8 V7 H10 V11 Z"/><path d="M10 8 H12.5 L14 12"/><circle cx="4" cy="12.5" r="1.3"/><circle cx="8" cy="12.5" r="1.3"/></svg><span class="label">Bulldozer</span><span class="price">$1</span></button>
+                <button id="queryButton" data-size="1" data-tool="query" data-colour="cyan" class="toolButton unselected" title="Inspect a tile (key 0)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="4.2"/><path d="M10.2 10.2 L14 14"/></svg><span class="label">Query</span><span class="price"></span></button>
+              </div>
+            </div>
           </div>
           <!-- POLICY LAB -->
           <div id="labButtons">

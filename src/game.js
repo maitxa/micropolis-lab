@@ -431,16 +431,17 @@ Game.prototype.handleScreenshotWindowClosure = function(action) {
 // POLICY LAB: laws that change what the player can build
 Game.prototype.applyPolicyToInterface = function() {
   if (!Policy.nuclearAllowed) {
-    $('#nuclearButton').prop('disabled', true).addClass('bannedTool').text('Nuclear: banned');
+    $('#nuclearButton').prop('disabled', true).addClass('bannedTool').attr('title', 'Nuclear power is banned by law');
+    $('#nuclearButton .price').text('banned');
   }
 
   // Prices that depend on the laws
   var transport = Policy.transportCosts();
-  $('#roadButton').text('Road ' + MiscUtils.formatMoney(transport.road));
-  $('#railButton').text('Rail ' + MiscUtils.formatMoney(transport.rail));
-  $('#commercialButton').text('Commercial ' + MiscUtils.formatMoney(Policy.businessZoneCost()));
-  $('#industrialButton').text('Industrial ' + MiscUtils.formatMoney(Policy.businessZoneCost()));
-  $('#parkButton').text('Park ' + MiscUtils.formatMoney(Policy.parkCost()));
+  $('#roadButton .price').text(MiscUtils.formatMoney(transport.road));
+  $('#railButton .price').text(MiscUtils.formatMoney(transport.rail));
+  $('#commercialButton .price').text(MiscUtils.formatMoney(Policy.businessZoneCost()));
+  $('#industrialButton .price').text(MiscUtils.formatMoney(Policy.businessZoneCost()));
+  $('#parkButton .price').text(MiscUtils.formatMoney(Policy.parkCost()));
 };
 
 

@@ -46,6 +46,10 @@ A preset fills in the laws and the starting budget only, never the world model, 
 rules were written to agree with it. Each preset lists the sources its settings are based on (see `src/presets.js`),
 and notes where a setting is an inference rather than a stated position.
 
+Interface: the tool panel is a grouped legend (zones, getting around, power and water, services, landmarks, change and
+inspect) with original icons; the setup screen is a two-column sheet whose choices are buttons ("chips"), with the
+original 1989 setting tagged. Interface text uses Public Sans.
+
 The Budget window has new **Social services** and **Social housing** lines. Its effect on crime depends on the chosen world model.
 
 With every setting at its "(original)" default, the simulation rules match the original game.

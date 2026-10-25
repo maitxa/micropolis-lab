@@ -134,6 +134,7 @@ var acquireNameAndDifficulty = function(e) {
     $('#pl_' + f).on('change', markCustom);
   });
   showPresetNote('original');
+  buildChips();
 
   // Display the name and difficulty form
   $('#start').toggle();
@@ -232,6 +233,7 @@ var applyPreset = function() {
     $('#pl_' + f).val(p.values[f]);
   });
   showPresetNote(name);
+  refreshChips();
 };
 
 var markCustom = function() {
@@ -239,7 +241,56 @@ var markCustom = function() {
     basedOn = $('#pl_preset').val();
     $('#pl_preset').val('custom');
     showPresetNote('custom');
+    refreshChips();
   }
+};
+
+
+// POLICY LAB: show each setup question's options as clickable chips. The <select> stays in the page (hidden) and remains
+// the single source of truth, so presets, Reset and the game's logic keep working unchanged.
+var chipsBuilt = false;
+
+var buildChips = function() {
+  if (chipsBuilt)
+    return;
+  chipsBuilt = true;
+
+  $('#policySetup select').each(function() {
+    var select = $(this);
+    var box = $('<div class="chips" role="group"></div>');
+    box.attr('aria-label', select.closest('label').find('span').first().text());
+
+    select.find('option').each(function() {
+      var option = $(this);
+      var text = option.text();
+      var isOriginal = /\(original\)/.test(text);
+      text = text.replace(/\s*\(original\)/, '');
+      var chip = $('<button type="button" class="chip"></button>');
+      chip.attr('data-value', option.val());
+      chip.append(document.createTextNode(text));
+      if (isOriginal)
+        chip.append('<span class="orig" title="The setting used by the original 1989 game">1989</span>');
+      chip.on('click', function(e) {
+        e.preventDefault();
+        select.val(option.val()).trigger('change');
+        refreshChips();
+      });
+      box.append(chip);
+    });
+
+    select.addClass('chipped').attr('tabindex', '-1').after(box);
+  });
+
+  refreshChips();
+};
+
+var refreshChips = function() {
+  $('#policySetup select.chipped').each(function() {
+    var value = $(this).val();
+    $(this).next('.chips').find('.chip').each(function() {
+      $(this).attr('aria-pressed', $(this).attr('data-value') === value ? 'true' : 'false');
+    });
+  });
 };
 
 var currentPresetLabel = function() {
@@ -265,6 +316,7 @@ var resetPolicyForm = function(e) {
   $('#pl_taxStart').val('7');
   $('#pl_preset').val('original');
   showPresetNote('original');
+  refreshChips();
 };
 
 

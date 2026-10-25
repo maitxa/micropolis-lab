@@ -1266,3 +1266,293 @@ nav li {
   font-style: italic;
   color: #555;
 }
+
+/* =====================================================================================================================
+   POLICY LAB: interface redesign
+   Civic typeface (Public Sans, the U.S. government's open typeface) for all interface text; slate ink from the game's
+   own header; zone colours used only to carry meaning (which group a tool belongs to).
+   ===================================================================================================================== */
+:root {
+  --pl-ink: #1e3436;
+  --pl-ink-soft: #4b5f61;
+  --pl-paper: #ffffff;
+  --pl-line: #c7d2d3;
+  --pl-wash: #f2f6f6;
+  --pl-zones: #2e8b47;
+  --pl-transport: #4a4a4a;
+  --pl-utilities: #1677a8;
+  --pl-services: #b3362b;
+  --pl-landmarks: #6d4fa0;
+  --pl-edit: #8a6a2c;
+  --pl-ui: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+#controls, #infobar, #miscButtons, #notifications, #messageHelp, #keysHelp, #start, .modal, #RCIContainer {
+  font-family: var(--pl-ui);
+  color: var(--pl-ink);
+}
+
+/* ---- Tool panel: a zoning-map legend ---- */
+#controls {
+  height: auto;
+  padding-bottom: 8px;
+  background: var(--pl-paper);
+  border: 1px solid var(--pl-line);
+  border-radius: 6px;
+}
+
+#toolInfo {
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 8px 2px 8px;
+  min-height: 18px;
+}
+
+#controls .toolGroup {
+  margin: 4px 8px 0 8px;
+  padding-left: 7px;
+  border-left: 3px solid var(--group);
+}
+
+#controls .toolGroupLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--group);
+  margin: 2px 0 1px 0;
+}
+
+#controls .toolGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 4px;
+}
+
+.toolGroup-zones { --group: var(--pl-zones); }
+.toolGroup-transport { --group: var(--pl-transport); }
+.toolGroup-utilities { --group: var(--pl-utilities); }
+.toolGroup-services { --group: var(--pl-services); }
+.toolGroup-landmarks { --group: var(--pl-landmarks); }
+.toolGroup-edit { --group: var(--pl-edit); }
+
+#controls .toolButton {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: auto;
+  height: 22px;
+  margin: 0;
+  padding: 0 5px;
+  font-family: var(--pl-ui);
+  font-size: 12px;
+  text-align: left;
+  color: var(--pl-ink);
+  background: var(--pl-paper);
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+
+#controls .toolButton:hover {
+  background: var(--pl-wash);
+  border-color: var(--pl-line);
+}
+
+#controls .toolButton:focus-visible {
+  outline: 2px solid var(--group);
+  outline-offset: 1px;
+}
+
+#controls .toolButton .toolIcon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--group);
+}
+
+#controls .toolButton .label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#controls .toolButton .price {
+  color: var(--pl-ink-soft);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+#controls .toolButton.selected {
+  font-weight: 700;
+  color: #fff;
+  background: var(--group);
+  border-color: var(--group);
+}
+
+#controls .toolButton.selected .toolIcon,
+#controls .toolButton.selected .price {
+  color: #fff;
+}
+
+#controls .toolButton.bannedTool {
+  text-decoration: none;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#labButtons {
+  margin: 8px 8px 0 8px;
+}
+
+#labButtons button {
+  font-family: var(--pl-ui);
+  border-radius: 4px;
+  height: 22px;
+}
+
+/* The share-on-Twitter link of the original no longer works (and sat under the taller tool panel) */
+#tw {
+  display: none;
+}
+
+#monstertv {
+  top: 420px;
+}
+
+/* ---- Setup screen: a wide planning sheet with choice chips ---- */
+#start {
+  width: 880px;
+  text-align: left;
+  font-size: 15px;
+}
+
+#start h2 {
+  text-align: center;
+}
+
+#playForm > label[for="nameForm"] {
+  font-weight: 600;
+}
+
+#policySetup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  font-size: 14px;
+}
+
+#policySetup .policyIntro,
+#policySetup #presetBox,
+#policySetup #pl_reset {
+  grid-column: 1 / -1;
+}
+
+#policySetup #pl_reset {
+  justify-self: start;
+}
+
+#policySetup fieldset {
+  margin: 0;
+  padding: 6px 10px 10px 10px;
+  border: 1px solid var(--pl-line);
+  border-radius: 6px;
+  background: var(--pl-paper);
+}
+
+#policySetup fieldset:nth-of-type(3) {
+  grid-column: 1 / -1;
+}
+
+#policySetup legend {
+  font-size: 15px;
+}
+
+/* Each question: text above, choices below */
+#policySetup .policyRow {
+  display: block;
+  margin: 8px 0 0 0;
+}
+
+#policySetup .policyRow > span {
+  display: block;
+  margin-bottom: 3px;
+}
+
+/* The real <select> stays (for keyboard users and the game's logic) but is visually replaced by chips */
+#policySetup .policyRow select.chipped {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chips .chip {
+  width: auto;
+  height: auto;
+  min-height: 24px;
+  padding: 3px 9px;
+  font-family: var(--pl-ui);
+  font-size: 12.5px;
+  line-height: 1.25;
+  text-align: left;
+  color: var(--pl-ink);
+  background: var(--pl-wash);
+  border: 1px solid var(--pl-line);
+  border-radius: 12px;
+}
+
+.chips .chip:hover {
+  border-color: var(--pl-ink-soft);
+}
+
+.chips .chip:focus-visible {
+  outline: 2px solid var(--pl-utilities);
+  outline-offset: 1px;
+}
+
+.chips .chip[aria-pressed="true"] {
+  color: #fff;
+  background: var(--pl-ink);
+  border-color: var(--pl-ink);
+  font-weight: 600;
+}
+
+/* Marks the setting the original 1989 game used */
+.chips .chip .orig {
+  margin-left: 5px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 3px;
+  background: #fff;
+  color: var(--pl-ink-soft);
+  border: 1px solid var(--pl-line);
+}
+
+.chips .chip[aria-pressed="true"] .orig {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 760px) {
+  #policySetup {
+    grid-template-columns: 1fr;
+  }
+
+  #policySetup fieldset:nth-of-type(3) {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chips .chip, #controls .toolButton {
+    transition: background-color 0.12s, border-color 0.12s;
+  }
+}
