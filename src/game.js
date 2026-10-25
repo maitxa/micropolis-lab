@@ -40,6 +40,8 @@ import { Simulation } from './simulation.js';
 import { Storage } from './storage.js';
 import { Text } from './text.js';
 import { TouchWarnWindow } from './touchWarnWindow.js';
+import { MiscUtils } from './miscUtils.js';
+import * as TileValues from './tileValues.ts';
 
 var disasterTimeout = 20 * 1000;
 
@@ -202,6 +204,13 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
 
   // Listen for tool clicks
   this.inputStatus.addEventListener(Messages.TOOL_CLICKED, this.handleTool.bind(this));
+
+  // POLICY LAB: straight lines, undo and keyboard help
+  this.inputStatus.addEventListener(Messages.TOOL_LINE, this.handleToolLine.bind(this));
+  this.inputStatus.addEventListener(Messages.UNDO_REQUESTED, this.handleUndo.bind(this));
+  this.inputStatus.addEventListener(Messages.KEYS_HELP_REQUESTED, this.toggleKeysHelp.bind(this));
+  $('#keysHelpClose').click(function(e) { e.preventDefault(); $('#keysHelp').hide(); });
+  $('#undoRequest').prop('disabled', true);
 
   // And pauses
   this.inputStatus.addEventListener(Messages.SPEED_CHANGE, this.handlePause.bind(this));
@@ -414,11 +423,11 @@ Game.prototype.applyPolicyToInterface = function() {
 
   // Prices that depend on the laws
   var transport = Policy.transportCosts();
-  $('#roadButton').text('Road $' + transport.road);
-  $('#railButton').text('Rail $' + transport.rail);
-  $('#commercialButton').text('Commercial $' + Policy.businessZoneCost());
-  $('#industrialButton').text('Industrial $' + Policy.businessZoneCost());
-  $('#parkButton').text('Park $' + Policy.parkCost());
+  $('#roadButton').text('Road ' + MiscUtils.formatMoney(transport.road));
+  $('#railButton').text('Rail ' + MiscUtils.formatMoney(transport.rail));
+  $('#commercialButton').text('Commercial ' + MiscUtils.formatMoney(Policy.businessZoneCost()));
+  $('#industrialButton').text('Industrial ' + MiscUtils.formatMoney(Policy.businessZoneCost()));
+  $('#parkButton').text('Park ' + MiscUtils.formatMoney(Policy.parkCost()));
 };
 
 
@@ -502,15 +511,29 @@ Game.prototype.handleTool = function(data) {
   if (tileCoords === null)
     return;
 
+  this.applyToolAt(tileCoords.x, tileCoords.y);
+};
+
+
+// POLICY LAB: apply the current tool to one tile, recording the change so it can be undone.
+// (This was the second half of handleTool.)
+Game.prototype.applyToolAt = function(tileX, tileY) {
   var tool = this.inputStatus.currentTool;
+  if (tool === null)
+    return;
 
   var budget = this.simulation.budget;
-  var evaluation = this.simulation.evaluation;
 
   // do it!
-  tool.doTool(tileCoords.x, tileCoords.y, this.simulation.blockMaps);
+  tool.lastUndo = null;
+  tool.doTool(tileX, tileY, this.simulation.blockMaps);
 
-  tool.modifyIfEnoughFunding(budget);
+  var built = tool.modifyIfEnoughFunding(budget);
+  if (built && tool.lastUndo && this.inputStatus.toolName !== 'query') {
+    this.recordUndo(tool.lastUndo, this.inputStatus.strokeId);
+    this._lastToolTile = {x: tileX, y: tileY, tool: this.inputStatus.toolName};
+  }
+
   switch (tool.result) {
     case tool.TOOLRESULT_NEEDS_BULLDOZE:
       $('#toolOutput').text(Text.toolMessages.needsDoze);
@@ -523,6 +546,117 @@ Game.prototype.handleTool = function(data) {
     default:
       $('#toolOutput').html('Tools');
   }
+};
+
+
+// POLICY LAB: Shift+click draws a straight line (or an L shape) from the last tile built with the same tool
+Game.prototype.handleToolLine = function(data) {
+  var end = this.gameCanvas.canvasCoordinateToTileCoordinate(data.x, data.y);
+  if (end === null)
+    return;
+
+  var tool = this.inputStatus.currentTool;
+  var start = this._lastToolTile;
+  if (tool === null || !tool.isDraggable || !start || start.tool !== this.inputStatus.toolName) {
+    // Nothing to draw from yet: behave like a normal click
+    this.applyToolAt(end.x, end.y);
+    return;
+  }
+
+  // Go along the longer direction first, then turn the corner if needed
+  var x = start.x, y = start.y;
+  var stepX = end.x > x ? 1 : -1, stepY = end.y > y ? 1 : -1;
+  var path = [];
+  if (Math.abs(end.x - x) >= Math.abs(end.y - y)) {
+    while (x !== end.x) { x += stepX; path.push([x, y]); }
+    while (y !== end.y) { y += stepY; path.push([x, y]); }
+  } else {
+    while (y !== end.y) { y += stepY; path.push([x, y]); }
+    while (x !== end.x) { x += stepX; path.push([x, y]); }
+  }
+
+  for (var i = 0; i < path.length; i++) {
+    this.applyToolAt(path[i][0], path[i][1]);
+    if (tool.result === tool.TOOLRESULT_NO_MONEY)
+      break;
+  }
+};
+
+
+// POLICY LAB: undo history. One entry per click or drag ("stroke"), newest last.
+var MAX_UNDO = 30;
+
+Game.prototype.recordUndo = function(change, strokeId) {
+  this._undoStack = this._undoStack || [];
+  var top = this._undoStack[this._undoStack.length - 1];
+
+  if (top && top.strokeId === strokeId) {
+    // Same drag: merge, keeping each tile's ORIGINAL value from before the stroke began
+    change.tiles.forEach(function(t) {
+      var existing = top.tiles.find(function(u) { return u.x === t.x && u.y === t.y; });
+      if (existing)
+        existing.newValue = t.newValue;
+      else
+        top.tiles.push(t);
+    });
+    top.cost += change.cost;
+  } else {
+    this._undoStack.push({strokeId: strokeId, tiles: change.tiles.slice(), cost: change.cost});
+    if (this._undoStack.length > MAX_UNDO)
+      this._undoStack.shift();
+  }
+
+  $('#undoRequest').prop('disabled', false);
+};
+
+
+var isExplosion = function(v) {
+  return (v >= TileValues.TINYEXP && v <= TileValues.TINYEXPLAST) ||
+         (v >= TileValues.RUBBLE && v <= TileValues.LASTRUBBLE) || v === TileValues.DIRT;
+};
+
+Game.prototype.handleUndo = function() {
+  if (this.dialogOpen)
+    return;
+
+  var stack = this._undoStack || [];
+  var entry = stack[stack.length - 1];
+  if (!entry) {
+    $('#toolOutput').text('Nothing to undo');
+    return;
+  }
+
+  // Only undo if the city hasn't changed those tiles since (e.g. a zone that has already started to grow)
+  var map = this.simulation._map;
+  var unchanged = entry.tiles.every(function(t) {
+    var now = map.getTileValue(t.x, t.y);
+    if (now === t.newValue)
+      return true;
+    // Bulldozing leaves an explosion that turns into rubble or clear land: that still counts as unchanged
+    return t.newValue >= TileValues.TINYEXP && t.newValue <= TileValues.TINYEXPLAST && isExplosion(now);
+  });
+
+  stack.pop();
+  $('#undoRequest').prop('disabled', stack.length === 0);
+
+  if (!unchanged) {
+    $('#toolOutput').text("Can't undo: the city has already changed there");
+    return;
+  }
+
+  for (var i = entry.tiles.length - 1; i >= 0; i--) {
+    var t = entry.tiles[i];
+    map.setTile(t.x, t.y, t.oldValue, t.oldFlags);
+  }
+
+  this.simulation.budget.spend(-entry.cost);
+  $('#toolOutput').text(entry.cost > 0 ? 'Undone: ' + MiscUtils.formatMoney(entry.cost) + ' refunded' : 'Undone');
+};
+
+
+// POLICY LAB: keyboard shortcuts help panel
+Game.prototype.toggleKeysHelp = function() {
+  $('#keysHelp').toggle();
 };
 
 

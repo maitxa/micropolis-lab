@@ -66,6 +66,21 @@ WorldEffects.prototype.setTile = function(x, y, value, flags) {
 };
 
 
+// POLICY LAB (undo): before applying, record what each affected tile looked like, and what it will become
+WorldEffects.prototype.snapshot = function() {
+  var keys = Object.keys(this._data);
+  var tiles = [];
+  for (var i = 0, l = keys.length; i < l; i++) {
+    var coords = fromKey(keys[i]);
+    tiles.push({x: coords.x, y: coords.y,
+                oldValue: this._map.getTileValue(coords.x, coords.y),
+                oldFlags: this._map.getTileFlags(coords.x, coords.y),
+                newValue: this._data[keys[i]].getValue()});
+  }
+  return tiles;
+};
+
+
 WorldEffects.prototype.apply = function() {
   var keys = Object.keys(this._data);
   for (var i = 0, l = keys.length; i < l; i++) {

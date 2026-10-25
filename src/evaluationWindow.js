@@ -16,6 +16,7 @@ import $ from "jquery";
 import { ModalWindow } from './modalWindow.js';
 import { EVAL_WINDOW_CLOSED } from './messages.ts';
 import { Text } from './text.js';
+import { MiscUtils } from './miscUtils.js';
 
 var EvaluationWindow = ModalWindow(function() {
   $(evaluationFormID).on('submit', submit.bind(this));
@@ -52,9 +53,9 @@ EvaluationWindow.prototype._populateWindow = function(evaluation) {
     }
   }
 
-  $('#evalPopulation').text(evaluation.cityPop);
-  $('#evalMigration').text(evaluation.cityPopDelta);
-  $('#evalValue').text(evaluation.cityAssessedValue);
+  $('#evalPopulation').text(MiscUtils.formatNumber(evaluation.cityPop));
+  $('#evalMigration').text(MiscUtils.formatNumber(evaluation.cityPopDelta));
+  $('#evalValue').text(MiscUtils.formatMoney(evaluation.cityAssessedValue));
   $('#evalLevel').text(Text.gameLevel[evaluation.gameLevel]);
   $('#evalClass').text(Text.cityClass[evaluation.cityClass]);
   $('#evalScore').text(evaluation.cityScore);

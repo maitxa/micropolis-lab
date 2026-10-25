@@ -53,6 +53,8 @@ var doAutoBulldoze = function(x, y) {
 
 
 var apply = function(budget) {
+  // POLICY LAB (undo): remember what this action changed and what it cost
+  this.lastUndo = {tiles: this._worldEffects.snapshot(), cost: this._applicationCost};
   this._worldEffects.apply();
   budget.spend(this._applicationCost);
   this.clear();

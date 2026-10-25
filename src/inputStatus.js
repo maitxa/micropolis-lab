@@ -44,6 +44,9 @@ var InputStatus = EventEmitter(function(map, tileWidth) {
   this._lastdragX = -1;
   this._lastdragY = -1;
 
+  // POLICY LAB: each click or drag is one "stroke" (so a whole dragged road is undone in one step)
+  this.strokeId = 0;
+
   // Tool buttons
   this.toolName = null;
   this.currentTool = null;
@@ -72,6 +75,9 @@ var InputStatus = EventEmitter(function(map, tileWidth) {
   $('#settingsRequest').click(settingsHandler.bind(this));
   $('#saveRequest').click(saveHandler.bind(this));
   $('#debugRequest').click(debugHandler.bind(this));
+  // POLICY LAB
+  $('#undoRequest').click(makeHandler('UNDO_REQUESTED').bind(this));
+  $('#keysRequest').click(makeHandler('KEYS_HELP_REQUESTED').bind(this));
 });
 
 
@@ -79,8 +85,47 @@ var canvasID = '#' + GameCanvas.DEFAULT_ID;
 var toolOutputID = '#toolOutput';
 
 
+// POLICY LAB: keyboard shortcuts for tools. Number keys and a few letters (W/A/S/D and the arrows still scroll).
+var toolKeys = {
+  49: 'residentialButton', 50: 'commercialButton', 51: 'industrialButton', 52: 'roadButton', 53: 'railButton',
+  54: 'wireButton', 55: 'parkButton', 56: 'policeButton', 57: 'fireButton', 48: 'queryButton',
+  66: 'bulldozerButton'  // B
+};
+// Numeric keypad
+for (var k = 0; k <= 9; k++)
+  toolKeys[96 + k] = toolKeys[48 + k];
+
+var isTyping = function(e) {
+  var t = e.target;
+  return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+};
+
 var keyDownHandler = function(e) {
   var handled = false;
+
+  if (!isTyping(e) && !$('.modal:visible').length) {
+    // Undo: Ctrl+Z (Windows) or Cmd+Z (Mac)
+    if ((e.ctrlKey || e.metaKey) && e.keyCode === 90 && !e.shiftKey) {
+      this._emitEvent(Messages.UNDO_REQUESTED);
+      e.preventDefault();
+      return;
+    }
+
+    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+      // "?" (Shift + /) or H: keyboard help
+      if (e.keyCode === 191 || e.keyCode === 72) {
+        this._emitEvent(Messages.KEYS_HELP_REQUESTED);
+        e.preventDefault();
+        return;
+      }
+
+      if (toolKeys[e.keyCode] !== undefined) {
+        this.selectToolByButton(toolKeys[e.keyCode]);
+        e.preventDefault();
+        return;
+      }
+    }
+  }
 
   switch (e.keyCode) {
     case 38:
@@ -152,6 +197,7 @@ var getRelativeCoordinates = function(e) {
 
 
 var mouseEnterHandler = function(e) {
+  this._mouseInside = true;  // POLICY LAB: so keyboard tool selection can hook up the canvas
   if (this.currentTool === null)
     return;
 
@@ -165,8 +211,19 @@ var mouseEnterHandler = function(e) {
 
 
 var mouseDownHandler = function(e) {
+  // POLICY LAB: Shift+click draws a straight line from the last tile you built on
+  if (e.which === 1 && e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
+    var c = this.getRelativeCoordinates(e);
+    this.strokeId += 1;
+    this._emitEvent(Messages.TOOL_LINE, {x: c.x, y: c.y});
+    e.preventDefault();
+    return;
+  }
+
   if (e.which !== 1 || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey)
     return;
+
+  this.strokeId += 1;
 
   var coords = this.getRelativeCoordinates(e);
   this.mouseX = coords.x;
@@ -193,6 +250,7 @@ var mouseUpHandler = function(e) {
 
 
 var mouseLeaveHandler = function(e) {
+  this._mouseInside = false;
   $(this.canvasID).off('mousedown');
   $(this.canvasID).off('mousemove');
   $(this.canvasID).off('mouseup');
@@ -238,6 +296,7 @@ var canvasClickHandler = function(e) {
      this._mouseY === -1 || this._dragging)
     return;
 
+  this.strokeId += 1;
   this._emitEvent(Messages.TOOL_CLICKED, {x: this.mouseX, y: this.mouseY});
   e.preventDefault();
 };
@@ -269,6 +328,28 @@ var toolButtonHandler = function(e) {
   }
 
   e.preventDefault();
+};
+
+
+// POLICY LAB: choose a tool from the keyboard, and make sure the canvas listens for the right kind of input
+// (click for buildings, press-and-drag for roads, rail, wires...)
+InputStatus.prototype.selectToolByButton = function(buttonID) {
+  var button = $('#' + buttonID);
+  if (!button.length || button.prop('disabled'))
+    return;
+
+  button.trigger('click');
+
+  if (this._mouseInside && this.currentTool !== null) {
+    $(this.canvasID).off('mousemove');
+    $(this.canvasID).off('mousedown');
+    $(this.canvasID).off('click');
+    $(this.canvasID).on('mousemove', this.mouseMoveHandler);
+    if (this.currentTool.isDraggable)
+      $(this.canvasID).on('mousedown', this.mouseDownHandler);
+    else
+      $(this.canvasID).on('click', this.canvasClickHandler);
+  }
 };
 
 

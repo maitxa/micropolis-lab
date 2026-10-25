@@ -15,6 +15,8 @@ import $ from "jquery";
 
 import { MiscUtils } from './miscUtils.js';
 import { Text } from './text.js';
+import { Help } from './help.js';
+import * as Messages from './messages.ts';
 
 var TIMEOUT_SECS = 30;
 
@@ -33,6 +35,12 @@ function Notification(element, map, initialText) {
   this._y = -1;
 
   this._element.click(this._handleClick);
+
+  // POLICY LAB: hover help ("why is this happening, and what can I do?")
+  this._subject = Messages.WELCOME;
+  this._help = $('#messageHelp');
+  this._element.on('mouseenter', showHelp.bind(this));
+  this._element.on('mouseleave', hideHelp.bind(this));
   this.close = close.bind(this);
   if (this._element.is(':visible'))
     this._element.toggle();
@@ -96,7 +104,37 @@ var handleClick = function(e) {
 };
 
 
+// POLICY LAB: build and show the help box for the current message
+var escapeHTML = function(s) {
+  return String(s).replace(/[&<>"]/g, function(c) {
+    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c];
+  });
+};
+
+var showHelp = function() {
+  var h = Help.forMessage(this._subject);
+  if (h === null || !this._element.is(':visible'))
+    return;
+
+  var html = '<div class="helpTitle">' + escapeHTML(Text.messageText[this._subject] || '') + '</div>' +
+             '<div class="helpWhy">' + escapeHTML(h.why) + '</div>' +
+             '<div class="helpFixLabel">What you can do:</div><ul>' +
+             h.fixes.map(function(f) { return '<li>' + escapeHTML(f) + '</li>'; }).join('') + '</ul>';
+  if (this._x !== -1)
+    html += '<div class="helpHint">Click the message to jump to the spot.</div>';
+
+  this._help.html(html).show();
+};
+
+var hideHelp = function() {
+  this._help.hide();
+};
+
+
 Notification.prototype.createMessage = function(message) {
+  // POLICY LAB: remember which message this is, for the hover help
+  this._subject = message.subject;
+  this._element.toggleClass('hasHelp', Help.forMessage(message.subject) !== null);
 
   if (message.hasOwnProperty('data') && message.data !== undefined && message.data.hasOwnProperty('x') && message.data.hasOwnProperty('y')) {
     this._displayLink(Text.messageText[message.subject], message.data.x, message.data.y);

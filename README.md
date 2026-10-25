@@ -17,7 +17,11 @@ Before play, a setup screen separates two kinds of choices:
   park subsidies.
 - **Budget timing**: change the budget any time (original) or only in election years (every 4 years).
 
-During play, the Budget window has a new **Social services** line. Its effect on crime depends on the chosen world model.
+During play: numbers have thousands separators; hovering over a message explains why it happened and what to do;
+an **Undo** button (Ctrl+Z / Cmd+Z) reverses the last click or drag with a refund; number keys pick tools (press **?**
+for the list); and **Shift+click** draws a straight road, rail or power line from the last tile built.
+
+The Budget window has a new **Social services** line. Its effect on crime depends on the chosen world model.
 
 With every setting at its "(original)" default, the simulation rules match the original game.
 

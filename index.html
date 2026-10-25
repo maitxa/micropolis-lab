@@ -121,7 +121,7 @@
               <span id="date">Jan 1900</span>
             </div>
             <div class="elided">
-              Funds $<span id="funds">20000</span>
+              Funds $<span id="funds">20,000</span>
             </div>
             <div class="elided">
               Score: <span id="score">0</span>
@@ -159,6 +159,13 @@
             <div>
               <button id="pauseRequest" class="miscButton">Pause</button>
             </div>
+            <!-- POLICY LAB -->
+            <div>
+              <button id="undoRequest" class="miscButton" title="Undo your last build (Ctrl+Z / Cmd+Z)">Undo</button>
+            </div>
+            <div>
+              <button id="keysRequest" class="miscButton" title="Keyboard shortcuts (press ?)">Keys</button>
+            </div>
           </div>
         </div>
         <div id="RCIContainer" class="controlShadow leftedge width140 padding10 mintcream z1 initialHidden"></div>
@@ -166,19 +173,19 @@
           <div id="toolInfo" class="alignCenter"><span id="toolOutput">Tools</span></div>
           <div id="buttons">
             <button id="residentialButton" data-size="3" data-tool="residential" data-colour="lime" class="toolButton unselected">Residential $100</button>
-            <button id="nuclearButton" data-size="4" data-tool="nuclear" data-colour="mistyrose" class="toolButton unselected">Nuclear $5000</button>
+            <button id="nuclearButton" data-size="4" data-tool="nuclear" data-colour="mistyrose" class="toolButton unselected">Nuclear $5,000</button>
             <button id="commercialButton" data-size="3" data-tool="commercial" data-colour="blue" class="toolButton unselected">Commercial $100</button>
-            <button id="coalButton" data-size="4" data-tool="coal" data-colour="gray" class="toolButton unselected">Coal $3000</button>
+            <button id="coalButton" data-size="4" data-tool="coal" data-colour="gray" class="toolButton unselected">Coal $3,000</button>
             <button id="industrialButton" data-size="3" data-tool="industrial" data-colour="yellow" class="toolButton unselected">Industrial $100</button>
             <button id="policeButton" data-size="3" data-tool="police" data-colour="darkblue" class="toolButton unselected">Police $500</button>
             <button id="roadButton" data-size="1" data-tool="road" data-colour="black" class="toolButton unselected">Road $10</button>
             <button id="fireButton" data-size="3" data-tool="fire" data-colour="red" class="toolButton unselected">Fire $500</button>
             <button id="railButton" data-size="1" data-tool="rail" data-colour="brown" class="toolButton unselected">Rail $20</button>
-            <button id="portButton" data-size="4" data-tool="port" data-colour="dodgerblue" class="toolButton unselected">Port $3000</button>
+            <button id="portButton" data-size="4" data-tool="port" data-colour="dodgerblue" class="toolButton unselected">Port $3,000</button>
             <button id="wireButton" data-size="1" data-tool="wire" data-colour="khaki" class="toolButton unselected">Wire $5</button>
-            <button id="stadiumButton" data-size="4" data-tool="stadium" data-colour="indigo" class="toolButton unselected">Stadium $5000</button>
+            <button id="stadiumButton" data-size="4" data-tool="stadium" data-colour="indigo" class="toolButton unselected">Stadium $5,000</button>
             <button id="bulldozerButton" data-size="1" data-tool="bulldozer" data-colour="salmon" class="toolButton unselected">Bulldozer $1</button>
-            <button id="airportButton" data-size="6" data-tool="airport" data-colour="violet" class="toolButton unselected">Airport $10000</button>
+            <button id="airportButton" data-size="6" data-tool="airport" data-colour="violet" class="toolButton unselected">Airport $10,000</button>
             <button id="queryButton" data-size="1" data-tool="query" data-colour="cyan" class="toolButton unselected">Query</button>
             <button id="parkButton" data-size="1" data-tool="park" data-colour="darkgreen" class="toolButton unselected">Park $10</button>
           </div>
@@ -204,6 +211,26 @@
           </div>
         </div>
         <div id="notifications" class="initialHidden neutral z1 rightedge alignCenter elided padding10 controlShadow"></div>
+        <!-- POLICY LAB: keyboard shortcuts -->
+        <div id="keysHelp" class="mintcream shadow">
+          <div class="helpTitle">Keyboard shortcuts</div>
+          <table>
+            <tr><td><b>1</b> Residential</td><td><b>6</b> Wire (power line)</td></tr>
+            <tr><td><b>2</b> Commercial</td><td><b>7</b> Park</td></tr>
+            <tr><td><b>3</b> Industrial</td><td><b>8</b> Police</td></tr>
+            <tr><td><b>4</b> Road</td><td><b>9</b> Fire station</td></tr>
+            <tr><td><b>5</b> Rail</td><td><b>0</b> Query (inspect a tile)</td></tr>
+            <tr><td><b>B</b> Bulldozer</td><td><b>?</b> or <b>H</b> this help</td></tr>
+          </table>
+          <p><b>Straight lines:</b> with Road, Rail or Wire, click where the line starts, then hold <b>Shift</b> and click
+            where it ends. If the end isn't in line, it turns one corner (an L shape).</p>
+          <p><b>Undo:</b> Ctrl+Z (Windows) or Cmd+Z (Mac), or the Undo button. Undoes one click or drag at a time and
+            refunds the money, as long as the city hasn't already changed those tiles.</p>
+          <p><b>Scroll the map:</b> arrow keys or W A S D.</p>
+          <button id="keysHelpClose" class="miscButton">Close</button>
+        </div>
+        <!-- POLICY LAB: help shown when hovering over a message -->
+        <div id="messageHelp" class="mintcream shadow"></div>
         <div id="tooSmall" data-hasscript="false" class="mintcream open"><div id="tooSmallInner" class="alignCenter padding10"><h2 class="chunk">Uh-oh!</h2><p>This screen is too small&mdash;I won't be able to fit in all the controls, buttons and gizmos! Sorry!</p></div></div>
         <noscript>
           <div id="noscript" class="open mintcream centred padding10">

@@ -37,7 +37,7 @@ var budgetOKID = '#budgetOK';
 var setSpendRangeText = function(element, percentage, totalSpend) {
   var labelID = element + 'Label';
   var cash = Math.floor(totalSpend * (percentage / 100));
-  var text = [percentage, '% of $', totalSpend, ' = $', cash].join('');
+  var text = [percentage, '% of ', MiscUtils.formatMoney(totalSpend), ' = ', MiscUtils.formatMoney(cash)].join('');
   $(MiscUtils.normaliseDOMid(labelID)).text(text);
 };
 
@@ -146,10 +146,10 @@ BudgetWindow.prototype.open = function(budgetData) {
   var cashFlow = taxesCollected - this.roadMaintenanceBudget - this.fireMaintenanceBudget - this.policeMaintenanceBudget -
                  Math.round(this.socialMaintenanceBudget * budgetData.socialRate / 100);
   var currentFunds = previousFunds + cashFlow;
-  $('#taxesCollected').text('$' + taxesCollected);
-  $('#cashFlow').text((cashFlow < 0 ? '-$' : '$') + cashFlow);
-  $('#previousFunds').text((previousFunds < 0 ? '-$' : '$') + previousFunds);
-  $('#currentFunds').text('$' + currentFunds);
+  $('#taxesCollected').text(MiscUtils.formatMoney(taxesCollected));
+  $('#cashFlow').text(MiscUtils.formatMoney(cashFlow));
+  $('#previousFunds').text(MiscUtils.formatMoney(previousFunds));
+  $('#currentFunds').text(MiscUtils.formatMoney(currentFunds));
 
   // POLICY LAB: outside election years the budget can be viewed but not changed (except in a cash emergency)
   var locked = !!budgetData.locked;

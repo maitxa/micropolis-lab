@@ -85,6 +85,10 @@ export const SPRITE_DYING = "Sprite dying";
 export const SPRITE_MOVED = "Sprite move";
 export const TAX_TOO_HIGH = "Tax too high";
 export const TOOL_CLICKED = "Tool clicked";
+// POLICY LAB
+export const TOOL_LINE = "Tool line (shift+click)";
+export const UNDO_REQUESTED = "Undo requested";
+export const KEYS_HELP_REQUESTED = "Keyboard help requested";
 export const TORNADO_SIGHTED = "Tornado sighted";
 export const TOUCH_WINDOW_CLOSED = "Touch Window closed";
 export const TRAFFIC_JAMS = "Traffic jams reported";

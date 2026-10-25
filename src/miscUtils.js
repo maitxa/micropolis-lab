@@ -37,8 +37,26 @@ var reflectEvent = function(message, value) {
 };
 
 
+// POLICY LAB: format numbers with thousands separators, e.g. 200000 -> "200,000"
+var formatNumber = function(n) {
+  if (typeof n !== 'number')
+    n = Number(n);
+  if (!isFinite(n))
+    return String(n);
+  return Math.round(n).toLocaleString('en-US');
+};
+
+// ... and money: -1500 -> "-$1,500"
+var formatMoney = function(n) {
+  n = Number(n);
+  return (n < 0 ? '-$' : '$') + formatNumber(Math.abs(n));
+};
+
+
 var MiscUtils = {
   clamp: clamp,
+  formatMoney: formatMoney,
+  formatNumber: formatNumber,
   makeConstantDescriptor: makeConstantDescriptor,
   normaliseDOMid: normaliseDOMid,
   reflectEvent: reflectEvent

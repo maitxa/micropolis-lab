@@ -995,3 +995,112 @@ nav li {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+
+/* POLICY LAB: message hover help */
+#notifications.hasHelp {
+  cursor: help;
+}
+
+#notifications.hasHelp.pointer {
+  cursor: pointer;
+}
+
+#messageHelp {
+  display: none;
+  position: absolute;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 420px;
+  max-width: 90vw;
+  padding: 10px 14px;
+  border: 1px solid black;
+  z-index: 30;
+  font-size: 14px;
+  text-align: left;
+  pointer-events: none;
+}
+
+#messageHelp .helpTitle {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+#messageHelp .helpFixLabel {
+  margin-top: 6px;
+  font-weight: bold;
+}
+
+#messageHelp ul {
+  margin: 4px 0 0 0;
+  padding-left: 18px;
+}
+
+#messageHelp .helpHint {
+  margin-top: 6px;
+  font-style: italic;
+}
+
+
+/* POLICY LAB: keyboard shortcuts panel */
+#keysHelp {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 460px;
+  max-width: 92vw;
+  padding: 14px 18px;
+  border: 1px solid black;
+  z-index: 40;
+  font-size: 15px;
+  text-align: left;
+}
+
+#keysHelp .helpTitle {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+#keysHelp table {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+#keysHelp td {
+  padding: 2px 6px 2px 0;
+}
+
+#keysHelp p {
+  margin: 6px 0;
+}
+
+#keysHelp b {
+  display: inline-block;
+  min-width: 14px;
+}
+
+#keysHelpClose {
+  background-color: darkslategray;
+  color: white;
+  width: auto;
+  padding: 2px 12px;
+}
+
+#undoRequest:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#undoRequest {
+  background-color: #8b5a2b;
+  color: white;
+}
+
+#keysRequest {
+  background-color: #4a6b8a;
+  color: white;
+}
