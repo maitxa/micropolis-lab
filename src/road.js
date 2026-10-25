@@ -11,6 +11,7 @@
  *
  */
 
+import { Policy } from './policy.js';
 import { Random } from './random.ts';
 import { Tile } from "./tile.ts";
 import { ANIMBIT, BIT_MASK, BULLBIT } from "./tileFlags.ts";
@@ -69,6 +70,19 @@ var closeHorizontal = [
 
 
 var doBridge = function(map, x, y, currentTile, simData) {
+  // POLICY LAB: under the "fixed bridges" law, bridges never open; one that is open (e.g. in an old saved game) closes
+  if (Policy.bridges === 'fixed') {
+    if (currentTile === TileValues.BRWV) {
+      closeBridge(map, x, y, verticalDeltaX, verticalDeltaY, openVertical, closeVertical);
+      return true;
+    }
+    if (currentTile === TileValues.BRWH) {
+      closeBridge(map, x, y, horizontalDeltaX, horizontalDeltaY, openHorizontal, closeHorizontal);
+      return true;
+    }
+    return false;
+  }
+
   if (currentTile === TileValues.BRWV) {
     // We have an open vertical bridge. Possibly close it.
     if (Random.getChance(3) && simData.spriteManager.getBoatDistance(x, y) > 340)

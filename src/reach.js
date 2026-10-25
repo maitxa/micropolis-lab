@@ -15,6 +15,7 @@ import { I18n } from './i18n.js';
 import { MiscUtils } from './miscUtils.js';
 import { Policy } from './policy.js';
 import { TileUtils } from './tileUtils.js';
+import * as TileValues from './tileValues.ts';
 
 var P = I18n.p;
 var fmt = MiscUtils.formatNumber;
@@ -68,6 +69,33 @@ var buildingCentre = function(map, x, y) {
   return {x: x, y: y};
 };
 
+// The raised halves of an open drawbridge
+var isRaisedBridge = function(v) {
+  return (v >= TileValues.HBRDG0 && v <= TileValues.HBRDG3) || (v >= TileValues.VBRDG0 && v <= TileValues.VBRDG3);
+};
+
+// A closed road bridge over the shipping channel, which can open (the same test the game uses, in road.js)
+var isDrawbridge = function(map, x, y) {
+  if (Policy.bridges === 'fixed')
+    return false;
+  var v = TileUtils.normalizeRoad(map.getTileValue(x, y));
+  if (v === TileValues.HBRIDGE)
+    return y > 0 && map.getTileValue(x, y - 1) === TileValues.CHANNEL;
+  if (v === TileValues.VBRIDGE)
+    return x < map.width - 1 && map.getTileValue(x + 1, y) === TileValues.CHANNEL;
+  return false;
+};
+
+// Is the road at (x, y) cut off by an open drawbridge right next to it?
+var nextToOpenBridge = function(map, x, y) {
+  for (var k = 0; k < 4; k++) {
+    var nx = x + DIRS[k][0], ny = y + DIRS[k][1];
+    if (map.testBounds(nx, ny) && isRaisedBridge(map.getTileValue(nx, ny)))
+      return true;
+  }
+  return false;
+};
+
 var drivable = function(map, x, y) {
   if (!map.testBounds(x, y))
     return false;
@@ -78,20 +106,18 @@ var drivable = function(map, x, y) {
   return !(TileUtils.isRoad(v) && Policy.isCarFree(map, x, y));
 };
 
-var compute = function(map, zx, zy, type, longReach) {
-  var max = longReach ? MAX_DISTANCE * 2 : MAX_DISTANCE;
+var key = function(x, y) { return x + ',' + y; };
+
+// Breadth-first search along drivable tiles from the given start tiles, up to max tiles
+var spread = function(map, starts, max) {
   var dist = {};
   var queue = [];
-  var key = function(x, y) { return x + ',' + y; };
-  for (var i = 0; i < 12; i++) {
-    var sx = zx + perimX[i], sy = zy + perimY[i];
-    if (drivable(map, sx, sy) && dist[key(sx, sy)] === undefined) {
-      dist[key(sx, sy)] = 1;
-      queue.push([sx, sy]);
+  starts.forEach(function(s) {
+    if (dist[key(s[0], s[1])] === undefined) {
+      dist[key(s[0], s[1])] = 1;
+      queue.push([s[0], s[1]]);
     }
-  }
-  var hasRoad = queue.length > 0;
-
+  });
   for (var q = 0; q < queue.length; q++) {
     var cx = queue[q][0], cy = queue[q][1], d = dist[key(cx, cy)];
     if (d >= max)
@@ -104,8 +130,30 @@ var compute = function(map, zx, zy, type, longReach) {
       }
     }
   }
+  return {dist: dist, tiles: queue};
+};
 
-  var near = [], far = [], dead = [], dests = {};
+var countLinks = function(map, x, y) {
+  var links = 0;
+  for (var k = 0; k < 4; k++)
+    if (drivable(map, x + DIRS[k][0], y + DIRS[k][1]))
+      links++;
+  return links;
+};
+
+var compute = function(map, zx, zy, type, longReach) {
+  var max = longReach ? MAX_DISTANCE * 2 : MAX_DISTANCE;
+  var starts = [];
+  for (var i = 0; i < 12; i++) {
+    var sx = zx + perimX[i], sy = zy + perimY[i];
+    if (drivable(map, sx, sy))
+      starts.push([sx, sy]);
+  }
+  var hasRoad = starts.length > 0;
+  var found = spread(map, starts, max);
+  var dist = found.dist, queue = found.tiles;
+
+  var near = [], far = [], dead = [], dests = {}, bridges = [];
   var isDest = DEST[type];
   var insideOrigin = function(x, y) { return Math.abs(x - zx) <= 1 && Math.abs(y - zy) <= 1; };
   queue.forEach(function(pos) {
@@ -123,14 +171,19 @@ var compute = function(map, zx, zy, type, longReach) {
           dests[ck] = {x: c.x, y: c.y, d: d};
       }
     }
+    // drawbridges on its routes: closed ones that can open, and open ones that cut the road right now
+    if (isDrawbridge(map, x, y))
+      bridges.push({x: x, y: y, open: false});
+    else if (links <= 1 && nextToOpenBridge(map, x, y))
+      bridges.push({x: x, y: y, open: true});
     // a dead end the car could drive into (not one right at the zone, where the car only starts)
-    if (links <= 1 && d > 1)
+    else if (links <= 1 && d > 1)
       dead.push([x, y]);
   });
 
   var destList = Object.keys(dests).map(function(k2) { return dests[k2]; });
   destList.sort(function(a, b) { return a.d - b.d; });
-  return {type: type, hasRoad: hasRoad, max: max, near: near, far: far, dead: dead, dests: destList};
+  return {type: type, hasRoad: hasRoad, max: max, near: near, far: far, dead: dead, dests: destList, bridges: bridges};
 };
 
 // Shapes for the map layer (see GameCanvas.setHighlights)
@@ -142,6 +195,11 @@ var shapes = function(r) {
   r.dead.forEach(function(d, i) {
     out.push({kind: 'dead', x: d[0], y: d[1], label: i === 0 ? P('Dead end', 'Calle sin salida') : ''});
   });
+  (r.bridges || []).forEach(function(b) {
+    out.push({kind: 'bridge', x: b.x, y: b.y, open: b.open,
+              label: b.open ? P('Drawbridge open: road cut', 'Puente levadizo abierto: calle cortada')
+                            : P('Drawbridge: opens for ships', 'Puente levadizo: se abre para los barcos')});
+  });
   return out;
 };
 
@@ -149,7 +207,7 @@ var what = function(type) {
   return {
     res: P('shops, factories or big buildings', 'tiendas, fábricas o edificios grandes'),
     com: P('homes, shops or factories', 'viviendas, tiendas o fábricas'),
-    ind: P('homes, for workers', 'viviendas, para trabajadores')
+    ind: P('homes for its workers', 'viviendas para sus trabajadores')
   }[type];
 };
 
@@ -176,6 +234,14 @@ var verdict = function(r) {
       text += ' ' + P('That is far: the car turns at random, so many trips will still fail. Closer is better.',
                       'Eso está lejos: el carro gira al azar, así que muchos viajes seguirán fallando. Más cerca es mejor.');
   }
+  var open = (r.bridges || []).filter(function(b) { return b.open; }).length;
+  var closed = (r.bridges || []).length - open;
+  if (open)
+    text += ' ' + P('A drawbridge on its routes is open right now: cars stop there until it closes.',
+                    'Un puente levadizo en sus rutas está abierto ahora: los carros se detienen allí hasta que se cierre.');
+  else if (closed)
+    text += ' ' + P('A drawbridge on its routes opens for ships (and sometimes at random), cutting the road while open.',
+                    'Un puente levadizo en sus rutas se abre para los barcos (y a veces al azar), y corta la calle mientras está abierto.');
   if (r.dead.length)
     text += ' ' + (r.dead.length === 1 ? P('1 dead end nearby can stop the car.', '1 calle sin salida cercana puede detener el carro.')
                                        : P('{0} dead ends nearby can stop the car.', '{0} calles sin salida cercanas pueden detener el carro.',
@@ -184,8 +250,146 @@ var verdict = function(r) {
 };
 
 
+// ---------------------------------------------------------------------------------------------------------------
+// Connection reports for the Query window. Each line: {mark: 'ok' | 'no' | 'warn', text}
+// ---------------------------------------------------------------------------------------------------------------
+
+var EMPTY_CENTRE = {res: TileValues.FREEZ, com: TileValues.COMCLR, ind: TileValues.INDCLR};
+
+// Has a zone got buildings? (homes start as single houses around an empty centre)
+var isBuilt = function(map, zone) {
+  if (zone.type !== 'res')
+    return map.getTileValue(zone.x, zone.y) !== EMPTY_CENTRE[zone.type];
+  for (var dx = -1; dx <= 1; dx++)
+    for (var dy = -1; dy <= 1; dy++)
+      if (map.testBounds(zone.x + dx, zone.y + dy) && map.getTileValue(zone.x + dx, zone.y + dy) >= TileValues.LHTHR)
+        return true;
+  return false;
+};
+
+var bridgeLines = function(r, lines) {
+  var open = r.bridges.filter(function(b) { return b.open; }).length;
+  var closed = r.bridges.length - open;
+  if (open)
+    lines.push({mark: 'warn', text: P('A drawbridge on these roads is open now: the road is cut until it closes.',
+                                      'Un puente levadizo en estas calles está abierto ahora: la calle está cortada hasta que se cierre.')});
+  else if (closed)
+    lines.push({mark: 'warn', text: P('A drawbridge on these roads opens for ships (and sometimes at random).',
+                                      'Un puente levadizo en estas calles se abre para los barcos (y a veces al azar).')});
+  if (r.dead.length)
+    lines.push({mark: 'warn', text: r.dead.length === 1 ? P('1 dead end within reach: a car that gets there gives up.',
+                                                            '1 calle sin salida a su alcance: el carro que llega allí se rinde.')
+                                                        : P('{0} dead ends within reach: a car that gets there gives up.',
+                                                            '{0} calles sin salida a su alcance: el carro que llega allí se rinde.', fmt(r.dead.length))});
+};
+
+// A residential, commercial or industrial zone
+var zoneReport = function(map, zone, longReach) {
+  var r = compute(map, zone.x, zone.y, zone.type, longReach);
+  var lines = [];
+  var powered = map.getTile(zone.x, zone.y).isPowered();
+  lines.push(r.hasRoad ? {mark: 'ok', text: P('Road touching one side', 'Una calle toca uno de sus lados')}
+                       : {mark: 'no', text: P('No road touching any side (corners don\'t count)', 'Ninguna calle toca sus lados (las esquinas no cuentan)')});
+  lines.push(powered ? {mark: 'ok', text: P('Has power', 'Tiene electricidad')}
+                     : {mark: 'no', text: P('No power', 'Sin electricidad')});
+  var closest = r.dests.length ? r.dests[0].d : null;
+  if (r.hasRoad) {
+    if (r.dests.length)
+      lines.push({mark: closest > NEAR ? 'warn' : 'ok',
+                  text: P('Can reach {0} ({1}); closest {2} road tiles away', 'Llega a {0} ({1}); el más cercano a {2} casillas de calle',
+                          what(r.type), fmt(r.dests.length), closest)});
+    else
+      lines.push({mark: 'no', text: P('No {0} within {1} road tiles', 'No hay {0} a menos de {1} casillas de calle', what(r.type), r.max)});
+    bridgeLines(r, lines);
+  }
+  if (!isBuilt(map, zone))
+    lines.push({mark: 'info', text: P('Still empty: its trips start once it has buildings.', 'Todavía vacía: sus viajes empiezan cuando tenga edificios.')});
+
+  var verdict;
+  if (!r.hasRoad)
+    verdict = {mark: 'no', text: P('Not connected: build a road along one side.', 'No está conectada: construye una calle en uno de sus lados.')};
+  else if (!powered)
+    verdict = {mark: 'no', text: P('Not connected to power: run a power line to it.', 'Sin conexión eléctrica: llévale un cable eléctrico.')};
+  else if (!r.dests.length)
+    verdict = {mark: 'no', text: P('Not connected to what it needs: put {0} along the shaded roads.',
+                                   'No está conectada a lo que necesita: pon {0} junto a las calles sombreadas.', what(r.type))};
+  else if (closest > NEAR || r.dead.length || r.bridges.length)
+    verdict = {mark: 'warn', text: P('Connected, but trips will sometimes fail (far away, dead ends or a drawbridge).',
+                                     'Conectada, pero a veces los viajes fallarán (lejos, calles sin salida o un puente levadizo).')};
+  else
+    verdict = {mark: 'ok', text: P('Connected: this {0} has what it needs to grow.', 'Conectada: esta {0} tiene lo que necesita para crecer.', noun(r.type))};
+  return {reach: r, lines: lines, verdict: verdict,
+          note: P('Growth also depends on demand, land value and pollution.', 'El crecimiento también depende de la demanda, el valor del suelo y la contaminación.')};
+};
+
+// A road or rail tile: where does it lead?
+var roadReport = function(map, x, y) {
+  var found = spread(map, [[x, y]], MAX_DISTANCE);
+  var zones = {}, near = [], far = [], dead = [], bridges = [], dests = [];
+  var counts = {res: 0, com: 0, ind: 0, empty: 0};
+  found.tiles.forEach(function(pos) {
+    var tx = pos[0], ty = pos[1], d = found.dist[key(tx, ty)];
+    (d <= NEAR ? near : far).push([tx, ty]);
+    var links = countLinks(map, tx, ty);
+    if (isDrawbridge(map, tx, ty))
+      bridges.push({x: tx, y: ty, open: false});
+    else if (links <= 1 && nextToOpenBridge(map, tx, ty))
+      bridges.push({x: tx, y: ty, open: true});
+    else if (links <= 1)
+      dead.push([tx, ty]);
+    for (var k = 0; k < 4; k++) {
+      var nx = tx + DIRS[k][0], ny = ty + DIRS[k][1];
+      if (!map.testBounds(nx, ny) || TileUtils.isDriveable(map.getTileValue(nx, ny)))
+        continue;
+      var z = zoneAt(map, nx, ny);
+      if (z && !zones[key(z.x, z.y)]) {
+        zones[key(z.x, z.y)] = true;
+        if (isBuilt(map, z)) {
+          counts[z.type] += 1;
+          dests.push({x: z.x, y: z.y, d: d});
+        } else {
+          counts.empty += 1;
+        }
+      }
+    }
+  });
+  var r = {type: null, hasRoad: true, max: MAX_DISTANCE, near: near, far: far, dead: dead, dests: dests, bridges: bridges};
+
+  var lines = [];
+  var here = TileUtils.normalizeRoad(map.getTileValue(x, y));
+  if (isDrawbridge(map, x, y))
+    lines.push({mark: 'warn', text: P('This is a drawbridge: it opens for ships (and sometimes at random), cutting the road.',
+                                      'Este es un puente levadizo: se abre para los barcos (y a veces al azar) y corta la calle.')});
+  else if (countLinks(map, x, y) <= 1)
+    lines.push({mark: 'warn', text: nextToOpenBridge(map, x, y)
+                  ? P('The drawbridge here is open: the road is cut until it closes.', 'El puente levadizo aquí está abierto: la calle está cortada hasta que se cierre.')
+                  : P('This tile is a dead end: a car that gets here gives up.', 'Esta casilla es una calle sin salida: el carro que llega aquí se rinde.')});
+  lines.push({mark: 'info', text: P('Within 30 road tiles: homes {0}, shops {1}, factories {2}{3}.',
+                                    'A menos de 30 casillas de calle: viviendas {0}, tiendas {1}, fábricas {2}{3}.',
+                                    fmt(counts.res), fmt(counts.com), fmt(counts.ind),
+                                    counts.empty ? P(' (empty zones: {0})', ' (zonas vacías: {0})', fmt(counts.empty)) : '')});
+  bridgeLines(r, lines);
+  var jobs = counts.com + counts.ind;
+  var verdict;
+  if (counts.res && jobs)
+    verdict = {mark: 'ok', text: P('Links homes and jobs.', 'Une viviendas y empleos.')};
+  else if (counts.res)
+    verdict = {mark: 'no', text: P('Only homes reachable: no shops or factories within 30 road tiles.', 'Solo hay viviendas a su alcance: no hay tiendas ni fábricas a menos de 30 casillas.')};
+  else if (jobs)
+    verdict = {mark: 'no', text: P('No homes reachable: the shops and factories here have no workers within 30 road tiles.',
+                                   'No hay viviendas a su alcance: las tiendas y fábricas de aquí no tienen trabajadores a menos de 30 casillas.')};
+  else
+    verdict = {mark: 'no', text: P('Not connected to any built zone.', 'No está conectada a ninguna zona construida.')};
+  // a hint that the rail/road tile itself is what we started from
+  return {reach: r, lines: lines, verdict: verdict, isRail: !TileUtils.isRoad(here), note: ''};
+};
+
+
 var Reach = {
   zoneAt: zoneAt,
+  zoneReport: zoneReport,
+  roadReport: roadReport,
+  isDrivable: drivable,
   compute: compute,
   shapes: shapes,
   verdict: verdict,

@@ -184,7 +184,7 @@ var play = function(e) {
 var numberFields = ['povertyCrime', 'densityCrime', 'policeStrength', 'socialCrime', 'taxGrowth',
                     'regulationGrowth', 'incentiveGrowth', 'sewagePollution', 'walkability', 'densityCap', 'electionCycle',
                     'pedestrian', 'greenBelt', 'healthAffects'];
-var textFields = ['regulation', 'transport', 'incentives', 'parks', 'zoning', 'growthModel'];
+var textFields = ['regulation', 'transport', 'incentives', 'parks', 'zoning', 'growthModel', 'bridges'];
 
 var readPolicyForm = function() {
   var policy = {};

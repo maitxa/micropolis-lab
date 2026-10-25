@@ -67,6 +67,17 @@ zone's reach: roads its car can get to (darker within 15 tiles, lighter up to 30
 reach (green frames), and dead ends (orange), with a one-line verdict. This is the best case; random turns mean far
 destinations are still missed some of the time (`src/reach.js`).
 
+Query tool: inspecting a home, shop or factory adds a **Connections** section to the info window (road touching a
+side, power, whether it can reach what it needs within 30 road tiles, dead ends and drawbridges on its routes, and a
+one-line verdict); inspecting a road or rail tile says where it leads (homes, shops and factories within 30 tiles,
+whether it links homes and jobs, whether this tile is a dead end or a drawbridge). The reach stays on the map after the
+window closes.
+
+Bridges law (setup screen): **Drawbridges** (original: road bridges over the shipping channel open for ships, and at
+random about a third of the time with no ship near, cutting the road while open) or **Fixed high bridges** (never open;
+ships pass underneath). Drawbridges are labelled in the reach view. Note that when roads are underfunded, bridges can
+also collapse into water (original rule).
+
 Hints on the map: "Show me on the map" (or clicking advice in the message bar) outlines every spot the advice is
 about: zones without power, zones without a road (with a dashed ring showing exactly where a road would count), zones
 whose trips failed, empty zones, or a circle where to build (e.g. "Zone homes inside this circle"). A bar at the top

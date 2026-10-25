@@ -14,6 +14,7 @@
 import { BaseSprite } from './baseSprite.js';
 import { SHIP_CRASHED, SOUND_HONKHONK } from './messages.ts';
 import { MiscUtils } from './miscUtils.js';
+import { Policy } from './policy.js';
 import { Random } from './random.ts';
 import { SPRITE_SHIP } from './spriteConstants.ts';
 import { SpriteConstants } from './spriteConstants.ts';
@@ -61,6 +62,10 @@ var oppositeAndUnderwater = function(tileValue, oldDir, newDir) {
 
   if (tileValue == TileValues.POWERBASE || tileValue == TileValues.POWERBASE + 1 ||
       tileValue == TileValues.RAILBASE || tileValue == TileValues.RAILBASE + 1)
+    return true;
+
+  // POLICY LAB: ships pass under fixed (high) road bridges
+  if (Policy.bridges === 'fixed' && Policy.isRoadBridge(tileValue))
     return true;
 
   return false;
@@ -159,7 +164,9 @@ BoatSprite.prototype.move = function(spriteCycle, disasterManager, blockMaps) {
 
   // If we didn't find a new direction, we might explode
   // depending on the last tile we looked at.
-  for (var i = 0; i < 8; i++) {
+  // POLICY LAB: a fixed (high) road bridge is safe for ships
+  var safeBridge = Policy.bridges === 'fixed' && Policy.isRoadBridge(tile);
+  for (var i = 0; i < 8 && !safeBridge; i++) {
     if (tile === tileWhiteList[i]) {
       break;
     }

@@ -497,6 +497,12 @@ var policyReport = function(sim) {
       (c.coalPowerPop > 0 ? P('; coal plants are a major source of pollution.', '; las plantas de carbón son una fuente importante de contaminación.')
                           : '.'));
 
+  // Bridges
+  if (Policy.bridges === 'fixed')
+    add(P('Bridges', 'Puentes'),
+        P('Fixed high bridges: road bridges over the shipping channel never open, so traffic is never cut off and ships pass underneath. (In the original, drawbridges open for ships and sometimes at random, and while open the road is a dead end.)',
+          'Puentes altos fijos: los puentes sobre el canal de navegación nunca se abren, así que el tráfico nunca se corta y los barcos pasan por debajo. (En el original, los puentes levadizos se abren para los barcos y a veces al azar, y mientras están abiertos la calle es un callejón sin salida.)'));
+
   // Parks
   if (Policy.parks !== 'standard')
     add(P('Parks', 'Parques'),

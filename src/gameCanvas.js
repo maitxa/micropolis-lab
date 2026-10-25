@@ -846,6 +846,23 @@ GameCanvas.prototype._paintHighlights = function() {
       out.push('<g class="hlOther">' + parts.join('') + '</g>');
       return;
     }
+    if (s.kind === 'bridge') {
+      var bx = px(s.x), by = py(s.y);
+      parts.push('<rect x="' + (bx + line / 2) + '" y="' + (by + line / 2) + '" width="' + (tw - line) + '" height="' + (tw - line) +
+                 '" class="' + (s.open ? 'hlBridgeOpen' : 'hlBridge') + '" stroke-width="' + line + '"/>');
+      parts.push(label(bx + tw + line, by + tw / 2, s.label));
+      out.push('<g class="hlOther">' + parts.join('') + '</g>');
+      return;
+    }
+    if (s.kind === 'tile') {
+      var tx0 = px(s.x), ty0 = py(s.y);
+      parts.push('<rect x="' + (tx0 - line / 2) + '" y="' + (ty0 - line / 2) + '" width="' + (tw + line) + '" height="' + (tw + line) +
+                 '" class="hlZone" stroke-width="' + line + '"/>');
+      if (focused)
+        parts.push(label(tx0, ty0 - line, s.label));
+      focusParts.push('<g class="hlFocus">' + parts.join('') + '</g>');
+      return;
+    }
     if (s.kind === 'zone' && s.tone === 'ok') {
       out.push('<g class="hlOk"><rect x="' + px(s.x - 1) + '" y="' + py(s.y - 1) + '" width="' + (3 * tw) + '" height="' + (3 * tw) +
                '" class="hlZoneOk" stroke-width="' + line + '" rx="' + Math.round(tw / 5) + '"/></g>');

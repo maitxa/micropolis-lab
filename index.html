@@ -119,6 +119,8 @@
                   <select id="pl_pedestrian"><option value="0" selected>None (original)</option><option value="6">Small (6 tiles around the centre)</option><option value="12">Large (12 tiles around the centre)</option></select></label>
                 <label class="policyRow"><span>Green belt (protected ring of land)</span>
                   <select id="pl_greenBelt"><option value="0" selected>None (original)</option><option value="1">Yes</option></select></label>
+                <label class="policyRow"><span>Bridges over the shipping channel</span>
+                  <select id="pl_bridges"><option value="draw" selected>Drawbridges: open for ships (original)</option><option value="fixed">Fixed high bridges: never open</option></select></label>
                 <label class="policyRow"><span>Housing density</span>
                   <select id="pl_densityCap"><option value="40" selected>No limit (original)</option><option value="24">Medium at most</option><option value="8">Single houses only</option></select></label>
                 <label class="policyRow"><span>Transportation priority</span>
@@ -519,6 +521,13 @@
                 <dt class="queryItem">Density</dt><dd class="queryItem queryRight" id="queryDensityRaw"></dd>
               </dl>
             </div>
+          </div>
+          <!-- POLICY LAB: is it connected to what it needs? -->
+          <div id="queryConnections" style="display:none">
+            <div class="queryConnTitle">Connections</div>
+            <ul id="queryConnList"></ul>
+            <p id="queryConnVerdict"></p>
+            <p id="queryConnNote"></p>
           </div>
           <div id="queryDebugTable" class="margin10 queryDebug hidden">
             <table id="flagsTable">

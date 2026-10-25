@@ -2084,3 +2084,76 @@ nav li {
   line-height: 1.35;
   opacity: 0.95;
 }
+
+/* POLICY LAB: drawbridges in the reach view */
+#hintOverlay .hlBridge {
+  fill: rgba(255, 200, 0, 0.35);
+  stroke: #ffc800;
+}
+
+#hintOverlay .hlBridgeOpen {
+  fill: rgba(255, 60, 0, 0.45);
+  stroke: #ff3c00;
+}
+
+/* POLICY LAB: "Connections" in the Query window */
+#queryConnections {
+  margin: 8px 10px 4px 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--pl-line);
+  font-family: var(--pl-ui);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  color: var(--pl-ink);
+}
+
+.queryConnTitle {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+#queryConnList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#queryConnList li {
+  display: flex;
+  gap: 6px;
+  margin: 2px 0;
+}
+
+.connMark {
+  flex: 0 0 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.conn-ok .connMark, #queryConnVerdict.conn-ok {
+  color: #1e7a3a;
+}
+
+.conn-no .connMark, #queryConnVerdict.conn-no {
+  color: #b3362b;
+}
+
+.conn-warn .connMark, #queryConnVerdict.conn-warn {
+  color: #a35f00;
+}
+
+.conn-info .connMark {
+  color: var(--pl-ink-soft);
+}
+
+#queryConnVerdict {
+  margin: 6px 0 2px 0;
+  font-weight: 700;
+}
+
+#queryConnNote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--pl-ink-soft);
+}

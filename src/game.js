@@ -594,19 +594,21 @@ Game.prototype.renderHint = function(centre) {
   var verdict = '';
   // A zone whose trips matter: also show how far its car can get along the roads, and what it could reach
   if (spot.type) {
-    var depots = this.simulation.blockMaps && this.simulation.blockMaps.depotMap;
-    var longReach = !!depots && depots.worldGet(spot.x, spot.y) > 0;
-    var r = Reach.compute(this.simulation._map, spot.x, spot.y, spot.type, longReach);
+    var r = Reach.compute(this.simulation._map, spot.x, spot.y, spot.type, this.depotCovers(spot.x, spot.y));
     shapes = shapes.concat(Reach.shapes(r));
     verdict = Reach.verdict(r);
+  } else if (spot.road) {
+    var rr = Reach.roadReport(this.simulation._map, spot.x, spot.y);
+    shapes = shapes.concat(Reach.shapes(rr.reach));
+    verdict = rr.verdict.text;
   }
   this.gameCanvas.setHighlights(shapes, h.index);
   if (centre)
     this.gameCanvas.centreOn(spot.x, spot.y);
   // A reach view is worded when drawn, so it follows language changes
   if (h.item.id === 'reach') {
-    h.item.text = I18n.t('How far this {0}\'s trips can go', Reach.noun(spot.type));
-    spot.label = I18n.t('Trips start here');
+    h.item.text = spot.road ? I18n.t('Where this road leads (30 tiles)') : I18n.t('How far this {0}\'s trips can go', Reach.noun(spot.type));
+    spot.label = spot.road ? I18n.t('You are here') : I18n.t('Trips start here');
   }
   $('#hintText').text(h.item.text);
   $('#hintVerdict').text(verdict).toggle(verdict !== '');
@@ -751,22 +753,53 @@ Game.prototype.handleDebugRequest = makeWindowOpenHandler('debug');
 Game.prototype.handleDisasterRequest = makeWindowOpenHandler('disaster');
 var openQueryWindow = makeWindowOpenHandler('query');
 
-// POLICY LAB: inspecting a residential, commercial or industrial zone also shows its reach on the map
+// POLICY LAB: inspecting a home, shop or factory (or a piece of road or rail) also says whether it is connected to
+// what it needs (in the Query window) and shows its reach on the map
 Game.prototype.handleQueryRequest = function(where) {
   openQueryWindow.call(this);
+  $('#queryConnections').hide();
   if (!where)
     return;
-  var zone = Reach.zoneAt(this.simulation._map, where.x, where.y);
-  if (!zone)
+  var map = this.simulation._map;
+  var zone = Reach.zoneAt(map, where.x, where.y);
+  var target, report;
+  if (zone) {
+    report = Reach.zoneReport(map, zone, this.depotCovers(zone.x, zone.y));
+    target = {kind: 'zone', x: zone.x, y: zone.y, type: zone.type, label: ''};
+  } else if (Reach.isDrivable(map, where.x, where.y)) {
+    report = Reach.roadReport(map, where.x, where.y);
+    target = {kind: 'tile', x: where.x, y: where.y, road: true, label: ''};
+  } else {
     return;
+  }
+  this.showConnections(report);
   window.clearTimeout(this._hintDoneTimer);
-  this._hint = {index: 0, item: {
-    id: 'reach',
-    text: I18n.t('How far this {0}\'s trips can go', Reach.noun(zone.type)),
-    targets: [{kind: 'zone', x: zone.x, y: zone.y, type: zone.type, label: I18n.t('Trips start here')}]
-  }};
+  this._hint = {index: 0, item: {id: 'reach', text: '', targets: [target]}};
   this.renderHint(false);
 };
+
+Game.prototype.depotCovers = function(x, y) {
+  var depots = this.simulation.blockMaps && this.simulation.blockMaps.depotMap;
+  return !!depots && depots.worldGet(x, y) > 0;
+};
+
+// Fill the "Connections" section of the Query window
+var MARKS = {ok: '\u2713', no: '\u2717', warn: '!', info: '\u2022'};
+Game.prototype.showConnections = function(report) {
+  var list = $('#queryConnList').empty();
+  report.lines.forEach(function(line) {
+    var li = $('<li></li>').addClass('conn-' + line.mark);
+    li.append($('<span class="connMark" aria-hidden="true"></span>').text(MARKS[line.mark]));
+    li.append($('<span></span>').text(line.text));
+    list.append(li);
+  });
+  $('#queryConnVerdict').removeClass('conn-ok conn-no conn-warn').addClass('conn-' + report.verdict.mark)
+                        .text(report.verdict.text);
+  $('#queryConnNote').text(report.note || '').toggle(!!report.note);
+  $('#queryConnections').show();
+};
+
+
 Game.prototype.handleScreenshotRequest = makeWindowOpenHandler('screenshot');
 
 

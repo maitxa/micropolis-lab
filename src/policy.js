@@ -11,6 +11,9 @@
  * The defaults reproduce the original 1989 SimCity rules exactly ("SimCity 1989" world, standard laws).
  */
 
+import { TileUtils } from './tileUtils.js';
+import * as TileValues from './tileValues.ts';
+
 var DEFAULTS = {
   // ---- World model ----
   // How strongly low land value ("poverty") pushes crime up. 1 = original, 0.5 = weakly, 0 = not at all.
@@ -56,6 +59,9 @@ var DEFAULTS = {
   pedestrian: 0,
   // Green belt: a protected ring of land around the city where nothing may be built. 0 = none (original), 1 = yes
   greenBelt: 0,
+  // Bridges over the shipping channel: 'draw' (original: drawbridges that open for ships, and sometimes at random,
+  // cutting the road while open) or 'fixed' (high bridges that never open; ships pass underneath)
+  bridges: 'draw',
 
   // ---- Budget timing ----
   // 0 = change the budget any time (original). 4 = only in election years (every 4 years).
@@ -124,6 +130,12 @@ Policy.load = function(saveData) {
   Policy.greenBeltCentre = extra.greenBeltCentre || {x: 60, y: 50};
   Policy.builtHospitals = extra.builtHospitals || {};
   Policy.presetName = extra.presetName || 'Original 1989 rules';
+};
+
+// Is this tile a road bridge (closed, any traffic level)?
+Policy.isRoadBridge = function(tileValue) {
+  var v = TileUtils.normalizeRoad(tileValue);
+  return v === TileValues.HBRIDGE || v === TileValues.VBRIDGE;
 };
 
 // Is (x, y) inside the car-free downtown?

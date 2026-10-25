@@ -14,7 +14,7 @@ var PRESETS = {
   original: {
     label: 'Original 1989 rules',
     values: {regulation: 'standard', nuclearAllowed: 'true', densityCap: '40', transport: 'balanced', incentives: 'none',
-             parks: 'standard', zoning: 'exclusive', pedestrian: '0', greenBelt: '0', electionCycle: '0',
+             parks: 'standard', zoning: 'exclusive', pedestrian: '0', greenBelt: '0', bridges: 'draw', electionCycle: '0',
              taxStart: '7', socialStart: '0', housingStart: '0'},
     note: 'The laws and budget of the original game.',
     noteEs: 'Las leyes y el presupuesto del juego original.',
@@ -24,7 +24,7 @@ var PRESETS = {
   progressive: {
     label: 'Progressive (Sanders-style)',
     values: {regulation: 'strict', nuclearAllowed: 'false', densityCap: '40', transport: 'transit', incentives: 'none',
-             parks: 'standard', zoning: 'mixed', pedestrian: '0', greenBelt: '0', electionCycle: '0',
+             parks: 'standard', zoning: 'mixed', pedestrian: '0', greenBelt: '0', bridges: 'draw', electionCycle: '0',
              taxStart: '9', socialStart: '100', housingStart: '100'},
     note: 'Higher taxes funding large public programs; strict environmental rules; no new nuclear power; transit and ' +
           'high-speed rail over roads; no corporate tax breaks; social housing and services fully funded; no limit on ' +
@@ -48,7 +48,7 @@ var PRESETS = {
   populist: {
     label: 'Conservative-populist (MAGA-style)',
     values: {regulation: 'standard', nuclearAllowed: 'true', densityCap: '24', transport: 'roads', incentives: 'strong',
-             parks: 'standard', zoning: 'exclusive', pedestrian: '0', greenBelt: '0', electionCycle: '0',
+             parks: 'standard', zoning: 'exclusive', pedestrian: '0', greenBelt: '0', bridges: 'draw', electionCycle: '0',
              taxStart: '5', socialStart: '25', housingStart: '0'},
     note: 'Low taxes ("large tax cuts"); strong incentives for businesses that produce at home (15% corporate rate); ' +
           'nuclear power expanded; roads over rail and transit (transit and passenger-rail cuts); single-use suburbs ' +
@@ -91,7 +91,7 @@ var Presets = {
   commonNoteEs: COMMON_NOTE_ES,
   // Names of the setup-screen fields a preset controls (without the "pl_" prefix)
   fields: ['regulation', 'nuclearAllowed', 'densityCap', 'transport', 'incentives', 'parks', 'zoning', 'pedestrian',
-           'greenBelt', 'electionCycle', 'taxStart', 'socialStart', 'housingStart']
+           'greenBelt', 'bridges', 'electionCycle', 'taxStart', 'socialStart', 'housingStart']
 };
 
 
