@@ -26,6 +26,11 @@ With every setting at its "(original)" default, the simulation rules match the o
 In upstream micropolisJS the crime calculation never ran (it read `mapWidth`/`mapHeight`, which `BlockMap` doesn't define), so
 crime was always zero. This version fixes it, restoring the original crime behaviour.
 
+In upstream micropolisJS, traffic was also broken: a 2018 refactor left `tryDrive` building an invalid position (so no
+car ever moved, and cities had no traffic, traffic pollution or traffic helicopter) and referencing an undefined variable
+(which would have frozen the simulation once the first bug was fixed). Both are fixed, and the original 1989 rule that a
+commercial zone only grows if its trip reaches a destination (dropped in micropolisJS) is restored.
+
 All changes in the source are marked with comments beginning `POLICY LAB`. New settings live in `src/policy.js`.
 
 ## Building

@@ -123,7 +123,10 @@ var commercialFound = function(map, x, y, simData) {
     // Thus, there's approximately a 3% chance that the value will be in the range, and we *might* grow.
     // This has the nice effect of not preventing an individual unit from growing even if overall demand has collapsed
     // (the business itself might still be growing.
-    if (zonePower && zoneScore > -350 && (zoneScore - 26380) > Random.getRandom16Signed()) {
+    // POLICY LAB: restored the original 1989 rule (s_zone.c, DoCommercial: "if (TrfGood && ...)"): a commercial zone
+    // only grows if its trip found a destination. micropolisJS had dropped this condition.
+    if (zonePower && trafficOK !== Traffic.NO_ROUTE_FOUND && zoneScore > -350 &&
+        (zoneScore - 26380) > Random.getRandom16Signed()) {
       lpValue = ZoneUtils.getLandPollutionValue(simData.blockMaps, x, y);
       growZone(map, x, y, simData.blockMaps, population, lpValue, zonePower);
       return;

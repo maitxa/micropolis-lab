@@ -102,17 +102,22 @@ var MAX_TRAFFIC_DISTANCE = 30;
 
 Traffic.prototype.tryDrive = function(startPos, destFn) {
   var dirLast;
-  var drivePos = new Position(startPos);
+  // POLICY LAB BUG FIX: the original micropolisJS wrote `new Position(startPos)`, but Position's constructor takes
+  // two numbers (x, y), not another Position. That produced a broken position, so no car ever moved and the city had
+  // no traffic at all (no jams, no traffic pollution, no traffic helicopter).
+  var drivePos = new Position(startPos.x, startPos.y);
 
   /* Maximum distance to try */
   for (var dist = 0; dist < MAX_TRAFFIC_DISTANCE; dist++) {
     var  dir = this.tryGo(drivePos, dirLast);
     if (dir) {
-      drivePos = Position.move(pos, dir);
+      // POLICY LAB BUG FIX: was Position.move(pos, dir), but there is no `pos` here. Once the bug above was fixed,
+      // this line would have thrown an error and frozen the simulation.
+      drivePos = Position.move(drivePos, dir);
       dirLast = dir.oppositeDirection();
 
       if (dist & 1)
-        this._stack.push(new Position(drivePos));
+        this._stack.push(new Position(drivePos.x, drivePos.y));
 
       if (this.driveDone(drivePos, destFn))
         return true;
