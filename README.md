@@ -50,6 +50,10 @@ Interface: the tool panel is a grouped legend (zones, getting around, power and 
 inspect) with original icons; the setup screen is a two-column sheet whose choices are buttons ("chips"), with the
 original 1989 setting tagged. Interface text uses Public Sans.
 
+Graphics: the map can be zoomed from 100% to 300% (the − / + buttons, or the **−** and **+** keys), and on high-density
+("Retina") screens it is drawn at full resolution. Sharper tile and sprite sheets (`images/hd/`, at 2×, 3×, 4× and 6×)
+were made from the original art with the xBRZ pixel-art scaler (`xbrz-js`, GPL) and load only when needed.
+
 The Budget window has new **Social services** and **Social housing** lines. Its effect on crime depends on the chosen world model.
 
 With every setting at its "(original)" default, the simulation rules match the original game.
