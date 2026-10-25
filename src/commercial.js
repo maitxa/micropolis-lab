@@ -16,6 +16,7 @@ import { TileUtils } from './tileUtils.js';
 import { COMCLR, CZB } from "./tileValues.ts";
 import { Traffic } from './traffic.js';
 import { ZoneUtils } from './zoneUtils.js';
+import { Utilities } from './utilities.js';
 
 // There are 20 types of commercial zone aside from the empty zone. They reflect 5 different categories of
 // population, and 4 grades of land value/pollution. Population value 1/low value corresponds to the 9 tiles
@@ -82,6 +83,10 @@ var commercialFound = function(map, x, y, simData) {
   var tileValue = map.getTileValue(x, y);
   var population = getZonePopulation(map, x, y, tileValue);
   simData.census.comPop += population;
+
+  // POLICY LAB: shops in business mark the area around them as "within walking distance of shops"
+  if (population > 0)
+    Utilities.markCoverage(simData.blockMaps.shopMapNext, x, y, 6);
 
   var zonePower = map.getTile(x, y).isPowered();
 

@@ -19,6 +19,7 @@ import { ANIMBIT, BULLBIT } from "./tileFlags.ts";
 import { TileUtils } from './tileUtils.js';
 import * as TileValues from "./tileValues.ts";
 import { ZoneUtils } from './zoneUtils.js';
+import { Policy } from './policy.js';
 
 var BulldozerTool = EventEmitter(ConnectingTool(function(map) {
   this.init(10, map, true);
@@ -84,6 +85,14 @@ BulldozerTool.prototype.doTool = function(x, y, blockMaps) {
 
   var tile = this._worldEffects.getTile(x, y);
   var tileValue = tile.getValue();
+
+  // POLICY LAB: trees in the protected green belt can't be cleared
+  this.blockedBy = null;
+  if (Policy.inGreenBelt(x, y) && tileValue >= TileValues.WOODS_LOW && tileValue <= TileValues.WOODS5) {
+    this.blockedBy = 'greenbelt';
+    this.result = this.TOOLRESULT_FAILED;
+    return;
+  }
 
   var zoneSize = 0;
   var deltaX;

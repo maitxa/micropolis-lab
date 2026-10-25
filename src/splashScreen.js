@@ -151,20 +151,25 @@ var play = function(e) {
   // POLICY LAB: read the setup screen before the simulation starts
   var choices = readPolicyForm();
   Policy.set(choices.policy);
+  // The green belt is centred on the middle of the map, where the city starts
+  Policy.greenBeltCentre = {x: Math.floor(this.map.width / 2), y: Math.floor(this.map.height / 2)};
+  Policy.builtHospitals = {};
 
   // Launch a new game
   var g = new Game(this.map, this.tileSet, this.snowTileSet, this.spriteSheet, difficulty, name);
 
   // POLICY LAB: starting social services funding
   g.simulation.budget.socialPercent = choices.socialStart / 100;
+  g.simulation.budget.housingPercent = choices.housingStart / 100;
   g.simulation.budget.updateFundEffects();
 };
 
 
 // POLICY LAB: helpers for the setup screen
 var numberFields = ['povertyCrime', 'densityCrime', 'policeStrength', 'socialCrime', 'taxGrowth',
-                    'regulationGrowth', 'incentiveGrowth', 'sewagePollution', 'densityCap', 'electionCycle'];
-var textFields = ['regulation', 'transport', 'incentives', 'parks'];
+                    'regulationGrowth', 'incentiveGrowth', 'sewagePollution', 'walkability', 'densityCap', 'electionCycle',
+                    'pedestrian', 'greenBelt', 'healthAffects'];
+var textFields = ['regulation', 'transport', 'incentives', 'parks', 'zoning', 'growthModel'];
 
 var readPolicyForm = function() {
   var policy = {};
@@ -175,7 +180,8 @@ var readPolicyForm = function() {
   textFields.forEach(function(key) {
     policy[key] = $('#pl_' + key).val();
   });
-  return {policy: policy, socialStart: parseFloat($('#pl_socialStart').val()) || 0};
+  return {policy: policy, socialStart: parseFloat($('#pl_socialStart').val()) || 0,
+          housingStart: parseFloat($('#pl_housingStart').val()) || 0};
 };
 
 
@@ -190,6 +196,7 @@ var resetPolicyForm = function(e) {
     $('#pl_' + key).val(Policy.DEFAULTS[key]);
   });
   $('#pl_socialStart').val('0');
+  $('#pl_housingStart').val('0');
 };
 
 

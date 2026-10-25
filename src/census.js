@@ -65,7 +65,8 @@ var rotate120Arrays = function() {
 var snapshotProps = ['poweredZoneCount', 'unpoweredZoneCount', 'firePop', 'roadTotal', 'railTotal', 'resPop', 'comPop',
                      'indPop', 'resZonePop', 'comZonePop', 'indZonePop', 'hospitalPop', 'churchPop', 'policeStationPop',
                      'fireStationPop', 'stadiumPop', 'coalPowerPop', 'nuclearPowerPop', 'seaportPop', 'airportPop',
-                     'depotPop', 'depotUnconnected', 'waterPlantPop', 'waterPlantUnpowered'];
+                     'depotPop', 'depotUnconnected', 'waterPlantPop', 'waterPlantUnpowered', 'mixedZones',
+                     'housingSaves', 'healthCoveredZones', 'builtHospitalPop'];
 
 Census.prototype.snapshot = function() {
   var copy = {};
@@ -101,6 +102,10 @@ Census.prototype.clearCensus = function() {
   this.depotUnconnected = 0;
   this.waterPlantPop = 0;
   this.waterPlantUnpowered = 0;
+  this.mixedZones = 0;
+  this.housingSaves = 0;
+  this.healthCoveredZones = 0;
+  this.builtHospitalPop = 0;
 };
 
 

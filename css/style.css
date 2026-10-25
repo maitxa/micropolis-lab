@@ -338,7 +338,7 @@ nav li {
   position: absolute;
   top: 40px;
   width: 305px;
-  height: 242px;  /* POLICY LAB: was 220px; one more row of tools */
+  height: 262px;  /* POLICY LAB: was 220px; two more rows of tools */
 }
 
 #debug {
@@ -1210,4 +1210,36 @@ nav li {
 #problemList {
   list-style-position: inside;
   padding-left: 0;
+}
+
+/* POLICY LAB: the setup window has grown; keep it above the footer, scrolling inside itself, with Play always visible */
+#start {
+  z-index: 50;
+  max-height: calc(100vh - 30px);
+  top: calc(50% - 10px);
+}
+
+#start #playSubmitDiv {
+  position: sticky;
+  bottom: -10px;
+  background: mintcream;
+  padding: 8px 0 6px 0;
+  border-top: 1px solid #ccc;
+}
+
+/* POLICY LAB: new tool buttons */
+#depotButton {
+  background-color: sienna;
+  color: white;
+}
+
+#waterButton {
+  background-color: deepskyblue;
+  color: black;
+}
+
+#hospitalButton {
+  background-color: white;
+  color: #c00;
+  border: 1px solid #c00;
 }

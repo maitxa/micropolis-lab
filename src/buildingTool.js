@@ -15,6 +15,7 @@ import { ConnectingTool } from './connectingTool.js';
 import { ANIMBIT, BNCNBIT, ZONEBIT } from "./tileFlags.ts";
 import { DIRT } from "./tileValues.ts";
 import { TileUtils } from './tileUtils.js';
+import { Policy } from './policy.js';
 
 var BuildingTool = ConnectingTool(function(cost, centreTile, map, size, animated) {
   this.init(cost, map, false);
@@ -96,6 +97,17 @@ BuildingTool.prototype.buildBuilding = function(x, y) {
   // Correct to top left
   x--;
   y--;
+
+  // POLICY LAB: nothing may be built in the protected green belt
+  this.blockedBy = null;
+  for (var gx = x; gx < x + this.size; gx++) {
+    for (var gy = y; gy < y + this.size; gy++) {
+      if (Policy.inGreenBelt(gx, gy)) {
+        this.blockedBy = 'greenbelt';
+        return this.TOOLRESULT_FAILED;
+      }
+    }
+  }
 
   var prepareResult = this.prepareBuildingSite(x, y);
   if (prepareResult !== this.TOOLRESULT_OK)

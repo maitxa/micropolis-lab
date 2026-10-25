@@ -33,7 +33,15 @@ zones within ~24 tiles. A new world-model question, "Does untreated sewage pollu
 their sewage to the nearest water, polluting it and its banks (the map has no direction of flow, so "nearest water"
 stands in for "downstream").
 
-The Budget window has a new **Social services** line. Its effect on crime depends on the chosen world model.
+European-inspired options (step D): a **zoning principle** law (separate uses, as in U.S. zoning and the original, or
+mixed use, where apartment blocks get ground-floor shops: after Hirt's "exclusivity vs. predominance" contrast);
+world-model questions on **walkable shops**, on **what makes people move** (jobs driven by industry, as in the
+original, or quality of life, with jobs following people), and on **hospital access**; a **car-free downtown** law and
+a **green belt** law (both drawn on the map); a **social housing** budget line that keeps lower-value neighbourhoods
+from emptying out; and a **Hospital** tool (key **M**; hospitals the city builds are never removed automatically and
+cost $150 a year).
+
+The Budget window has new **Social services** and **Social housing** lines. Its effect on crime depends on the chosen world model.
 
 With every setting at its "(original)" default, the simulation rules match the original game.
 

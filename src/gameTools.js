@@ -45,6 +45,7 @@ function GameTools(map) {
     // POLICY LAB
     depot: new BuildingTool(1000, TileValues.DEPOT, map, 3, false),
     water: new BuildingTool(2000, TileValues.WATERPLANT, map, 3, false),
+    hospital: new BuildingTool(3000, TileValues.HOSPITAL, map, 3, false),
   });
 
   // POLICY LAB: business incentives change the price of commercial and industrial zones

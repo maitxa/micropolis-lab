@@ -10,6 +10,7 @@
 import { MiscUtils } from './miscUtils.js';
 import { Policy } from './policy.js';
 import { Text } from './text.js';
+import { Utilities } from './utilities.js';
 
 var fmt = MiscUtils.formatNumber;
 var money = MiscUtils.formatMoney;
@@ -66,7 +67,7 @@ var cityData = function(sim) {
   var comJobs = c.comPop * 160;
   var indJobs = c.indPop * 160;
   var resCap = c.resZonePop * Math.min(40, Policy.densityCap) * 20;
-  var comCap = c.comZonePop * 5 * 160;
+  var comCap = c.comZonePop * 5 * 160 + (c.mixedZones || 0) * 160;  // ground-floor shops count as commercial space
   var indCap = c.indZonePop * 4 * 160;
 
   html += '<h3>Zones</h3><table class="dataTable"><tr><th></th><th>Zones</th><th>Now</th><th>Room for</th>' +
@@ -79,6 +80,9 @@ var cityData = function(sim) {
   };
   html += row('Residential', '#2ecc40', c.resZonePop, residents, resCap, 'people', demandLabel(v.resValve, 2000));
   html += row('Commercial', '#0074d9', c.comZonePop, comJobs, comCap, 'jobs', demandLabel(v.comValve, 1500));
+  if (c.mixedZones)
+    html += '<tr><td colspan="6" class="dataNote">Commercial jobs include ' + fmt(c.mixedZones * 160) +
+            ' in ground-floor shops of ' + fmt(c.mixedZones) + ' mixed-use apartment block(s).</td></tr>';
   html += row('Industrial', '#e6c700', c.indZonePop, indJobs, indCap, 'jobs', demandLabel(v.indValve, 1500));
   html += '</table>';
   if (Policy.densityCap < 40)
@@ -120,8 +124,10 @@ var cityData = function(sim) {
   html += '<li>Zones with power: <b>' + fmt(c.poweredZoneCount) + ' of ' + fmt(zones) + '</b> (' +
           pct(c.poweredZoneCount, zones) + '%)' + ' &middot; plants: ' + fmt(c.coalPowerPop) + ' coal, ' +
           fmt(c.nuclearPowerPop) + ' nuclear</li>';
+  var healthCov = c.resZonePop > 0 ? Math.round(100 * (c.healthCoveredZones || 0) / c.resZonePop) : 0;
   html += '<li>Police stations: <b>' + fmt(c.policeStationPop) + '</b> &middot; Fire stations: <b>' +
-          fmt(c.fireStationPop) + '</b> &middot; Hospitals: ' + fmt(c.hospitalPop) + '</li>';
+          fmt(c.fireStationPop) + '</b> &middot; Hospitals: ' + fmt(c.hospitalPop) + ' (homes within reach: ' +
+          healthCov + '%)</li>';
   html += '<li>Stadium: ' + (c.stadiumPop ? 'yes' : 'no') + ' &middot; Seaport: ' + (c.seaportPop ? 'yes' : 'no') +
           ' &middot; Airport: ' + (c.airportPop ? 'yes' : 'no') + '</li>';
   html += '<li>Road tiles: ' + fmt(c.roadTotal) + ' &middot; Rail tiles: ' + fmt(c.railTotal) + ' &middot; Train depots: ' +
@@ -137,8 +143,8 @@ var cityData = function(sim) {
   html += '<li>Funds: <b>' + money(b.totalFunds) + '</b> &middot; Taxes collected: ' + money(b.taxFund) +
           ' at ' + b.cityTax + '%</li>';
   html += '<li>Spending: roads ' + money(b.roadSpend) + ', police ' + money(b.policeSpend) + ', fire ' +
-          money(b.fireSpend) + ', social services ' + money(b.socialSpend || 0) + ', depots and water plants ' +
-          money(b.utilityCost || 0) + '</li>';
+          money(b.fireSpend) + ', social services ' + money(b.socialSpend || 0) + ', social housing ' +
+          money(b.housingSpend || 0) + ', depots, water plants and city hospitals ' + money(b.utilityCost || 0) + '</li>';
   html += '</ul>';
 
   return html;
@@ -163,6 +169,9 @@ var worldModelSummary = function() {
   if (Policy.regulationGrowth !== d.regulationGrowth) out.push('regulation does not affect industry');
   if (Policy.incentiveGrowth !== d.incentiveGrowth) out.push('business incentives do not attract business');
   if (Policy.sewagePollution !== d.sewagePollution) out.push('untreated sewage pollutes rivers');
+  if (Policy.growthModel !== d.growthModel) out.push('people move for quality of life, and jobs follow people');
+  if (Policy.walkability !== d.walkability) out.push('residents value shops within walking distance');
+  if (Policy.healthAffects !== d.healthAffects) out.push('access to a hospital affects where people live');
   return out;
 };
 
@@ -272,6 +281,59 @@ var policyReport = function(sim) {
   add('Transportation', 'Law: ' + esc(Policy.transport) + ' (road ' + money(tc.road) + ', rail ' + money(tc.rail) +
       ' per tile). You have ' + fmt(c.roadTotal) + ' road and ' + fmt(c.railTotal) + ' rail tiles, costing ' +
       money(b.roadMaintenanceBudget) + ' a year to maintain fully.');
+
+  // Zoning and walkability
+  if (Policy.zoning === 'mixed')
+    add('Zoning', 'Mixed use (European-style). ' + fmt(c.mixedZones || 0) + ' apartment block(s) have ground-floor shops: ' +
+        'each adds some jobs, and half the time their residents walk to the shops instead of driving.');
+  if (Policy.walkability)
+    add('Walkability', 'In your world model, neighbourhoods within walking distance of shops gain land value. ' +
+        (Policy.zoning === 'mixed' ? 'Mixed-use blocks count as shops for their immediate surroundings.'
+                                   : 'With separate-use zoning, only commercial zones provide this.'));
+
+  // Social housing
+  var housingPct = Math.round((b.housingPercent || 0) * 100);
+  if (housingPct > 0)
+    add('Social housing', 'Funded at ' + housingPct + '% (' + money(b.housingSpend || 0) + ' last year). It keeps ' +
+        'lower-value neighbourhoods from emptying out: ' + fmt(c.housingSaves || 0) + ' decline(s) prevented in the last ' +
+        'scan of the city.');
+
+  // Hospitals
+  if (c.hospitalPop || Policy.healthAffects) {
+    var cov = c.resZonePop > 0 ? Math.round(100 * (c.healthCoveredZones || 0) / c.resZonePop) : 0;
+    var builtH = c.builtHospitalPop || 0, autoH = (c.hospitalPop || 0) - builtH;
+    var parts = [];
+    if (builtH) parts.push(fmt(builtH) + ' built by the city at ' + money(Utilities.HOSPITAL_MAINTENANCE) + ' a year each');
+    if (autoH) parts.push(fmt(autoH) + ' that appeared on their own, as in the original game');
+    add('Healthcare', 'Hospitals: ' + fmt(c.hospitalPop || 0) + (parts.length ? ' (' + parts.join('; ') + ')' : '') + '. ' +
+        cov + '% of residential zones are within reach of a powered hospital. ' +
+        (Policy.healthAffects ? 'In your world model this raises land value nearby' +
+                                (Policy.growthModel === 'quality' ? ' and makes the city more attractive.' : '.')
+                              : 'In the original world model hospitals do not affect growth.'));
+  }
+
+  // Car-free downtown and green belt
+  if (Policy.pedestrian)
+    add('Car-free downtown', 'Within ' + Policy.pedestrian + ' tiles of the city centre (orange circle on the map; it moves ' +
+        'as the city grows), three quarters of trips are on foot or by public transport and produce no road traffic or ' +
+        'traffic pollution. Cars cannot drive through it, so connect the centre by rail and train depots.');
+  if (Policy.greenBelt)
+    add('Green belt', 'Nothing can be built, and no trees cleared, in the protected ring (green on the map). Roads, rail ' +
+        'and power lines may cross it. The woods keep land value up nearby and stop the city sprawling outward.');
+
+  // Growth model
+  if (v.lastLivability !== undefined) {
+    var L = v.lastLivability;
+    var lText = 'Livability index: <b>' + (L >= 0 ? '+' : '') + L.toFixed(2) + '</b> (from -1 to +1; based on land value, ' +
+                'crime and pollution' + (Policy.healthAffects ? ', and hospital access' : '') + '). ';
+    if (Policy.growthModel === 'quality')
+      lText += 'In your world model this drives 60% of migration (jobs the other 40%): ' +
+               (L > 0.1 ? 'the city is attracting people.' : L < -0.1 ? 'the city is putting people off.' : 'roughly neutral.') +
+               ' (The 60/40 split is a Policy Lab assumption.)';
+    else
+      lText += 'In the original world model it does not affect migration: only jobs do.';
+    add('What brings people here', lText);
+  }
 
   // Train depots
   if (c.depotPop) {

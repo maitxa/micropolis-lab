@@ -25,8 +25,9 @@ var BudgetWindow = ModalWindow(function() {
 
 
 // POLICY LAB: social services added as a fourth budget line
-var dataKeys = ['roadMaintenanceBudget', 'fireMaintenanceBudget', 'policeMaintenanceBudget', 'socialMaintenanceBudget'];
-var spendKeys = ['roadRate', 'fireRate', 'policeRate', 'socialRate'];
+var dataKeys = ['roadMaintenanceBudget', 'fireMaintenanceBudget', 'policeMaintenanceBudget', 'socialMaintenanceBudget',
+                'housingMaintenanceBudget'];
+var spendKeys = ['roadRate', 'fireRate', 'policeRate', 'socialRate', 'housingRate'];
 
 var budgetResetID = '#budgetReset';
 var budgetCancelID = '#budgetCancel';
@@ -91,10 +92,11 @@ var submit = function(e) {
   var firePercent = $('#fireRate')[0].value;
   var policePercent = $('#policeRate')[0].value;
   var socialPercent = $('#socialRate')[0].value;
+  var housingPercent = $('#housingRate')[0].value;
   var taxPercent = $('#taxRate')[0].value;
 
   var data = {cancelled: false, roadPercent: roadPercent, firePercent: firePercent,
-                        policePercent: policePercent, socialPercent: socialPercent,
+                        policePercent: policePercent, socialPercent: socialPercent, housingPercent: housingPercent,
                         taxPercent: taxPercent, e: e, original: e.type};
   this.close(data);
 };
@@ -144,7 +146,8 @@ BudgetWindow.prototype.open = function(budgetData) {
     throw new Error('Missing budget data (taxesCollected)');
 
   var cashFlow = taxesCollected - this.roadMaintenanceBudget - this.fireMaintenanceBudget - this.policeMaintenanceBudget -
-                 Math.round(this.socialMaintenanceBudget * budgetData.socialRate / 100) - (budgetData.utilityCost || 0);
+                 Math.round(this.socialMaintenanceBudget * budgetData.socialRate / 100) -
+                 Math.round(this.housingMaintenanceBudget * budgetData.housingRate / 100) - (budgetData.utilityCost || 0);
   var currentFunds = previousFunds + cashFlow;
   $('#taxesCollected').text(MiscUtils.formatMoney(taxesCollected));
   $('#cashFlow').text(MiscUtils.formatMoney(cashFlow));

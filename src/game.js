@@ -143,6 +143,8 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
       // POLICY LAB: social services, and whether this is an election year
       socialMaintenanceBudget: this.simulation.budget.socialMaintenanceBudget,
       socialRate: Math.round(this.simulation.budget.socialPercent * 100),
+      housingMaintenanceBudget: this.simulation.budget.housingMaintenanceBudget,
+      housingRate: Math.round(this.simulation.budget.housingPercent * 100),
       utilityCost: this.simulation.budget.utilityCost || 0,
       locked: !this.simNeededBudget && !Policy.isBudgetYear(this.simulation.getDate().year),
       nextBudgetYear: Policy.nextBudgetYear(this.simulation.getDate().year),
@@ -467,6 +469,7 @@ Game.prototype.handleBudgetWindowClosure = function(data) {
     this.simulation.budget.policePercent = data.policePercent / 100;
     // POLICY LAB
     this.simulation.budget.socialPercent = data.socialPercent / 100;
+    this.simulation.budget.housingPercent = data.housingPercent / 100;
     this.simulation.budget.setTax(data.taxPercent - 0);
     if (this.simNeededBudget) {
       this.simulation.budget.doBudgetWindow();
@@ -540,9 +543,19 @@ Game.prototype.applyToolAt = function(tileX, tileY) {
   tool.doTool(tileX, tileY, this.simulation.blockMaps);
 
   var built = tool.modifyIfEnoughFunding(budget);
+  // POLICY LAB: remember hospitals the player built, so the simulation never removes them
+  if (built && this.inputStatus.toolName === 'hospital')
+    Policy.builtHospitals[tileX + ',' + tileY] = true;
+
   if (built && tool.lastUndo && this.inputStatus.toolName !== 'query') {
     this.recordUndo(tool.lastUndo, this.inputStatus.strokeId);
     this._lastToolTile = {x: tileX, y: tileY, tool: this.inputStatus.toolName};
+  }
+
+  // POLICY LAB: explain refusals caused by the laws
+  if (tool.blockedBy === 'greenbelt') {
+    $('#toolOutput').text('Protected green belt: no building here');
+    return;
   }
 
   switch (tool.result) {

@@ -26,6 +26,10 @@ var SEWAGE_SEARCH_RADIUS = 20;
 // Yearly running costs
 var DEPOT_MAINTENANCE = 50;
 var WATER_PLANT_MAINTENANCE = 100;
+// Yearly running cost of each hospital the player builds (hospitals that appear by themselves are free, as originally)
+var HOSPITAL_MAINTENANCE = 150;
+// Hospital reach, in tiles
+var HEALTH_RADIUS = 20;
 
 
 var isWater = function(tileValue) {
@@ -169,8 +173,11 @@ var sewageScan = function(map, census, blockMaps) {
 
 
 var Utilities = {
+  markCoverage: markCoverage,
   DEPOT_MAINTENANCE: DEPOT_MAINTENANCE,
   WATER_PLANT_MAINTENANCE: WATER_PLANT_MAINTENANCE,
+  HOSPITAL_MAINTENANCE: HOSPITAL_MAINTENANCE,
+  HEALTH_RADIUS: HEALTH_RADIUS,
   isWater: isWater,
   registerHandlers: function(mapScanner, repairManager) {
     mapScanner.addAction(TileValues.DEPOT, depotFound);

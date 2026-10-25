@@ -290,6 +290,14 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
         if (crimeRateMap.get(x, y) > 190)
           landValue -= 20;
 
+        // POLICY LAB: shops within walking distance raise land value, if the world model says residents value that
+        if (Policy.walkability && blockMaps.shopMap.worldGet(worldX, worldY) > 0)
+          landValue += 20;
+
+        // POLICY LAB: being near a hospital raises land value, if the world model says healthcare access matters
+        if (Policy.healthAffects && blockMaps.healthMap.worldGet(worldX, worldY) > 0)
+          landValue += 15;
+
         // Clamp in range 1-250 (0 represents undeveloped land)
         landValue = MiscUtils.clamp(landValue, 1, 250);
         landValueMap.set(x, y, landValue);

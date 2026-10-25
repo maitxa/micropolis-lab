@@ -20,6 +20,7 @@ import * as TileValues from "./tileValues.ts";
 import { Traffic } from './traffic.js';
 import { ZoneUtils } from './zoneUtils.js';
 import { Policy } from './policy.js';
+import { Utilities } from './utilities.js';
 
 // Residential tiles have 'populations' of 16, 24, 32 or 40, and value from 0 to 3. The tiles are laid out in
 // increasing order of land value, cycling through each population value
@@ -224,14 +225,28 @@ var residentialFound = function(map, x, y, simData) {
   var population = getZonePopulation(map, x, y, tileValue);
   simData.census.resPop += population;
 
+  // POLICY LAB: under mixed-use zoning, apartment blocks (population 16 and up) have ground-floor shops. They count as a
+  // little commercial space (jobs), make the neighbourhood "walkable", and half the time residents just walk downstairs
+  // instead of driving to the shops.
+  var mixedHere = Policy.zoning === 'mixed' && tileValue !== TileValues.FREEZ && population >= 16;
+  if (mixedHere) {
+    simData.census.comPop += 1;
+    simData.census.mixedZones += 1;
+    Utilities.markCoverage(simData.blockMaps.shopMapNext, x, y, 3);
+  }
+
   var zonePower = map.getTile(x, y).isPowered();
+
+  // POLICY LAB: count homes within reach of a hospital
+  if (simData.blockMaps.healthMap.worldGet(x, y) > 0)
+    simData.census.healthCoveredZones += 1;
 
   var trafficOK = Traffic.ROUTE_FOUND;
 
   // Occasionally check to see if the zone is connected to the road network. The chance of this happening increases
   // as the zone's population increases. Note: we will never execute this conditional if the zone is empty, as zero
   // will never be be bigger than any of the values Random will generate
-  if (population > Random.getRandom(35)) {
+  if (population > Random.getRandom(35) && !(mixedHere && Random.getChance(1))) {
     // Is there a route from this zone to a commercial zone?
     trafficOK = simData.trafficManager.makeTraffic(x, y, simData.blockMaps, TileUtils.isCommercial);
 
@@ -283,6 +298,15 @@ var residentialFound = function(map, x, y, simData) {
     // There is a 89.7% chance of the number being below 20880 thus never triggering this branch, which leaves a
     // 0.1% chance of this branch being conditional on zoneScore.
     if (zoneScore < 350 && (zoneScore + 26380) < Random.getRandom16Signed()) {
+      // POLICY LAB: social housing keeps lower-value neighbourhoods from emptying out. With full funding, three out of
+      // four declines in areas below middle-class land value are prevented.
+      var housing = simData.budget.housingEffect || 0;
+      if (housing > 0 && simData.blockMaps.landValueMap.worldGet(x, y) < 128 &&
+          Random.getRandom(1000) < housing * 750) {
+        simData.census.housingSaves += 1;
+        return;
+      }
+
       // Get an index in the range 0-3 scoring the land desirability and pollution, and degrade to the next
       // lower ranked zone
       lpValue = ZoneUtils.getLandPollutionValue(simData.blockMaps, x, y);
@@ -304,6 +328,16 @@ var makeHospital = function(map, x, y, simData, zonePower) {
 
 var hospitalFound = function(map, x, y, simData) {
   simData.census.hospitalPop += 1;
+
+  // POLICY LAB: a powered hospital serves the homes around it
+  if (map.getTile(x, y).isPowered())
+    Utilities.markCoverage(simData.blockMaps.healthMapNext, x, y, Utilities.HEALTH_RADIUS);
+
+  // POLICY LAB: hospitals the player built are the city's own: never removed automatically, but they cost money to run
+  if (Policy.builtHospitals[x + ',' + y]) {
+    simData.census.builtHospitalPop += 1;
+    return;
+  }
 
   // Degrade to an empty zone if a hospital is no longer sustainable
   if (simData.census.needHospital === -1) {

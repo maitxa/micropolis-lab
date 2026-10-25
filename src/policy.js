@@ -30,6 +30,12 @@ var DEFAULTS = {
   incentiveGrowth: 1,
   // Whether untreated sewage pollutes rivers (and the land along them). 0 = no (original game), 1 = yes.
   sewagePollution: 0,
+  // Whether residents value having shops within walking distance (raises land value). 0 = no (original), 1 = yes.
+  walkability: 0,
+  // What drives residential growth: 'industry' (original: jobs, ultimately exports) or 'quality' (quality of life).
+  growthModel: 'industry',
+  // Whether access to a hospital affects where people want to live. 0 = no (original), 1 = yes.
+  healthAffects: 0,
 
   // ---- Laws ----
   nuclearAllowed: true,
@@ -43,6 +49,13 @@ var DEFAULTS = {
   incentives: 'none',
   // 'standard' (original) | 'subsidized' | 'free'
   parks: 'standard',
+  // Zoning principle: 'exclusive' (original, US-style: one use per zone) or 'mixed' (European-style "predominance":
+  // apartment blocks get ground-floor shops)
+  zoning: 'exclusive',
+  // Car-free downtown: radius in tiles around the city centre (0 = none, original)
+  pedestrian: 0,
+  // Green belt: a protected ring of land around the city where nothing may be built. 0 = none (original), 1 = yes
+  greenBelt: 0,
 
   // ---- Budget timing ----
   // 0 = change the budget any time (original). 4 = only in election years (every 4 years).
@@ -70,7 +83,17 @@ var INCENTIVES = {
 };
 var PARK_COST = {standard: 10, subsidized: 5, free: 0};
 
+// Green belt ring, in tiles from its centre (the centre of the map, where the city starts)
+var GREEN_BELT_INNER = 28;
+var GREEN_BELT_OUTER = 34;
+
 var Policy = Object.assign({}, DEFAULTS);
+Policy.GREEN_BELT_INNER = GREEN_BELT_INNER;
+Policy.GREEN_BELT_OUTER = GREEN_BELT_OUTER;
+// Centre of the green belt (set when a game starts; saved with the city)
+Policy.greenBeltCentre = {x: 60, y: 50};
+// Hospitals the player built (so the simulation never removes them), as "x,y" keys
+Policy.builtHospitals = {};
 
 Policy.DEFAULTS = DEFAULTS;
 
@@ -86,12 +109,34 @@ Policy.set = function(values) {
 Policy.save = function(saveData) {
   var copy = {};
   Object.keys(DEFAULTS).forEach(function(key) { copy[key] = Policy[key]; });
+  copy.greenBeltCentre = Policy.greenBeltCentre;
+  copy.builtHospitals = Policy.builtHospitals;
   saveData.policyLab = copy;
 };
 
 Policy.load = function(saveData) {
   // Games saved before the Policy Lab existed simply get the original rules
   Policy.set(saveData.policyLab);
+  var extra = saveData.policyLab || {};
+  Policy.greenBeltCentre = extra.greenBeltCentre || {x: 60, y: 50};
+  Policy.builtHospitals = extra.builtHospitals || {};
+};
+
+// Is (x, y) inside the car-free downtown?
+Policy.isCarFree = function(map, x, y) {
+  if (!Policy.pedestrian)
+    return false;
+  var dx = x - map.cityCentreX, dy = y - map.cityCentreY;
+  return dx * dx + dy * dy <= Policy.pedestrian * Policy.pedestrian;
+};
+
+// Is (x, y) inside the protected green belt?
+Policy.inGreenBelt = function(x, y) {
+  if (!Policy.greenBelt)
+    return false;
+  var dx = x - Policy.greenBeltCentre.x, dy = y - Policy.greenBeltCentre.y;
+  var d2 = dx * dx + dy * dy;
+  return d2 >= GREEN_BELT_INNER * GREEN_BELT_INNER && d2 <= GREEN_BELT_OUTER * GREEN_BELT_OUTER;
 };
 
 Policy.industrialPollutionFactor = function() {

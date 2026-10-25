@@ -118,7 +118,13 @@ var Simulation = EventEmitter(function (gameMap, gameLevel, speed, savedGame) {
     waterMap: new BlockMap(this._map.width, this._map.height, 8),
     waterMapNext: new BlockMap(this._map.width, this._map.height, 8),
     // POLICY LAB: untreated sewage reaching the water, 0-255
-    sewageMap: new BlockMap(this._map.width, this._map.height, 4)
+    sewageMap: new BlockMap(this._map.width, this._map.height, 4),
+    // POLICY LAB: shops within walking distance (1 = yes), same double-buffered arrangement as depotMap
+    shopMap: new BlockMap(this._map.width, this._map.height, 4),
+    shopMapNext: new BlockMap(this._map.width, this._map.height, 4),
+    // POLICY LAB: hospital coverage (1 = within reach of a powered hospital)
+    healthMap: new BlockMap(this._map.width, this._map.height, 8),
+    healthMapNext: new BlockMap(this._map.width, this._map.height, 8)
   };
 
   this._clearCensus();
@@ -243,6 +249,8 @@ Simulation.prototype._clearCensus = function() {
   // POLICY LAB
   this.blockMaps.depotMapNext.clear();
   this.blockMaps.waterMapNext.clear();
+  this.blockMaps.shopMapNext.clear();
+  this.blockMaps.healthMapNext.clear();
 };
 
 
@@ -366,6 +374,11 @@ var simulate = function(simData) {
       this.lastCensus = this._census.snapshot();
       this.blockMaps.depotMap.copyFrom(this.blockMaps.depotMapNext, function(v) { return v; });
       this.blockMaps.waterMap.copyFrom(this.blockMaps.waterMapNext, function(v) { return v; });
+      this.blockMaps.shopMap.copyFrom(this.blockMaps.shopMapNext, function(v) { return v; });
+      this.blockMaps.healthMap.copyFrom(this.blockMaps.healthMapNext, function(v) { return v; });
+      // Share of residential zones within reach of a hospital (used by the livability index)
+      this._census.healthCoverage = this.lastCensus.resZonePop > 0 ?
+                                    this.lastCensus.healthCoveredZones / this.lastCensus.resZonePop : 0;
 
       if (this._cityTime % CENSUS_FREQUENCY_10 === 0)
         this._census.take10Census(budget);

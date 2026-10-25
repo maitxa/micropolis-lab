@@ -19,6 +19,7 @@ import { SPRITE_HELICOPTER } from './spriteConstants.ts';
 import { SpriteUtils } from './spriteUtils.js';
 import { TileUtils } from './tileUtils.js';
 import { DIRT, POWERBASE, ROADBASE } from "./tileValues.ts";
+import { Policy } from './policy.js';
 
 function Traffic(map, spriteManager) {
   this._map = map;
@@ -33,6 +34,11 @@ Traffic.prototype.makeTraffic = function(x, y, blockMaps, destFn) {
   // POLICY LAB: zones near a working train depot can commute by train: trips can go twice as far, and only half of
   // their traffic ends up on the roads
   this._byTrain = !!(blockMaps.depotMap && blockMaps.depotMap.worldGet(x, y) > 0);
+
+  // POLICY LAB: in a car-free downtown, three quarters of trips are made on foot or by tram/bus (no road traffic);
+  // the rest can't drive out through the car-free streets
+  if (Policy.isCarFree(this._map, x, y) && !Random.getChance(3))
+    return Traffic.ROUTE_FOUND;
 
   var pos = new Position(x, y);
 
@@ -119,6 +125,11 @@ Traffic.prototype.tryDrive = function(startPos, destFn) {
       // POLICY LAB BUG FIX: was Position.move(pos, dir), but there is no `pos` here. Once the bug above was fixed,
       // this line would have thrown an error and frozen the simulation.
       drivePos = Position.move(drivePos, dir);
+
+      // POLICY LAB: cars can't use roads inside the car-free downtown (trains can still use rail)
+      if (Policy.isCarFree(this._map, drivePos.x, drivePos.y) &&
+          TileUtils.isRoad(this._map.getTileValue(drivePos.x, drivePos.y)))
+        return false;
       dirLast = dir.oppositeDirection();
 
       if (dist & 1)

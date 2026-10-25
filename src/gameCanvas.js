@@ -20,6 +20,7 @@ import { MouseBox } from './mouseBox.js';
 import { Position } from './position.ts';
 import { TileSet } from './tileSet.js';
 import { TILE_INVALID } from "./tileValues.ts";
+import { Policy } from './policy.js';
 
 function GameCanvas(id, parentNode) {
   if (!(this instanceof GameCanvas))
@@ -627,6 +628,9 @@ GameCanvas.prototype.paint = function(mouse, sprites, isPaused) {
   this._lastCanvasWidth = this.canvasWidth;
   this._lastCanvasHeight = this.canvasHeight;
 
+  // POLICY LAB: outlines of the car-free downtown and the green belt
+  this._paintPolicyOverlay();
+
   if (!mouse && !sprites) {
     return;
   }
@@ -655,6 +659,69 @@ GameCanvas.prototype.paint = function(mouse, sprites, isPaused) {
       }
     }
   }
+};
+
+
+// POLICY LAB: draw the car-free downtown (orange dashed circle) and the green belt (green ring) on a transparent SVG
+// layer above the map. The map canvas only repaints tiles that change, so drawing on it directly would leave fragments.
+// The layer is only redrawn when something it depends on changes.
+GameCanvas.prototype._paintPolicyOverlay = function() {
+  // Only on the main map (the monster TV window reuses this class)
+  if (this._canvas.id !== GameCanvas.DEFAULT_ID)
+    return;
+
+  var svg = this._policyOverlay;
+  var hasOverlay = Policy.pedestrian || Policy.greenBelt;
+
+  if (!hasOverlay) {
+    if (svg)
+      svg.style.display = 'none';
+    return;
+  }
+
+  if (!svg) {
+    svg = this._policyOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('id', 'policyOverlay');
+    svg.style.position = 'absolute';
+    svg.style.pointerEvents = 'none';
+    this._canvas.parentNode.insertBefore(svg, this._canvas.nextSibling);
+  }
+
+  var tw = this._tileSet.tileWidth;
+  var key = [this._originX, this._originY, tw, this.canvasWidth, this.canvasHeight, this._map.cityCentreX,
+             this._map.cityCentreY, Policy.pedestrian, Policy.greenBelt].join(',');
+  if (key === this._lastOverlayKey)
+    return;
+  this._lastOverlayKey = key;
+
+  svg.style.display = '';
+  svg.style.left = this._canvas.offsetLeft + 'px';
+  svg.style.top = this._canvas.offsetTop + 'px';
+  svg.setAttribute('width', this.canvasWidth);
+  svg.setAttribute('height', this.canvasHeight);
+
+  var originX = this._originX, originY = this._originY;
+  var toPx = function(wx, wy) {
+    return {x: (wx - originX) * tw + tw / 2, y: (wy - originY) * tw + tw / 2};
+  };
+
+  var parts = [];
+  if (Policy.greenBelt) {
+    var c = toPx(Policy.greenBeltCentre.x, Policy.greenBeltCentre.y);
+    var ro = Policy.GREEN_BELT_OUTER * tw, ri = Policy.GREEN_BELT_INNER * tw;
+    // A ring: outer circle minus inner circle (even-odd fill)
+    var ring = 'M ' + (c.x - ro) + ' ' + c.y + ' a ' + ro + ' ' + ro + ' 0 1 0 ' + (2 * ro) + ' 0 a ' + ro + ' ' + ro +
+               ' 0 1 0 ' + (-2 * ro) + ' 0 Z M ' + (c.x - ri) + ' ' + c.y + ' a ' + ri + ' ' + ri + ' 0 1 0 ' + (2 * ri) +
+               ' 0 a ' + ri + ' ' + ri + ' 0 1 0 ' + (-2 * ri) + ' 0 Z';
+    parts.push('<path d="' + ring + '" fill="rgba(0,120,0,0.18)" fill-rule="evenodd" stroke="rgba(0,90,0,0.7)" ' +
+               'stroke-width="2" stroke-dasharray="6 4"/>');
+  }
+  if (Policy.pedestrian) {
+    var p = toPx(this._map.cityCentreX, this._map.cityCentreY);
+    parts.push('<circle cx="' + p.x + '" cy="' + p.y + '" r="' + (Policy.pedestrian * tw) + '" fill="rgba(255,165,0,0.08)" ' +
+               'stroke="rgba(230,120,0,0.9)" stroke-width="2" stroke-dasharray="8 5"/>');
+  }
+  svg.innerHTML = parts.join('');
 };
 
 
