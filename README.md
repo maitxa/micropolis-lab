@@ -1,3 +1,41 @@
+Micropolis Policy Lab
+=====================
+
+**A modified version of [micropolisJS](https://github.com/graememcc/micropolisJS)** by Graeme McCutcheon, which is a JavaScript port of
+Micropolis, the open-source release of the original 1989 SimCity by Will Wright (Maxis / Electronic Arts). This is **not** the
+original game, and it is not affiliated with Electronic Arts, Maxis, or the micropolisJS author.
+
+## What the Policy Lab adds
+
+Before play, a setup screen separates two kinds of choices:
+
+- **World model**: assumptions about cause and effect, fixed for the whole game. Does poverty (cheap land) drive crime? Does
+  density? How effective are police? Do social services reduce crime? Do high taxes slow growth? Does regulation slow industry?
+- **Laws**: structural policies, fixed for the whole game: nuclear power allowed or banned; environmental rules on industry.
+- **Budget timing**: change the budget any time (original) or only in election years (every 4 years).
+
+During play, the Budget window has a new **Social services** line. Its effect on crime depends on the chosen world model.
+
+With every setting at its "(original)" default, the simulation rules match the original game.
+
+### Bug fix
+
+In upstream micropolisJS the crime calculation never ran (it read `mapWidth`/`mapHeight`, which `BlockMap` doesn't define), so
+crime was always zero. This version fixes it, restoring the original crime behaviour.
+
+All changes in the source are marked with comments beginning `POLICY LAB`. New settings live in `src/policy.js`.
+
+## Building
+
+```
+npm install
+npm run build      # output in dist/
+```
+
+---
+
+*Original micropolisJS README follows.*
+
 micropolisJS
 ============
 
