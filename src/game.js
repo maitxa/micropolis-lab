@@ -46,6 +46,7 @@ import { CityDataWindow } from './cityDataWindow.js';
 import { I18n } from './i18n.js';
 import { Advisor } from './advisor.js';
 import { Panels } from './panels.js';
+import { Reach } from './reach.js';
 
 var disasterTimeout = 20 * 1000;
 
@@ -564,19 +565,7 @@ Game.prototype.runAdvisor = function(newMonth) {
     return;
   }
 
-  // The message bar: the top item every three months, or at once if it is urgent and new
-  this._advisorMonths += 1;
-  var top = result.items[0];
-  if (!top || top.priority < 40)
-    return;
-  var urgentAndNew = top.priority >= 80 && top.id !== this._lastAdviceShown;
-  if (urgentAndNew || this._advisorMonths % 3 === 0) {
-    var d = new Date();
-    if (this.lastBadMessageTime === null || d - this.lastBadMessageTime > disasterTimeout) {
-      this._notificationBar.advice(top);
-      this._lastAdviceShown = top.id;
-    }
-  }
+  // (The advice stays in the To do list only: the message bar is left to the game's original alerts.)
 };
 
 
@@ -601,10 +590,26 @@ Game.prototype.renderHint = function(centre) {
   var n = h.item.targets.length;
   h.index = Math.min(h.index, n - 1);
   var spot = h.item.targets[h.index];
-  this.gameCanvas.setHighlights(h.item.targets, h.index);
+  var shapes = h.item.targets;
+  var verdict = '';
+  // A zone whose trips matter: also show how far its car can get along the roads, and what it could reach
+  if (spot.type) {
+    var depots = this.simulation.blockMaps && this.simulation.blockMaps.depotMap;
+    var longReach = !!depots && depots.worldGet(spot.x, spot.y) > 0;
+    var r = Reach.compute(this.simulation._map, spot.x, spot.y, spot.type, longReach);
+    shapes = shapes.concat(Reach.shapes(r));
+    verdict = Reach.verdict(r);
+  }
+  this.gameCanvas.setHighlights(shapes, h.index);
   if (centre)
     this.gameCanvas.centreOn(spot.x, spot.y);
+  // A reach view is worded when drawn, so it follows language changes
+  if (h.item.id === 'reach') {
+    h.item.text = I18n.t('How far this {0}\'s trips can go', Reach.noun(spot.type));
+    spot.label = I18n.t('Trips start here');
+  }
   $('#hintText').text(h.item.text);
+  $('#hintVerdict').text(verdict).toggle(verdict !== '');
   $('#hintCount').text(n > 1 ? I18n.t('{0} of {1}', h.index + 1, n) : '');
   $('#hintPrev, #hintNext').toggle(n > 1);
   $('#hintBar').removeClass('done').show();
@@ -632,6 +637,11 @@ Game.prototype.refreshHint = function(items) {
   var h = this._hint;
   if (!h)
     return;
+  // A reach view opened with the Query tool: just redraw it (the roads may have changed)
+  if (h.item.id === 'reach') {
+    this.renderHint(false);
+    return;
+  }
   var fresh = items.filter(function(i) { return i.id === h.item.id; })[0];
   if (fresh && fresh.targets.length) {
     h.item = fresh;
@@ -739,7 +749,24 @@ var makeWindowOpenHandler = function(winName, customFn) {
 
 Game.prototype.handleDebugRequest = makeWindowOpenHandler('debug');
 Game.prototype.handleDisasterRequest = makeWindowOpenHandler('disaster');
-Game.prototype.handleQueryRequest = makeWindowOpenHandler('query');
+var openQueryWindow = makeWindowOpenHandler('query');
+
+// POLICY LAB: inspecting a residential, commercial or industrial zone also shows its reach on the map
+Game.prototype.handleQueryRequest = function(where) {
+  openQueryWindow.call(this);
+  if (!where)
+    return;
+  var zone = Reach.zoneAt(this.simulation._map, where.x, where.y);
+  if (!zone)
+    return;
+  window.clearTimeout(this._hintDoneTimer);
+  this._hint = {index: 0, item: {
+    id: 'reach',
+    text: I18n.t('How far this {0}\'s trips can go', Reach.noun(zone.type)),
+    targets: [{kind: 'zone', x: zone.x, y: zone.y, type: zone.type, label: I18n.t('Trips start here')}]
+  }};
+  this.renderHint(false);
+};
 Game.prototype.handleScreenshotRequest = makeWindowOpenHandler('screenshot');
 
 

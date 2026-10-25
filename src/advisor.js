@@ -192,11 +192,13 @@ var advise = function(sim) {
       ind: P('Some factories can\'t reach homes (workers) within 30 tiles of road', 'Algunas fábricas no llegan a viviendas (trabajadores) a menos de 30 casillas de calle')
     }[worst];
     add('trips', 80, tripText,
-        P('Every so often each occupied zone sends a trip along the roads. If it finds no destination within 30 tiles, the zone cannot grow.',
-          'Cada cierto tiempo, cada zona ocupada envía un viaje por las calles. Si no encuentra destino a menos de 30 casillas, la zona no puede crecer.'),
-        [P('Put homes, shops and factories closer together (within about 20 tiles), joined by roads.',
-           'Pon viviendas, tiendas y fábricas más cerca unas de otras (a unas 20 casillas), unidas por calles.'),
-         P('Check that the roads really connect: a missing tile breaks the route.', 'Comprueba que las calles de verdad conecten: una casilla que falte corta la ruta.'),
+        P('Every so often each occupied zone sends a car along the roads. It turns at random at each junction, never turns back, and gives up at a dead end or after 30 tiles. If it passes no place it needs, the trip fails and the zone cannot grow. Homes need a shop, factory or big building; shops need a home, shop or factory; factories need homes (workers).',
+          'Cada cierto tiempo, cada zona ocupada envía un carro por las calles. Gira al azar en cada cruce, nunca da la vuelta y se rinde en una calle sin salida o después de 30 casillas. Si no pasa junto a ningún lugar que necesita, el viaje falla y la zona no puede crecer. Las viviendas necesitan una tienda, fábrica o edificio grande; las tiendas, una vivienda, tienda o fábrica; las fábricas, viviendas (trabajadores).'),
+        [P('Click "Show me on the map": the shaded roads show how far the car can get, green frames show places it can reach, and orange marks show dead ends.',
+           'Haz clic en "Muéstrame en el mapa": las calles sombreadas muestran hasta dónde llega el carro, los marcos verdes los lugares a los que puede llegar y las marcas naranjas las calles sin salida.'),
+         P('Put what the zone needs closer (within about 15 road tiles), along the same roads.',
+           'Pon lo que la zona necesita más cerca (a unas 15 casillas de calle), junto a las mismas calles.'),
+         P('Remove dead ends or connect them, so the car can keep going.', 'Quita las calles sin salida o conéctalas, para que el carro pueda seguir.'),
          P('A train depot lets nearby zones travel twice as far.', 'Una estación de tren permite a las zonas cercanas viajar el doble de lejos.')],
         c.tripFailPos);
   }
@@ -307,7 +309,9 @@ var advise = function(sim) {
 
   // ---- What to highlight on the map for each piece of advice ----
   var frames = function(list, label, ring) {
-    return (list || []).map(function(q) { return {kind: 'zone', x: q.x, y: q.y, label: label, ring: !!ring}; });
+    return (list || []).map(function(q) {
+      return {kind: 'zone', x: q.x, y: q.y, label: typeof label === 'function' ? label(q) : label, ring: !!ring, type: q.type};
+    });
   };
   var circleAround = function(list, r, label) {
     if (!list || !list.length)
@@ -319,7 +323,13 @@ var advise = function(sim) {
   var targets = {
     noPower: frames(z.noPowerList, P('No power', 'Sin electricidad')),
     noRoad: frames(z.noRoadList, P('Needs a road along one side', 'Necesita una calle en un lado'), true),
-    trips: frames(c.tripFailList, P('Its trip found no destination', 'Su viaje no encontró destino')),
+    trips: frames(c.tripFailList, function(q) {
+      return {
+        res: P('Homes here need a shop or factory within 30 road tiles', 'Estas viviendas necesitan una tienda o fábrica a menos de 30 casillas de calle'),
+        com: P('Shops here need a home, shop or factory within 30 road tiles', 'Estas tiendas necesitan una vivienda, tienda o fábrica a menos de 30 casillas de calle'),
+        ind: P('Factories need homes (workers) within 30 road tiles', 'Las fábricas necesitan viviendas (trabajadores) a menos de 30 casillas de calle')
+      }[q.type];
+    }),
     needHomes: circleAround(z.com.list.concat(z.ind.list), 20, P('Zone homes inside this circle', 'Zonifica viviendas dentro de este círculo')),
     needJobs: circleAround(z.res.list, 20, P('Zone shops and factories inside this circle', 'Zonifica tiendas y fábricas dentro de este círculo')),
     stadium: circleAround(z.res.list, 10, P('Build the stadium near here', 'Construye el estadio cerca de aquí')),

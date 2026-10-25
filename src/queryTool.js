@@ -145,7 +145,8 @@ QueryTool.prototype.doTool = function(x, y, blockMaps) {
   this.classifyRateOfGrowth(x, y, blockMaps);
   this.classifyDebug(x, y, blockMaps);
 
-  this._emitEvent(QUERY_WINDOW_NEEDED);
+  // POLICY LAB: say where, so the game can show the zone's reach
+  this._emitEvent(QUERY_WINDOW_NEEDED, {x: x, y: y});
 
   this.result = this.TOOLRESULT_OK;
 };

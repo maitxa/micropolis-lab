@@ -55,12 +55,17 @@ Graphics: the map can be zoomed from 100% to 300% (the − / + buttons, or the *
 were made from the original art with the xBRZ pixel-art scaler (`xbrz-js`, GPL) and load only when needed.
 
 City advisor: a **To do** card under the tool panel lists the three most useful things to build or fix, updated every
-game month (click an item for why and what to do; "Show on map" jumps to the spot). It checks the game's own rules:
-zones without power, zones with no road touching them, trips that can't reach a destination, missing workers or jobs,
-growth caps (stadium, seaport, airport), demand compared with empty zones, and money running out. Every three months,
-or at once when something urgent and new comes up, the top item also appears in the message bar. The original "More
-... zones needed" messages (which only compare zone counts) are skipped when the advisor says zones of that kind are
-still empty. See `src/advisor.js`.
+game month (click an item for why and what to do). It checks the game's own rules: zones without power, zones with no
+road touching them, trips that can't reach a destination, missing workers or jobs, growth caps (stadium, seaport,
+airport), demand compared with empty zones, and money running out. The advice stays in the card; the message bar is
+left to the game's original alerts (except the original "More ... zones needed" messages, which only compare zone
+counts and are skipped when the advisor says zones of that kind are still empty). See `src/advisor.js`.
+
+Reach: a zone's trips are a car that drives at most 30 road tiles, turning at random at junctions and giving up at
+dead ends (as in 1989). For a "can't reach" hint, and for any zone you click with the Query tool, the map shows that
+zone's reach: roads its car can get to (darker within 15 tiles, lighter up to 30), the places it needs that it could
+reach (green frames), and dead ends (orange), with a one-line verdict. This is the best case; random turns mean far
+destinations are still missed some of the time (`src/reach.js`).
 
 Hints on the map: "Show me on the map" (or clicking advice in the message bar) outlines every spot the advice is
 about: zones without power, zones without a road (with a dashed ring showing exactly where a road would count), zones

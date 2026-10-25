@@ -2052,3 +2052,35 @@ nav li {
   padding: 0 10px;
   margin-left: 6px;
 }
+
+/* POLICY LAB: a zone's reach along the roads (see src/reach.js) */
+#hintOverlay .hlNear {
+  fill: rgba(0, 200, 255, 0.55);
+}
+
+#hintOverlay .hlFar {
+  fill: rgba(0, 200, 255, 0.22);
+}
+
+#hintOverlay .hlZoneOk {
+  fill: rgba(40, 220, 90, 0.18);
+  stroke: #1fdc5a;
+}
+
+#hintOverlay .hlDead {
+  fill: rgba(255, 140, 0, 0.35);
+  stroke: #ff8c00;
+}
+
+#hintBar {
+  flex-wrap: wrap;
+}
+
+#hintVerdict {
+  flex-basis: 100%;
+  order: 10;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+  opacity: 0.95;
+}

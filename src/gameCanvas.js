@@ -768,7 +768,8 @@ GameCanvas.prototype._paintPolicyOverlay = function() {
 // shapes: [{kind: 'zone', x, y, label, ring} | {kind: 'circle', x, y, r, label}] in map tiles; focus: index of the
 // shape to pulse (the spot the player is looking at). Pass null to clear.
 GameCanvas.prototype.setHighlights = function(shapes, focus) {
-  this._highlights = shapes && shapes.length ? {shapes: shapes, focus: focus || 0} : null;
+  this._hlVersion = (this._hlVersion || 0) + 1;
+  this._highlights = shapes && shapes.length ? {shapes: shapes, focus: focus || 0, version: this._hlVersion} : null;
   this._lastHighlightKey = null;
 };
 
@@ -799,8 +800,7 @@ GameCanvas.prototype._paintHighlights = function() {
   }
 
   var tw = this._tileSet.tileWidth;
-  var key = [this._originX, this._originY, tw, this.canvasWidth, this.canvasHeight, h.focus, h.shapes.length,
-             h.shapes.length ? h.shapes[0].label : ''].join(',');
+  var key = [this._originX, this._originY, tw, this.canvasWidth, this.canvasHeight, h.focus, h.version].join(',');
   if (key === this._lastHighlightKey)
     return;
   this._lastHighlightKey = key;
@@ -823,10 +823,34 @@ GameCanvas.prototype._paintHighlights = function() {
            Math.round(4 * dpr) + '">' + escapeSVG(text) + '</text>';
   };
 
-  var out = [], focusParts = [];
+  var under = [], out = [], focusParts = [];
   h.shapes.forEach(function(s, i) {
     var parts = [];
     var focused = i === h.focus;
+    if (s.kind === 'reach') {
+      // roads the trip car can get to: darker for the first 15 tiles, lighter up to the limit
+      var cells = function(list, cls) {
+        return list.map(function(c) {
+          return '<rect x="' + px(c[0]) + '" y="' + py(c[1]) + '" width="' + tw + '" height="' + tw + '" class="' + cls + '"/>';
+        }).join('');
+      };
+      under.push('<g class="hlReach">' + cells(s.far, 'hlFar') + cells(s.near, 'hlNear') + '</g>');
+      return;
+    }
+    if (s.kind === 'dead') {
+      var dx0 = px(s.x), dy0 = py(s.y);
+      parts.push('<rect x="' + (dx0 + line / 2) + '" y="' + (dy0 + line / 2) + '" width="' + (tw - line) + '" height="' + (tw - line) +
+                 '" class="hlDead" stroke-width="' + line + '"/>');
+      if (s.label)
+        parts.push(label(dx0 + tw + line, dy0 + tw / 2, s.label));
+      out.push('<g class="hlOther">' + parts.join('') + '</g>');
+      return;
+    }
+    if (s.kind === 'zone' && s.tone === 'ok') {
+      out.push('<g class="hlOk"><rect x="' + px(s.x - 1) + '" y="' + py(s.y - 1) + '" width="' + (3 * tw) + '" height="' + (3 * tw) +
+               '" class="hlZoneOk" stroke-width="' + line + '" rx="' + Math.round(tw / 5) + '"/></g>');
+      return;
+    }
     if (s.kind === 'zone') {
       var x0 = px(s.x - 1), y0 = py(s.y - 1), w = 3 * tw;
       if (s.ring) {
@@ -856,7 +880,7 @@ GameCanvas.prototype._paintHighlights = function() {
       out.push(g);
   });
   // the spot being looked at is drawn last, on top
-  svg.innerHTML = out.join('') + focusParts.join('');
+  svg.innerHTML = under.join('') + out.join('') + focusParts.join('');
 };
 
 

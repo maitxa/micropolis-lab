@@ -365,6 +365,8 @@ var ES = {
   'To do: {0}': 'Por hacer: {0}',
   'Show on map': 'Ver en el mapa',
   'Show me on the map': 'Muéstrame en el mapa',
+  'How far this {0}\'s trips can go': 'Hasta dónde llegan los viajes de esta {0}',
+  'Trips start here': 'Los viajes salen de aquí',
   'Previous': 'Anterior',
   'Next': 'Siguiente',
   'Hide': 'Ocultar',
