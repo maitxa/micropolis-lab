@@ -163,7 +163,7 @@ var play = function(e) {
 
 // POLICY LAB: helpers for the setup screen
 var numberFields = ['povertyCrime', 'densityCrime', 'policeStrength', 'socialCrime', 'taxGrowth',
-                    'regulationGrowth', 'incentiveGrowth', 'densityCap', 'electionCycle'];
+                    'regulationGrowth', 'incentiveGrowth', 'sewagePollution', 'densityCap', 'electionCycle'];
 var textFields = ['regulation', 'transport', 'incentives', 'parks'];
 
 var readPolicyForm = function() {

@@ -210,7 +210,7 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
   tempMap3.clear();
 
   // POLICY LAB: pollution by source
-  var pollutionSources = {traffic: 0, industry: 0, power: 0, other: 0};
+  var pollutionSources = {traffic: 0, industry: 0, power: 0, sewage: 0, other: 0};
   census.pollutionSources = pollutionSources;
 
   var landValueMap = blockMaps.landValueMap;
@@ -240,6 +240,11 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
             continue;
 
           if (tileValue < TileValues.RUBBLE) {
+            // POLICY LAB: water polluted by sewage is no longer a "nice view"
+            if (Policy.sewagePollution && tileValue <= TileValues.LASTRIVEDGE &&
+                blockMaps.sewageMap.worldGet(mapX, mapY) >= 40)
+              continue;
+
             // Undeveloped land: record in tempMap3. Each undeveloped piece of land scores 15.
             // tempMap3 has a chunk size of 4, so each square in tempMap3 will ultimately contain a
             // maximum value of 240
@@ -256,6 +261,13 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
           if (tileValue >= TileValues.ROADBASE)
             developed = true;
         }
+      }
+
+      // POLICY LAB: untreated sewage pollutes the water and the banks around it
+      if (Policy.sewagePollution) {
+        var sewage = blockMaps.sewageMap.worldGet(worldX, worldY);
+        pollutionLevel += sewage;
+        pollutionSources.sewage += sewage;
       }
 
       // Clamp pollution in range 0-255 (at the moment it's range is 0-1020) and record it for later.

@@ -28,6 +28,8 @@ var DEFAULTS = {
   regulationGrowth: 1,
   // Whether business incentives attract commercial and industrial growth. 1 = yes, 0 = no.
   incentiveGrowth: 1,
+  // Whether untreated sewage pollutes rivers (and the land along them). 0 = no (original game), 1 = yes.
+  sewagePollution: 0,
 
   // ---- Laws ----
   nuclearAllowed: true,

@@ -338,7 +338,7 @@ nav li {
   position: absolute;
   top: 40px;
   width: 305px;
-  height: 220px;
+  height: 242px;  /* POLICY LAB: was 220px; one more row of tools */
 }
 
 #debug {

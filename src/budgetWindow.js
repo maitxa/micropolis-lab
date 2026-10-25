@@ -144,7 +144,7 @@ BudgetWindow.prototype.open = function(budgetData) {
     throw new Error('Missing budget data (taxesCollected)');
 
   var cashFlow = taxesCollected - this.roadMaintenanceBudget - this.fireMaintenanceBudget - this.policeMaintenanceBudget -
-                 Math.round(this.socialMaintenanceBudget * budgetData.socialRate / 100);
+                 Math.round(this.socialMaintenanceBudget * budgetData.socialRate / 100) - (budgetData.utilityCost || 0);
   var currentFunds = previousFunds + cashFlow;
   $('#taxesCollected').text(MiscUtils.formatMoney(taxesCollected));
   $('#cashFlow').text(MiscUtils.formatMoney(cashFlow));

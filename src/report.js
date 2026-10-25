@@ -124,7 +124,12 @@ var cityData = function(sim) {
           fmt(c.fireStationPop) + '</b> &middot; Hospitals: ' + fmt(c.hospitalPop) + '</li>';
   html += '<li>Stadium: ' + (c.stadiumPop ? 'yes' : 'no') + ' &middot; Seaport: ' + (c.seaportPop ? 'yes' : 'no') +
           ' &middot; Airport: ' + (c.airportPop ? 'yes' : 'no') + '</li>';
-  html += '<li>Road tiles: ' + fmt(c.roadTotal) + ' &middot; Rail tiles: ' + fmt(c.railTotal) + '</li>';
+  html += '<li>Road tiles: ' + fmt(c.roadTotal) + ' &middot; Rail tiles: ' + fmt(c.railTotal) + ' &middot; Train depots: ' +
+          fmt(c.depotPop || 0) + (c.depotUnconnected ? ' (' + fmt(c.depotUnconnected) + ' not touching rail)' : '') + '</li>';
+  var treated = live.sewageTreatedZones || 0, untreated = live.sewageUntreatedZones || 0;
+  html += '<li>Water treatment plants: ' + fmt(c.waterPlantPop || 0) +
+          (c.waterPlantUnpowered ? ' (' + fmt(c.waterPlantUnpowered) + ' without power)' : '') +
+          ' &middot; zones with treated sewage: <b>' + fmt(treated) + ' of ' + fmt(treated + untreated) + '</b></li>';
   html += '</ul>';
 
   // Money
@@ -132,7 +137,8 @@ var cityData = function(sim) {
   html += '<li>Funds: <b>' + money(b.totalFunds) + '</b> &middot; Taxes collected: ' + money(b.taxFund) +
           ' at ' + b.cityTax + '%</li>';
   html += '<li>Spending: roads ' + money(b.roadSpend) + ', police ' + money(b.policeSpend) + ', fire ' +
-          money(b.fireSpend) + ', social services ' + money(b.socialSpend || 0) + '</li>';
+          money(b.fireSpend) + ', social services ' + money(b.socialSpend || 0) + ', depots and water plants ' +
+          money(b.utilityCost || 0) + '</li>';
   html += '</ul>';
 
   return html;
@@ -156,6 +162,7 @@ var worldModelSummary = function() {
   if (Policy.taxGrowth !== d.taxGrowth) out.push('high taxes slow growth ' + words[Policy.taxGrowth]);
   if (Policy.regulationGrowth !== d.regulationGrowth) out.push('regulation does not affect industry');
   if (Policy.incentiveGrowth !== d.incentiveGrowth) out.push('business incentives do not attract business');
+  if (Policy.sewagePollution !== d.sewagePollution) out.push('untreated sewage pollutes rivers');
   return out;
 };
 
@@ -241,11 +248,13 @@ var policyReport = function(sim) {
   // Pollution and environmental rules
   var src = live.pollutionSources;
   if (src) {
-    var total = src.traffic + src.industry + src.power + src.other;
+    var total = src.traffic + src.industry + src.power + (src.sewage || 0) + src.other;
     if (total > 0) {
       var polText = 'Average pollution is <b>' + esc(level(live.pollutionAverage, Text.pollutionStrings)) +
                     '</b>. Sources: industry ' + pct(src.industry, total) + '%, power plants ' + pct(src.power, total) +
-                    '%, traffic ' + pct(src.traffic, total) + '%, other ' + pct(src.other, total) + '%. ';
+                    '%, traffic ' + pct(src.traffic, total) + '%, ' +
+                    (Policy.sewagePollution ? 'sewage in rivers ' + pct(src.sewage || 0, total) + '%, ' : '') +
+                    'other ' + pct(src.other, total) + '%. ';
       if (Policy.regulation === 'strict')
         polText += 'Your strict environmental rules halve industrial pollution' +
                    (Policy.regulationGrowth ? ', at the cost of slower industrial growth.' : '.');
@@ -263,6 +272,29 @@ var policyReport = function(sim) {
   add('Transportation', 'Law: ' + esc(Policy.transport) + ' (road ' + money(tc.road) + ', rail ' + money(tc.rail) +
       ' per tile). You have ' + fmt(c.roadTotal) + ' road and ' + fmt(c.railTotal) + ' rail tiles, costing ' +
       money(b.roadMaintenanceBudget) + ' a year to maintain fully.');
+
+  // Train depots
+  if (c.depotPop) {
+    add('Trains', 'You have ' + fmt(c.depotPop) + ' train depot(s)' +
+        (c.depotUnconnected ? ', of which ' + fmt(c.depotUnconnected) + ' do not touch a rail line and so do nothing' : '') +
+        '. Zones within about 16 tiles of a working depot can commute twice as far, and only half of their traffic goes ' +
+        'on the roads. Running cost: ' + money(50) + ' per depot per year.');
+  }
+
+  // Water and sewage
+  var tr = live.sewageTreatedZones || 0, un = live.sewageUntreatedZones || 0;
+  if (Policy.sewagePollution || c.waterPlantPop) {
+    var wText = fmt(tr) + ' of ' + fmt(tr + un) + ' zones have their sewage treated (' + fmt(c.waterPlantPop || 0) +
+                ' treatment plant(s)' + (c.waterPlantUnpowered ? ', ' + fmt(c.waterPlantUnpowered) + ' without power' : '') + '). ';
+    if (Policy.sewagePollution)
+      wText += (live.sewageToRiverZones ? '<b>' + fmt(live.sewageToRiverZones) + ' zones send raw sewage into the nearest ' +
+                'water</b>, polluting it and the banks around it (and spoiling the view for nearby homes). '
+                                        : 'No raw sewage is reaching the water. ') +
+               'Each treatment plant needs power and serves zones within about 24 tiles.';
+    else
+      wText += 'In your world model untreated sewage does not pollute rivers, so treatment plants only cost money.';
+    add('Water and sewage', wText);
+  }
 
   // Housing density
   if (Policy.densityCap < 40)

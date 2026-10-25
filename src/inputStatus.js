@@ -90,7 +90,9 @@ var toolOutputID = '#toolOutput';
 var toolKeys = {
   49: 'residentialButton', 50: 'commercialButton', 51: 'industrialButton', 52: 'roadButton', 53: 'railButton',
   54: 'wireButton', 55: 'parkButton', 56: 'policeButton', 57: 'fireButton', 48: 'queryButton',
-  66: 'bulldozerButton'  // B
+  66: 'bulldozerButton',  // B
+  84: 'depotButton',      // T (train depot)
+  85: 'waterButton'       // U (water treatment plant)
 };
 // Numeric keypad
 for (var k = 0; k <= 9; k++)

@@ -64,7 +64,8 @@ var rotate120Arrays = function() {
 // scan, so reading them mid-scan would give half-counted numbers)
 var snapshotProps = ['poweredZoneCount', 'unpoweredZoneCount', 'firePop', 'roadTotal', 'railTotal', 'resPop', 'comPop',
                      'indPop', 'resZonePop', 'comZonePop', 'indZonePop', 'hospitalPop', 'churchPop', 'policeStationPop',
-                     'fireStationPop', 'stadiumPop', 'coalPowerPop', 'nuclearPowerPop', 'seaportPop', 'airportPop'];
+                     'fireStationPop', 'stadiumPop', 'coalPowerPop', 'nuclearPowerPop', 'seaportPop', 'airportPop',
+                     'depotPop', 'depotUnconnected', 'waterPlantPop', 'waterPlantUnpowered'];
 
 Census.prototype.snapshot = function() {
   var copy = {};
@@ -95,6 +96,11 @@ Census.prototype.clearCensus = function() {
   this.nuclearPowerPop = 0;
   this.seaportPop = 0;
   this.airportPop = 0;
+  // POLICY LAB
+  this.depotPop = 0;
+  this.depotUnconnected = 0;
+  this.waterPlantPop = 0;
+  this.waterPlantUnpowered = 0;
 };
 
 

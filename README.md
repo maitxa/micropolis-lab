@@ -26,6 +26,13 @@ commercial and industrial zones, jobs per resident, neighbourhood averages, powe
 **Evaluation** window adds "Your policies at work": a plain-language report on how the world model and each law are
 affecting the city (e.g. what is driving crime, where pollution comes from, what tax breaks cost).
 
+Two new buildings (drawn in the original style, in tile slots 956-973 that micropolisJS reserved but never used):
+**Train depot** ($1,000, key **T**): must touch a rail line; zones within ~16 tiles can commute twice as far and put
+half as much traffic on the roads. **Water treatment plant** ($2,000, key **U**): needs power; treats the sewage of
+zones within ~24 tiles. A new world-model question, "Does untreated sewage pollute rivers?", makes untreated zones send
+their sewage to the nearest water, polluting it and its banks (the map has no direction of flow, so "nearest water"
+stands in for "downstream").
+
 The Budget window has a new **Social services** line. Its effect on crime depends on the chosen world model.
 
 With every setting at its "(original)" default, the simulation rules match the original game.

@@ -298,6 +298,12 @@ export const NUKESWIRL4     = 955;
 // export const  956-959 unused (originally)
 // original tile count = 960;
 
+// POLICY LAB: the first two "extended church" slots (never placed by micropolisJS) are reused for new buildings
+export const DEPOTBASE      = 956; // Train depot (3x3), tiles 956--964
+export const DEPOT          = 960; // 'Centre' tile of the train depot
+export const WATERPLANTBASE = 965; // Water treatment plant (3x3), tiles 965--973
+export const WATERPLANT     = 969; // 'Centre' tile of the water treatment plant
+
 // Extended zones: 956-1019
 export const CHURCH1BASE    = 956;
 export const CHURCH1        = 960;

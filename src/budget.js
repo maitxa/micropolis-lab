@@ -15,6 +15,7 @@ import { EventEmitter } from './eventEmitter.js';
 import * as Messages from './messages.ts';
 import { MiscUtils } from './miscUtils.js';
 import { Policy } from './policy.js';
+import { Utilities } from './utilities.js';
 
 // POLICY LAB: cost of fully funding social services, per unit of city population (census.totalPop)
 var socialMaintenanceCostPerPop = 1;
@@ -68,6 +69,8 @@ var Budget = EventEmitter(function() {
   this.socialEffect = 0;
   // POLICY LAB: the current city year, set by the simulation before taxes are collected
   this.currentYear = 1900;
+  // POLICY LAB: yearly running costs of depots and water plants
+  this.utilityCost = 0;
 
   this.awaitingValues = false;
   this.autoBudget = true;
@@ -78,7 +81,8 @@ var saveProps = ['autoBudget', 'totalFunds', 'policePercent', 'roadPercent', 'fi
                  'policeSpend', 'fireSpend', 'roadMaintenanceBudget', 'policeMaintenanceBudget',
                  'fireMaintenanceBudget', 'cityTax', 'roadEffect', 'policeEffect', 'fireEffect',
                  // POLICY LAB
-                 'socialPercent', 'socialSpend', 'socialMaintenanceBudget', 'socialEffect', 'currentYear'];
+                 'socialPercent', 'socialSpend', 'socialMaintenanceBudget', 'socialEffect', 'currentYear',
+                 'utilityCost'];
 
 Budget.prototype.save = function(saveData) {
   for (var i = 0, l = saveProps.length; i < l; i++)
@@ -137,7 +141,7 @@ Budget.prototype._calculateBestPercentages = function() {
   var policeCost = 0;
   var socialCost = 0;
 
-  var cashRemaining = this.totalFunds + this.taxFund;
+  var cashRemaining = this.totalFunds + this.taxFund - (this.utilityCost || 0);
 
   // Spending priorities: road, fire, police
   if (cashRemaining >= this.roadSpend)
@@ -213,7 +217,7 @@ Budget.prototype.doBudgetNow = function(fromWindow) {
   var policeCost = costs.police;
   var fireCost = costs.fire;
   var socialCost = costs.social;
-  var totalCost = roadCost + policeCost + fireCost + socialCost;
+  var totalCost = roadCost + policeCost + fireCost + socialCost + (this.utilityCost || 0);
   var cashRemaining = this.totalFunds + this.taxFund - totalCost;
 
   // Autobudget
@@ -238,7 +242,7 @@ Budget.prototype.doBudgetSpend = function(roadValue, fireValue, policeValue, soc
   this.fireSpend = fireValue;
   this.policeSpend = policeValue;
   this.socialSpend = socialValue || 0;
-  var total = this.roadSpend + this.fireSpend + this.policeSpend + this.socialSpend;
+  var total = this.roadSpend + this.fireSpend + this.policeSpend + this.socialSpend + (this.utilityCost || 0);
 
   this.spend(-(this.taxFund - total));
   this.updateFundEffects();
@@ -284,6 +288,9 @@ Budget.prototype.collectTax = function(gameLevel, census) {
   this.fireMaintenanceBudget = census.fireStationPop * fireMaintenanceCost;
   // POLICY LAB: social services scale with population
   this.socialMaintenanceBudget = Math.floor(census.totalPop * socialMaintenanceCostPerPop);
+  // POLICY LAB: fixed yearly running costs of train depots and water treatment plants (always paid first)
+  this.utilityCost = census.depotPop * Utilities.DEPOT_MAINTENANCE +
+                     census.waterPlantPop * Utilities.WATER_PLANT_MAINTENANCE;
 
   // POLICY LAB: maintenance costs depend on the transportation priority law (original: road 1, rail 2)
   var roadCost = census.roadTotal * Policy.transportCosts().roadMaintenance;
@@ -299,7 +306,7 @@ Budget.prototype.collectTax = function(gameLevel, census) {
 
   if (census.totalPop > 0) {
     this.cashFlow = this.taxFund - (this.policeMaintenanceBudget + this.fireMaintenanceBudget + this.roadMaintenanceBudget +
-                                    Math.round(this.socialMaintenanceBudget * this.socialPercent));
+                                    Math.round(this.socialMaintenanceBudget * this.socialPercent) + this.utilityCost);
     this.doBudgetNow(false);
   } else {
     // We don't want roads etc deteriorating when population hasn't yet been established

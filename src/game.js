@@ -143,6 +143,7 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
       // POLICY LAB: social services, and whether this is an election year
       socialMaintenanceBudget: this.simulation.budget.socialMaintenanceBudget,
       socialRate: Math.round(this.simulation.budget.socialPercent * 100),
+      utilityCost: this.simulation.budget.utilityCost || 0,
       locked: !this.simNeededBudget && !Policy.isBudgetYear(this.simulation.getDate().year),
       nextBudgetYear: Policy.nextBudgetYear(this.simulation.getDate().year),
       emergency: this.simNeededBudget && !Policy.isBudgetYear(this.simulation.getDate().year),

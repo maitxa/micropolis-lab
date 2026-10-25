@@ -30,6 +30,10 @@ function Traffic(map, spriteManager) {
 Traffic.prototype.makeTraffic = function(x, y, blockMaps, destFn) {
   this._stack = [];
 
+  // POLICY LAB: zones near a working train depot can commute by train: trips can go twice as far, and only half of
+  // their traffic ends up on the roads
+  this._byTrain = !!(blockMaps.depotMap && blockMaps.depotMap.worldGet(x, y) > 0);
+
   var pos = new Position(x, y);
 
   if (this.findPerimeterRoad(pos)) {
@@ -60,7 +64,7 @@ Traffic.prototype.addToTrafficDensityMap = function(blockMaps) {
     if (tileValue >= ROADBASE && tileValue < POWERBASE) {
       // Update traffic density.
       var traffic = trafficDensityMap.worldGet(pos.x, pos.y);
-      traffic += 50;
+      traffic += this._byTrain ? 25 : 50;
       traffic = Math.min(traffic, 240);
       trafficDensityMap.worldSet(pos.x, pos.y, traffic);
 
@@ -108,7 +112,8 @@ Traffic.prototype.tryDrive = function(startPos, destFn) {
   var drivePos = new Position(startPos.x, startPos.y);
 
   /* Maximum distance to try */
-  for (var dist = 0; dist < MAX_TRAFFIC_DISTANCE; dist++) {
+  var maxDistance = this._byTrain ? MAX_TRAFFIC_DISTANCE * 2 : MAX_TRAFFIC_DISTANCE;
+  for (var dist = 0; dist < maxDistance; dist++) {
     var  dir = this.tryGo(drivePos, dirLast);
     if (dir) {
       // POLICY LAB BUG FIX: was Position.move(pos, dir), but there is no `pos` here. Once the bug above was fixed,

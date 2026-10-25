@@ -35,6 +35,7 @@ import { Stadia } from './stadia.js';
 import { Traffic } from './traffic.js';
 import { Transport } from './transport.js';
 import { Valves } from './valves.js';
+import { Utilities } from './utilities.js';
 
 var Simulation = EventEmitter(function (gameMap, gameLevel, speed, savedGame) {
   this._map = gameMap;
@@ -107,7 +108,17 @@ var Simulation = EventEmitter(function (gameMap, gameLevel, speed, savedGame) {
     // Temporary maps
     tempMap1: new BlockMap(this._map.width, this._map.height, 2),
     tempMap2: new BlockMap(this._map.width, this._map.height, 2),
-    tempMap3: new BlockMap(this._map.width, this._map.height, 4)
+    tempMap3: new BlockMap(this._map.width, this._map.height, 4),
+
+    // POLICY LAB: train depot coverage (1 = within reach of a working depot). Filled into depotMapNext during each
+    // map scan, then copied into depotMap once the scan is complete, so zones always see a complete map.
+    depotMap: new BlockMap(this._map.width, this._map.height, 8),
+    depotMapNext: new BlockMap(this._map.width, this._map.height, 8),
+    // POLICY LAB: water treatment coverage (1 = served by a powered treatment plant), same arrangement
+    waterMap: new BlockMap(this._map.width, this._map.height, 8),
+    waterMapNext: new BlockMap(this._map.width, this._map.height, 8),
+    // POLICY LAB: untreated sewage reaching the water, 0-255
+    sewageMap: new BlockMap(this._map.width, this._map.height, 4)
   };
 
   this._clearCensus();
@@ -229,6 +240,9 @@ Simulation.prototype._clearCensus = function() {
   this._powerManager.clearPowerStack();
   this.blockMaps.fireStationMap.clear();
   this.blockMaps.policeStationMap.clear();
+  // POLICY LAB
+  this.blockMaps.depotMapNext.clear();
+  this.blockMaps.waterMapNext.clear();
 };
 
 
@@ -294,6 +308,8 @@ Simulation.prototype.init = function() {
   Residential.registerHandlers(this._mapScanner, this._repairManager);
   Stadia.registerHandlers(this._mapScanner, this._repairManager);
   Transport.registerHandlers(this._mapScanner, this._repairManager);
+  // POLICY LAB: train depot and water treatment plant
+  Utilities.registerHandlers(this._mapScanner, this._repairManager);
 
   var simData = this._constructSimData();
   this._mapScanner.mapScan(0, this._map.width, simData);
@@ -345,8 +361,11 @@ var simulate = function(simData) {
       break;
 
     case 9:
-      // POLICY LAB: the map scan is complete; keep a copy of its counts for the City data window and reports
+      // POLICY LAB: the map scan is complete; keep a copy of its counts for the City data window and reports,
+      // and switch to the newly computed depot and water coverage
       this.lastCensus = this._census.snapshot();
+      this.blockMaps.depotMap.copyFrom(this.blockMaps.depotMapNext, function(v) { return v; });
+      this.blockMaps.waterMap.copyFrom(this.blockMaps.waterMapNext, function(v) { return v; });
 
       if (this._cityTime % CENSUS_FREQUENCY_10 === 0)
         this._census.take10Census(budget);
@@ -377,8 +396,11 @@ var simulate = function(simData) {
       break;
 
     case 12:
-      if ((this._simCycle % speedPollutionTerrainLandValueScan[speedIndex]) === 0)
+      if ((this._simCycle % speedPollutionTerrainLandValueScan[speedIndex]) === 0) {
+        // POLICY LAB: work out where sewage goes before computing pollution
+        Utilities.sewageScan(this._map, this._census, this.blockMaps);
         BlockMapUtils.pollutionTerrainLandValueScan(this._map, this._census, this.blockMaps);
+      }
       break;
 
     case 13:
