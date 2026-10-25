@@ -46,7 +46,7 @@ EvaluationWindow.prototype._populateWindow = function(evaluation) {
   for (var i = 0; i < 4; i++) {
     var problemNo = evaluation.getProblemNumber(i);
     if (problemNo !== null) {
-      var text = Text.problems[problemNo];
+      var text = Text.L('problems')[problemNo];
       $('#evalProb' + (i + 1)).text(text);
       $('#evalProb' + (i + 1)).show();
     } else {
@@ -57,7 +57,7 @@ EvaluationWindow.prototype._populateWindow = function(evaluation) {
   $('#evalPopulation').text(MiscUtils.formatNumber(evaluation.cityPop));
   $('#evalMigration').text(MiscUtils.formatNumber(evaluation.cityPopDelta));
   $('#evalValue').text(MiscUtils.formatMoney(evaluation.cityAssessedValue));
-  $('#evalLevel').text(Text.gameLevel[evaluation.gameLevel]);
+  $('#evalLevel').text(Text.L('gameLevel')[evaluation.gameLevel]);
   $('#evalClass').text(Text.cityClass[evaluation.cityClass]);
   $('#evalScore').text(evaluation.cityScore);
   $('#evalScoreDelta').text(evaluation.cityScoreDelta);
@@ -65,11 +65,23 @@ EvaluationWindow.prototype._populateWindow = function(evaluation) {
 
 
 EvaluationWindow.prototype.open = function(evaluation, simulation) {
+  this._evaluation = evaluation;
+  this._simulation = simulation;
   this._populateWindow(evaluation);
   // POLICY LAB: "Your policies at work"
   if (simulation)
     $('#policyReportContent').html(Report.policyReport(simulation));
   this._toggleDisplay();
+};
+
+
+// POLICY LAB: redraw the open window (after a language change)
+EvaluationWindow.prototype.refresh = function() {
+  if (!this._evaluation)
+    return;
+  this._populateWindow(this._evaluation);
+  if (this._simulation)
+    $('#policyReportContent').html(Report.policyReport(this._simulation));
 };
 
 

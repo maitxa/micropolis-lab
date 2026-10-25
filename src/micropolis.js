@@ -14,6 +14,7 @@
 import $ from "jquery";
 
 import { Config } from './config.js';
+import { I18n } from './i18n.js';
 import { SplashScreen } from './splashScreen.js';
 import { TileSet } from './tileSet.js';
 import { TileSetURI } from './tileSetURI.ts';
@@ -90,6 +91,10 @@ var tileSetError = function() {
 Config.debug = window.location.search.slice(1).split('&').some(function(param) {
   return param.trim().toLowerCase() === 'debug=1';
 });
+
+
+// POLICY LAB: English / Spanish interface (the switch is in the page header)
+I18n.init();
 
 
 var tiles = $('#tiles')[0];

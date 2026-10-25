@@ -54,6 +54,13 @@ Graphics: the map can be zoomed from 100% to 300% (the − / + buttons, or the *
 ("Retina") screens it is drawn at full resolution. Sharper tile and sprite sheets (`images/hd/`, at 2×, 3×, 4× and 6×)
 were made from the original art with the xBRZ pixel-art scaler (`xbrz-js`, GPL) and load only when needed.
 
+Languages: the **EN | ES** switch in the header changes the whole interface between English and Spanish (U.S.) at any
+time, even mid-game, and remembers the choice (a browser set to Spanish starts in Spanish). Short interface texts are
+in `src/i18n-es.js`; the message help, presets and reports keep their Spanish next to the English in `src/help.js`,
+`src/presets.js` and `src/report.js`; word lists whose Spanish depends on context are in `src/text.js`. The header and
+footer now use Alfa Slab One (SIL Open Font License, in `css/`), because the original ChunkFive font has no accented
+letters.
+
 The Budget window has new **Social services** and **Social housing** lines. Its effect on crime depends on the chosen world model.
 
 With every setting at its "(original)" default, the simulation rules match the original game.

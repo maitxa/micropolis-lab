@@ -17,6 +17,7 @@ var PRESETS = {
              parks: 'standard', zoning: 'exclusive', pedestrian: '0', greenBelt: '0', electionCycle: '0',
              taxStart: '7', socialStart: '0', housingStart: '0'},
     note: 'The laws and budget of the original game.',
+    noteEs: 'Las leyes y el presupuesto del juego original.',
     sources: []
   },
 
@@ -30,6 +31,12 @@ var PRESETS = {
           'housing density (against "exclusionary zoning"). Police funded at 100%: Sanders rejected abolishing police and ' +
           'wants them "well-trained, well-paid". Mixed-use zoning is an INFERENCE from his opposition to exclusionary ' +
           'zoning, not a stated position. Parks, car-free downtown and green belt: no stated position, so original settings.',
+    noteEs: 'Impuestos más altos para financiar grandes programas públicos; normas ambientales estrictas; nada de energía nuclear nueva; ' +
+            'transporte público y trenes de alta velocidad antes que calles; sin exenciones fiscales para las corporaciones; vivienda social ' +
+            'y servicios sociales financiados al 100%; sin límite de densidad de vivienda (en contra de la "zonificación excluyente"). La ' +
+            'policía, financiada al 100%: Sanders rechazó abolir la policía y la quiere "bien entrenada y bien pagada". El uso mixto es una ' +
+            'INFERENCIA a partir de su oposición a la zonificación excluyente, no una postura declarada. Parques, centro sin carros y ' +
+            'cinturón verde: sin postura declarada, así que se dejan los ajustes originales.',
     sources: [
       ['NLIHC: Bernie Sanders Releases Affordable Housing Plan', 'https://nlihc.org/resource/bernie-sanders-releases-affordable-housing-plan'],
       ['MIT Technology Review: Sanders’s climate plan', 'https://www.technologyreview.com/2020/02/28/905621/bernie-sanders-has-an-audaciousand-hugely-expensiveclimate-plan/'],
@@ -50,6 +57,13 @@ var PRESETS = {
           '100% ("lock up violent offenders"). Environmental rules set to Standard, not None: the platform calls for cutting ' +
           '"costly and burdensome regulations", not abolishing them. Parks, car-free downtown and green belt: no stated ' +
           'position, so original settings.',
+    noteEs: 'Impuestos bajos ("grandes recortes de impuestos"); incentivos fuertes para las empresas que producen en el país (impuesto ' +
+            'corporativo del 15%); más energía nuclear; calles antes que trenes y transporte público (recortes al transporte público y a los ' +
+            'trenes de pasajeros); suburbios de uso único protegidos de la vivienda de bajos ingresos (densidad media como máximo); servicios ' +
+            'sociales reducidos mediante requisitos de trabajo (25%, no cero: sus partidarios lo presentan como devolver el trabajo, no como ' +
+            'eliminar programas); sin vivienda social. La policía, financiada al 100% ("encarcelar a los delincuentes violentos"). Normas ' +
+            'ambientales en Estándar, no en Ninguna: la plataforma pide recortar las "regulaciones costosas y onerosas", no abolirlas. ' +
+            'Parques, centro sin carros y cinturón verde: sin postura declarada, así que se dejan los ajustes originales.',
     sources: [
       ['NBC: The Republican party’s 2024 platform', 'https://www.nbcwashington.com/news/national-international/the-republican-partys-2024-platform-reflects-a-trump-centric-shift-in-policies/3661801/'],
       ['Fox 5 NY: Trump on suburbs and low-income housing (2020)', 'https://www.fox5ny.com/news/trump-tells-voters-who-live-in-suburbs-they-will-no-longer-be-bothered-by-low-income-housing'],
@@ -66,9 +80,15 @@ var COMMON_NOTE = 'Presets set laws and the starting budget only, never the worl
                   'show "who" is taxed. You can change any setting afterwards.';
 
 
+var COMMON_NOTE_ES = 'Los perfiles fijan solo las leyes y el presupuesto inicial, nunca el modelo del mundo. Las plataformas nacionales ' +
+                     'se trasladan a un juego de ciudades, así que esto es una analogía. El juego tiene un único impuesto municipal ' +
+                     'fijo, así que no puede mostrar "a quién" se le cobra. Puedes cambiar cualquier ajuste después.';
+
+
 var Presets = {
   all: PRESETS,
   commonNote: COMMON_NOTE,
+  commonNoteEs: COMMON_NOTE_ES,
   // Names of the setup-screen fields a preset controls (without the "pl_" prefix)
   fields: ['regulation', 'nuclearAllowed', 'densityCap', 'transport', 'incentives', 'parks', 'zoning', 'pedestrian',
            'greenBelt', 'electionCycle', 'taxStart', 'socialStart', 'housingStart']

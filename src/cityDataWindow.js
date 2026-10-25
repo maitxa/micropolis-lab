@@ -30,8 +30,16 @@ var submit = function(e) {
 
 
 CityDataWindow.prototype.open = function(simulation) {
+  this._simulation = simulation;
   $('#cityDataContent').html(Report.cityData(simulation));
   this._toggleDisplay();
+};
+
+
+// Redraw the open window (after a language change)
+CityDataWindow.prototype.refresh = function() {
+  if (this._simulation)
+    $('#cityDataContent').html(Report.cityData(this._simulation));
 };
 
 

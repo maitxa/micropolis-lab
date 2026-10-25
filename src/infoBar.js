@@ -32,7 +32,7 @@ var InfoBar = function(classification, population, score, funds, date, name) {
     $(populationSelector).text(MiscUtils.formatNumber(initialValues.population));
     $(scoreSelector).text(initialValues.score);
     $(fundsSelector).text(MiscUtils.formatNumber(initialValues.funds));
-    $(dateSelector).text([Text.months[initialValues.date.month], initialValues.date.year].join(' '));
+    $(dateSelector).text([Text.L('months')[initialValues.date.month], initialValues.date.year].join(' '));
     $(nameSelector).text(initialValues.name);
 
     // Add the various listeners
@@ -53,7 +53,7 @@ var InfoBar = function(classification, population, score, funds, date, name) {
     });
 
     dataSource.addEventListener(Messages.DATE_UPDATED, function(date) {
-      $(dateSelector).text([Text.months[date.month], date.year].join(' '));
+      $(dateSelector).text([Text.L('months')[date.month], date.year].join(' '));
     });
   };
 };

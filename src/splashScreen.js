@@ -15,6 +15,7 @@ import $ from "jquery";
 
 import { Config } from './config.js';
 import { Game } from './game.js';
+import { I18n } from './i18n.js';
 import { MapGenerator } from './mapGenerator.js';
 import { Policy } from './policy.js';
 import { Presets } from './presets.js';
@@ -135,6 +136,11 @@ var acquireNameAndDifficulty = function(e) {
   });
   showPresetNote('original');
   buildChips();
+  // POLICY LAB: redraw the preset description when the language changes
+  I18n.onChange(function() {
+    if ($('#start').is(':visible'))
+      showPresetNote($('#pl_preset').val());
+  });
 
   // Display the name and difficulty form
   $('#start').toggle();
@@ -207,17 +213,18 @@ var escapeHTML = function(s) {
 var showPresetNote = function(name) {
   var p = Presets.all[name];
   if (!p) {
-    $('#presetNote').html('<p>Custom settings' + (basedOn ? ', starting from <b>' + escapeHTML(Presets.all[basedOn].label) +
-                          '</b>' : '') + '.</p>');
+    $('#presetNote').html('<p>' + (basedOn ? I18n.t('Custom settings, starting from {0}.',
+                                                    '<b>' + escapeHTML(I18n.t(Presets.all[basedOn].label)) + '</b>')
+                                         : I18n.t('Custom settings') + '.') + '</p>');
     return;
   }
-  var html = '<p>' + escapeHTML(p.note) + '</p>';
+  var html = '<p>' + escapeHTML(I18n.p(p.note, p.noteEs || p.note)) + '</p>';
   if (p.sources.length)
-    html += '<p class="presetSources">Based on: ' + p.sources.map(function(s) {
+    html += '<p class="presetSources">' + I18n.t('Based on:') + ' ' + p.sources.map(function(s) {
       return '<a href="' + s[1] + '" target="_blank" rel="noopener">' + escapeHTML(s[0]) + '</a>';
     }).join(' &middot; ') + '</p>';
   if (name !== 'original')
-    html += '<p class="presetCaveat">' + escapeHTML(Presets.commonNote) + '</p>';
+    html += '<p class="presetCaveat">' + escapeHTML(I18n.p(Presets.commonNote, Presets.commonNoteEs)) + '</p>';
   $('#presetNote').html(html);
 };
 

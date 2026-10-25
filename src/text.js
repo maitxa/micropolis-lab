@@ -14,6 +14,7 @@
 import { Evaluation } from './evaluation.js';
 import * as Messages from './messages.ts';
 import { Simulation } from './simulation.js';
+import { I18n } from './i18n.js';
 
 // TODO Some kind of rudimentary L20N based on navigator.language?
 
@@ -150,6 +151,35 @@ messageText[Messages.REACHED_MEGALOPOLIS] = 'Population has reached 500,000';
 messageText[Messages.REACHED_METROPOLIS] = 'Population has reached 100,000';
 messageText[Messages.REACHED_TOWN] = 'Population has reached 2,000';
 
+// POLICY LAB: Spanish (U.S.) versions of the short word lists, which can't go in the general dictionary because the
+// same English word needs different Spanish in different places (e.g. "Light" crime vs "Light" traffic).
+var spanish = {
+  densityStrings: ['Baja', 'Media', 'Alta', 'Muy alta'],
+  landValueStrings: ['Barrio pobre', 'Clase baja', 'Clase media', 'Clase alta'],
+  crimeStrings: ['Segura', 'Leve', 'Moderada', 'Peligrosa'],
+  pollutionStrings: ['Ninguna', 'Moderada', 'Fuerte', 'Muy fuerte'],
+  rateStrings: ['En declive', 'Estable', 'Crecimiento lento', 'Crecimiento rápido'],
+  zoneTypes: ['Vacío', 'Agua', 'Árboles', 'Escombros', 'Inundación', 'Residuos radiactivos',
+              'Fuego', 'Calle', 'Electricidad', 'Vía férrea', 'Residencial', 'Comercial',
+              'Industrial', 'Puerto', 'Aeropuerto', 'Planta de carbón', 'Estación de bomberos',
+              'Estación de policía', 'Estadio', 'Planta nuclear', 'Puente levadizo',
+              'Antena de radar', 'Fuente', 'Industrial', 'Steelers 38  Bears 3',
+              'Puente levadizo', 'Ur 238'],
+  months: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+  gameLevel: {},
+  problems: {}
+};
+spanish.gameLevel['' + Simulation.LEVEL_EASY] = 'Fácil';
+spanish.gameLevel['' + Simulation.LEVEL_MED] = 'Medio';
+spanish.gameLevel['' + Simulation.LEVEL_HARD] = 'Difícil';
+spanish.problems[Evaluation.CRIME] = 'Delincuencia';
+spanish.problems[Evaluation.POLLUTION] = 'Contaminación';
+spanish.problems[Evaluation.HOUSING] = 'Vivienda';
+spanish.problems[Evaluation.TAXES] = 'Impuestos';
+spanish.problems[Evaluation.TRAFFIC] = 'Tráfico';
+spanish.problems[Evaluation.UNEMPLOYMENT] = 'Desempleo';
+spanish.problems[Evaluation.FIRE] = 'Incendios';
+
 var Text = {
   badMessages: badMessages,
   cityClass: cityClass,
@@ -165,7 +195,11 @@ var Text = {
   pollutionStrings: pollutionStrings,
   rateStrings: rateStrings,
   toolMessages: toolMessages,
-  zoneTypes: zoneTypes
+  zoneTypes: zoneTypes,
+  // POLICY LAB: the word list for the current language, e.g. Text.L('crimeStrings')[2]
+  L: function(name) {
+    return I18n.lang() === 'es' && spanish[name] ? spanish[name] : Text[name];
+  }
 };
 
 export { Text };

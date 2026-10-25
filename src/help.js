@@ -7,6 +7,7 @@
  * actual rules) and what the player can do about it.
  */
 
+import { I18n } from './i18n.js';
 import * as Messages from './messages.ts';
 
 var help = {};
@@ -149,8 +150,128 @@ add(Messages.WELCOME,
      'Keyboard: number keys pick tools, Shift+click draws straight lines, Ctrl+Z (Cmd+Z) undoes. Press ? for the list.']);
 
 
+// ---- Spanish (U.S.) ----
+var es = {};
+var addES = function(subject, why, fixes) {
+  es[subject] = {why: why, fixes: fixes};
+};
+
+addES(Messages.NEED_MORE_RESIDENTIAL,
+      'Hay más empleos (comerciales + industriales) que residentes, así que la gente quiere mudarse aquí.',
+      ['Zonifica más terreno residencial, conectado por calle y con electricidad.', 'Pon las viviendas cerca del agua, los árboles o los parques y lejos de la contaminación: crecen más rápido en suelo valioso.']);
+addES(Messages.NEED_MORE_COMMERCIAL,
+      'Las tiendas quieren atender a tu población, y hay mano de obra disponible.',
+      ['Zonifica más terreno comercial, mejor cerca del centro (allí las tiendas puntúan más).', 'Las tiendas tienen que poder llegar en carro a sus clientes: conéctalas por calle con las viviendas y la industria.']);
+addES(Messages.NEED_MORE_INDUSTRIAL,
+      'El mercado exterior quiere más de lo que produce tu ciudad, y hay trabajadores disponibles.',
+      ['Zonifica más terreno industrial, lejos de las viviendas (las fábricas contaminan).', 'Conecta la industria con las zonas residenciales por calle o vía férrea para que los trabajadores puedan llegar.']);
+addES(Messages.NEED_MORE_ROADS,
+      'Muchas zonas no tienen acceso por calle. Las zonas sin una calle en su borde no pueden crecer y se reducen.',
+      ['Pon una calle a lo largo de al menos un borde de cada zona.', 'Consejo: haz clic en una casilla de inicio y luego Shift+clic en el final para trazar una calle recta.']);
+addES(Messages.NEED_MORE_RAILS,
+      'Tu ciudad es grande pero tiene poca vía férrea.',
+      ['Añade vías férreas entre las zonas residenciales y las de empleo para repartir la carga con las calles.', 'Con la ley de transporte "Transporte público", la vía férrea es más barata de construir y mantener.']);
+addES(Messages.NEED_ELECTRICITY,
+      'Las zonas solo crecen si tienen electricidad.',
+      ['Construye una planta de carbón o nuclear (si tus leyes permiten la energía nuclear).', 'Conéctala a las zonas con cables eléctricos (herramienta Cable). Las zonas que se tocan se pasan la electricidad.']);
+addES(Messages.NOT_ENOUGH_POWER,
+      'Tus plantas eléctricas no alcanzan para todas las zonas conectadas, así que algunas se quedan a oscuras y dejan de crecer.',
+      ['Construye otra planta eléctrica y conéctala a la red.', 'Revisa las zonas conectadas por un solo cable largo: un corte en cualquier punto deja sin luz todo lo que sigue.']);
+addES(Messages.BLACKOUTS_REPORTED,
+      'La demanda de electricidad es mayor que lo que producen tus plantas.',
+      ['Construye otra planta eléctrica.', 'Una planta de carbón contamina; una nuclear no, pero tiene riesgo de fusión.']);
+addES(Messages.NEED_POLICE_STATION,
+      'Tu población ya es lo bastante grande como para que los residentes esperen tener policía.',
+      ['Construye una estación de policía cerca de los vecindarios densos o de poco valor, donde hay más delincuencia.', 'Financia la policía al 100% en la ventana de Presupuesto.']);
+addES(Messages.NEED_FIRE_STATION,
+      'Tu población ya es lo bastante grande como para que los residentes esperen protección contra incendios.',
+      ['Construye una estación de bomberos; su cobertura disminuye con la distancia, así que repártelas.', 'Financia a los bomberos al 100% en la ventana de Presupuesto.']);
+addES(Messages.POLICE_NEEDS_FUNDING,
+      'La policía tiene menos del 100% de sus fondos, así que sus estaciones frenan menos la delincuencia.',
+      ['Sube los fondos de la policía en la ventana de Presupuesto (si el presupuesto está abierto este año).']);
+addES(Messages.FIRE_STATION_NEEDS_FUNDING,
+      'Los bomberos tienen menos del 100% de sus fondos, así que los incendios se extienden más antes de apagarse.',
+      ['Sube los fondos de los bomberos en la ventana de Presupuesto (si el presupuesto está abierto este año).']);
+addES(Messages.ROAD_NEEDS_FUNDING,
+      'Las calles tienen menos del 100% de sus fondos, así que algunas casillas de calle se deterioran cada año.',
+      ['Sube los fondos de las calles en la ventana de Presupuesto.', 'Menos calles, mejor planificadas, cuestan menos de mantener.']);
+addES(Messages.NEED_STADIUM,
+      'El crecimiento residencial está limitado hasta que construyas un estadio (población de más de 500).',
+      ['Construye un estadio cerca de las zonas residenciales. Hasta entonces, la demanda residencial no puede subir de cero.']);
+addES(Messages.NEED_SEAPORT,
+      'El crecimiento industrial está limitado hasta que construyas un puerto.',
+      ['Construye un puerto en la costa, conectado por calle y con electricidad.']);
+addES(Messages.NEED_AIRPORT,
+      'El crecimiento comercial está limitado hasta que construyas un aeropuerto.',
+      ['Construye un aeropuerto (necesita un área grande y plana) conectado por calle y con electricidad.']);
+addES(Messages.HIGH_POLLUTION,
+      'La contaminación viene de la industria, las plantas de carbón, el tráfico intenso, los incendios y la radiación. Baja el valor del suelo y aleja a los residentes.',
+      ['Mantén la industria y las plantas de carbón lejos de las viviendas; deja árboles o parques entre medio.', 'Reduce el tráfico: más vías férreas, mejores trazados de calles, viviendas más cerca del empleo.', 'Laboratorio de Políticas: las normas ambientales estrictas reducen a la mitad la contaminación industrial (a costa del crecimiento industrial, si así lo dice el modelo del mundo).', 'Cambia el carbón por energía nuclear, si tus leyes lo permiten.']);
+addES(Messages.HIGH_CRIME,
+      'En este juego, la delincuencia sube en el suelo barato y en las zonas abarrotadas, y baja cerca de estaciones de policía con fondos (y, si así lo dice el modelo del mundo, con servicios sociales).',
+      ['Construye estaciones de policía en las peores zonas y financia el 100%.', 'Sube el valor del suelo: parques, árboles y agua cerca, menos contaminación.', 'Laboratorio de Políticas: financia los servicios sociales en la ventana de Presupuesto, si tu modelo del mundo dice que funcionan.']);
+addES(Messages.HEAVY_TRAFFIC,
+      'Algunas calles llevan mucho tráfico. El tráfico intenso contamina el terreno cercano.',
+      ['Añade calles paralelas o vías férreas para repartir el tráfico.', 'Pon viviendas, tiendas y empleos más cerca unos de otros para que los viajes sean más cortos.']);
+addES(Messages.TRAFFIC_JAMS,
+      'Muchas calles están congestionadas. La contaminación del tráfico baja el valor del suelo a su alrededor.',
+      ['Construye vías férreas entre las zonas residenciales y las de empleo.', 'Evita que toda la ciudad tenga que pasar por una sola calle.']);
+addES(Messages.TAX_TOO_HIGH,
+      'Los impuestos por encima del 12% molestan a los residentes y (en el modelo del mundo original) los impuestos más altos frenan todo tipo de crecimiento.',
+      ['Baja la tasa de impuestos en la ventana de Presupuesto.', 'Recorta gastos en su lugar: menos calles que mantener, servicios a la medida de lo que se necesita.']);
+addES(Messages.NO_MONEY,
+      'Tu ciudad gastó todo su dinero.',
+      ['Baja los gastos en la ventana de Presupuesto (el juego te pedirá que lo revises).', 'Sube un poco los impuestos, o deja que la ciudad amplíe su base fiscal antes de construir más.']);
+addES(Messages.FIRE_REPORTED,
+      'Empezó un incendio. Sin cobertura de bomberos, puede extenderse.',
+      ['Haz clic en el mensaje para ir al incendio.', 'Demuele un espacio alrededor para que no se extienda; construye estaciones de bomberos para prevenir incendios.']);
+addES(Messages.FLOODING_REPORTED,
+      'El agua inundó terreno cerca de la costa. Las inundaciones bajan solas después de un tiempo.',
+      ['Espera a que pase y luego reconstruye. Evita construir justo en la orilla.']);
+addES(Messages.TORNADO_SIGHTED,
+      'Un tornado está destruyendo edificios a su paso. Desaparecerá solo.',
+      ['Reconstruye después. Puedes desactivar los desastres aleatorios en Configuración.']);
+addES(Messages.MONSTER_SIGHTED,
+      'Un monstruo solo aparece cuando la contaminación es alta, y va hacia las zonas más contaminadas.',
+      ['Reduce la contaminación para que no vuelva. Puedes desactivar los desastres aleatorios en Configuración.']);
+addES(Messages.EARTHQUAKE,
+      'Un terremoto dañó la ciudad.',
+      ['Reconstruye las zonas dañadas y apaga los incendios.']);
+addES(Messages.EXPLOSION_REPORTED,
+      'Algo explotó (a menudo por un accidente o un incendio).',
+      ['Haz clic para ir allí, retira los escombros y reconstruye.']);
+addES(Messages.NUCLEAR_MELTDOWN,
+      'Una planta nuclear sufrió una fusión y dejó terreno radiactivo que no se podrá usar en mucho tiempo.',
+      ['Construye en otro lugar. Laboratorio de Políticas: puedes prohibir la energía nuclear al configurar la partida si prefieres no correr el riesgo.']);
+addES(Messages.PLANE_CRASHED,
+      'Se estrelló un avión cerca del aeropuerto.',
+      ['Retira los restos y reconstruye.']);
+addES(Messages.SHIP_CRASHED,
+      'Naufragó un barco.',
+      ['Solo queda limpiar.']);
+addES(Messages.TRAIN_CRASHED,
+      'Se estrelló un tren.',
+      ['Retira los restos y repara la vía.']);
+addES(Messages.HELICOPTER_CRASHED,
+      'Se estrelló un helicóptero de tráfico.',
+      ['Retira los restos y reconstruye.']);
+addES(Messages.WELCOME,
+      'Empieza con una planta eléctrica, algunas zonas residenciales, comerciales e industriales, calles en sus bordes y cables eléctricos.',
+      ['Mira las barras R/C/I (abajo a la izquierda): muestran lo que la ciudad quiere a continuación.', 'Teclado: los números eligen herramientas, Shift+clic traza líneas rectas, Ctrl+Z (Cmd+Z) deshace. Pulsa ? para ver la lista.']);
+var milestoneES = ['¡Bien hecho! Las ciudades más grandes traen nuevas demandas (estadio, puerto, aeropuerto) y problemas más grandes.',
+                    'Revisa la ventana de Evaluación para ver lo que más preocupa a los residentes.'];
+addES(Messages.REACHED_TOWN, 'Tu población superó los 2,000 habitantes.', milestoneES);
+addES(Messages.REACHED_CITY, 'Tu población superó los 10,000 habitantes.', milestoneES);
+addES(Messages.REACHED_CAPITAL, 'Tu población superó los 50,000 habitantes.', milestoneES);
+addES(Messages.REACHED_METROPOLIS, 'Tu población superó los 100,000 habitantes.', milestoneES);
+addES(Messages.REACHED_MEGALOPOLIS, 'Tu población superó los 500,000 habitantes.', milestoneES);
+
+
 var Help = {
+  // The help for a message, in the current language
   forMessage: function(subject) {
+    if (I18n.lang() === 'es' && es[subject])
+      return es[subject];
     return help[subject] || null;
   }
 };

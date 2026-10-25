@@ -16,6 +16,7 @@ import $ from "jquery";
 import { MiscUtils } from './miscUtils.js';
 import { Text } from './text.js';
 import { Help } from './help.js';
+import { I18n } from './i18n.js';
 import * as Messages from './messages.ts';
 
 var TIMEOUT_SECS = 30;
@@ -116,12 +117,12 @@ var showHelp = function() {
   if (h === null || !this._element.is(':visible'))
     return;
 
-  var html = '<div class="helpTitle">' + escapeHTML(Text.messageText[this._subject] || '') + '</div>' +
+  var html = '<div class="helpTitle">' + escapeHTML(I18n.t(Text.messageText[this._subject] || '')) + '</div>' +
              '<div class="helpWhy">' + escapeHTML(h.why) + '</div>' +
-             '<div class="helpFixLabel">What you can do:</div><ul>' +
+             '<div class="helpFixLabel">' + I18n.t('What you can do:') + '</div><ul>' +
              h.fixes.map(function(f) { return '<li>' + escapeHTML(f) + '</li>'; }).join('') + '</ul>';
   if (this._x !== -1)
-    html += '<div class="helpHint">Click the message to jump to the spot.</div>';
+    html += '<div class="helpHint">' + I18n.t('Click the message to jump to the spot.') + '</div>';
 
   this._help.html(html).show();
 };

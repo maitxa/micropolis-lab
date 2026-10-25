@@ -32,7 +32,7 @@ QueryTool.prototype.classifyPopulationDensity = function(x, y, blockMaps) {
     $('#queryDensityRaw').text(density);
   density = density >> 6;
   density = density & 3;
-  $('#queryDensity').text(Text.densityStrings[density]);
+  $('#queryDensity').text(Text.L('densityStrings')[density]);
 };
 
 
@@ -49,7 +49,7 @@ QueryTool.prototype.classifyLandValue = function(x, y, blockMaps) {
    else if (landValue >= 30)
      i = 1;
 
-   var text = Text.landValueStrings[i];
+   var text = Text.L('landValueStrings')[i];
    $('#queryLandValue').text(text);
 };
 
@@ -60,7 +60,7 @@ QueryTool.prototype.classifyCrime = function(x, y, blockMaps) {
     $('#queryCrimeRaw').text(crime);
   crime = crime >> 6;
   crime = crime & 3;
-  $('#queryCrime').text(Text.crimeStrings[crime]);
+  $('#queryCrime').text(Text.L('crimeStrings')[crime]);
 };
 
 
@@ -70,7 +70,7 @@ QueryTool.prototype.classifyPollution = function(x, y, blockMaps) {
     $('#queryPollutionRaw').text(pollution);
   pollution = pollution >> 6;
   pollution = pollution & 3;
-  $('#queryPollution').text(Text.pollutionStrings[pollution]);
+  $('#queryPollution').text(Text.L('pollutionStrings')[pollution]);
 };
 
 
@@ -80,7 +80,7 @@ QueryTool.prototype.classifyRateOfGrowth = function(x, y, blockMaps) {
     $('#queryRateRaw').text(rate);
   rate = rate >> 6;
   rate = rate & 3;
-  $('#queryRate').text(Text.rateStrings[rate]);
+  $('#queryRate').text(Text.L('rateStrings')[rate]);
 };
 
 
@@ -117,7 +117,7 @@ QueryTool.prototype.classifyZone = function(x, y) {
       break;
   }
 
-  $('#queryZoneType').text(Text.zoneTypes[index]);
+  $('#queryZoneType').text(Text.L('zoneTypes')[index]);
 };
 
 

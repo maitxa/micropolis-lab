@@ -43,6 +43,7 @@ import { TouchWarnWindow } from './touchWarnWindow.js';
 import { MiscUtils } from './miscUtils.js';
 import * as TileValues from './tileValues.ts';
 import { CityDataWindow } from './cityDataWindow.js';
+import { I18n } from './i18n.js';
 
 var disasterTimeout = 20 * 1000;
 
@@ -131,6 +132,13 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
 
   this.evalWindow = new EvaluationWindow(opacityLayerID, 'evalWindow');
   this.evalWindow.addEventListener(Messages.EVAL_WINDOW_CLOSED, this.genericDialogClosure);
+
+  // POLICY LAB: when the language changes, redraw the open report window and the election notice
+  I18n.onChange((function() {
+    if (this.dialogOpen && (this._openWindow === 'cityDataWindow' || this._openWindow === 'evalWindow'))
+      this[this._openWindow].refresh();
+    this.updateElectionInfo(this.simulation.getDate());
+  }).bind(this));
   this.inputStatus.addEventListener(Messages.EVAL_REQUESTED, this.handleEvalRequest.bind(this));
 
   // ... and similarly for the budget window
@@ -468,9 +476,9 @@ Game.prototype.updateElectionInfo = function(date) {
 
   elem.show();
   if (Policy.isBudgetYear(date.year))
-    elem.text('Election year: budget open');
+    elem.text(I18n.t('Election year: budget open'));
   else
-    elem.text('Next budget vote: ' + Policy.nextBudgetYear(date.year));
+    elem.text(I18n.t('Next budget vote: {0}', Policy.nextBudgetYear(date.year)));
 };
 
 
@@ -688,7 +696,7 @@ Game.prototype.handleUndo = function() {
   }
 
   this.simulation.budget.spend(-entry.cost);
-  $('#toolOutput').text(entry.cost > 0 ? 'Undone: ' + MiscUtils.formatMoney(entry.cost) + ' refunded' : 'Undone');
+  $('#toolOutput').text(entry.cost > 0 ? I18n.t('Undone: {0} refunded', MiscUtils.formatMoney(entry.cost)) : I18n.t('Undone'));
 };
 
 

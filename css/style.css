@@ -25,6 +25,16 @@
   src: local('ChunkFive'), url(chunk.woff) format('woff');
 }
 
+/* POLICY LAB: Alfa Slab One by JM Solé (SIL Open Font License 1.1, see ALFA_SLAB_ONE_LICENSE.txt). Included with the
+   game because ChunkFive has no accented letters, which the Spanish interface needs. */
+@font-face {
+  font-family: 'Alfa Slab One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(alfa-slab-one-latin-400-normal.woff2) format('woff2'), url(alfa-slab-one-latin-400-normal.woff) format('woff');
+}
+
 body {
   background-image: url('../images/dirtbg.png');
 }
@@ -50,7 +60,7 @@ footer {
 header {
   background-color: darkslategray;
   background-image: repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(255, 255, 255, 0.2) 35px, rgba(255, 255, 255, 0.2) 70px);
-  font-family: 'Chunk', serif;
+  font-family: 'Alfa Slab One', 'Chunk', serif;
   height: 35px;
 }
 
@@ -126,7 +136,8 @@ nav li {
 }
 
 .chunk {
-  font-family: 'Chunk', serif;
+  /* POLICY LAB: Alfa Slab One (a close match to ChunkFive) has the accented letters Spanish needs; ChunkFive does not */
+  font-family: 'Alfa Slab One', 'Chunk', serif;
   font-weight: normal;
 }
 
@@ -1601,4 +1612,61 @@ nav li {
   text-align: center;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+}
+
+/* POLICY LAB: English / Spanish switch in the header */
+#langSwitch {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+#langSwitch button {
+  width: auto;
+  height: auto;
+  font-family: var(--pl-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  min-width: 34px;
+  padding: 3px 8px;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+#langSwitch button:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+#langSwitch button:last-child {
+  border-radius: 0 4px 4px 0;
+  border-left: none;
+}
+
+#langSwitch button[aria-pressed="true"] {
+  background: #fff;
+  color: var(--pl-ink);
+}
+
+#langSwitch button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* POLICY LAB: Alfa Slab One is a little wider and taller than ChunkFive, so the header title and the footer are set
+   slightly smaller to keep their original footprint */
+#title.fontlarge {
+  font-size: 31px;
+}
+
+#footer.chunk {
+  font-size: 13px;
+}
+
+@media (max-height: 742px) {
+  #title.fontlarge {
+    font-size: 16px;
+  }
 }

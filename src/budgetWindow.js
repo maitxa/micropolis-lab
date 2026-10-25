@@ -11,6 +11,7 @@
  *
  */
 
+import { I18n } from './i18n.js';
 import $ from "jquery";
 
 import { BUDGET_WINDOW_CLOSED } from './messages.ts';
@@ -38,7 +39,7 @@ var budgetOKID = '#budgetOK';
 var setSpendRangeText = function(element, percentage, totalSpend) {
   var labelID = element + 'Label';
   var cash = Math.floor(totalSpend * (percentage / 100));
-  var text = [percentage, '% of ', MiscUtils.formatMoney(totalSpend), ' = ', MiscUtils.formatMoney(cash)].join('');
+  var text = I18n.t('{0}% of {1} = {2}', percentage, MiscUtils.formatMoney(totalSpend), MiscUtils.formatMoney(cash));
   $(MiscUtils.normaliseDOMid(labelID)).text(text);
 };
 
@@ -54,7 +55,7 @@ var onFundingUpdate = function(elementID, e) {
 var onTaxUpdate = function(e) {
   var elem = $('#taxRateLabel')[0];
   var sourceElem = $('#taxRate')[0];
-  $(elem).text(['Tax rate: ', sourceElem.value, '%'].join(''));
+  $(elem).text(I18n.t('Tax rate: {0}%', sourceElem.value));
 };
 
 
@@ -160,8 +161,8 @@ BudgetWindow.prototype.open = function(budgetData) {
   $('#budgetOK').prop('disabled', locked);
   $('#budgetReset').prop('disabled', locked);
   if (locked) {
-    $('#budgetLockNote').text('Not an election year: you can look, but the budget can only change in ' +
-                              budgetData.nextBudgetYear + '.').show();
+    $('#budgetLockNote').text(I18n.t('Not an election year: you can look, but the budget can only change in {0}.',
+                                     budgetData.nextBudgetYear)).show();
   } else if (budgetData.emergency) {
     $('#budgetLockNote').text('Emergency session: the city has run out of money, so the budget must be revised now.').show();
   } else {

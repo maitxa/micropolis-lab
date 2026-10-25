@@ -391,9 +391,10 @@ InputStatus.prototype.selectToolByButton = function(buttonID) {
 
 
 InputStatus.prototype.speedChangeHandler = function(e) {
-  var requestedSpeed = $('#pauseRequest').text();
+  // POLICY LAB: remember the request in an attribute, since the button's text may be translated
+  var requestedSpeed = $('#pauseRequest').attr('data-request') || 'Pause';
   var newRequest = requestedSpeed === 'Pause' ? 'Play' : 'Pause';
-  $('#pauseRequest').text(newRequest);
+  $('#pauseRequest').attr('data-request', newRequest).text(newRequest);
   this._emitEvent(Messages.SPEED_CHANGE, requestedSpeed);
 };
 
