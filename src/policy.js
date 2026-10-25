@@ -94,6 +94,8 @@ Policy.GREEN_BELT_OUTER = GREEN_BELT_OUTER;
 Policy.greenBeltCentre = {x: 60, y: 50};
 // Hospitals the player built (so the simulation never removes them), as "x,y" keys
 Policy.builtHospitals = {};
+// Which preset the city's laws started from (for the report)
+Policy.presetName = 'Original 1989 rules';
 
 Policy.DEFAULTS = DEFAULTS;
 
@@ -111,6 +113,7 @@ Policy.save = function(saveData) {
   Object.keys(DEFAULTS).forEach(function(key) { copy[key] = Policy[key]; });
   copy.greenBeltCentre = Policy.greenBeltCentre;
   copy.builtHospitals = Policy.builtHospitals;
+  copy.presetName = Policy.presetName;
   saveData.policyLab = copy;
 };
 
@@ -120,6 +123,7 @@ Policy.load = function(saveData) {
   var extra = saveData.policyLab || {};
   Policy.greenBeltCentre = extra.greenBeltCentre || {x: 60, y: 50};
   Policy.builtHospitals = extra.builtHospitals || {};
+  Policy.presetName = extra.presetName || 'Original 1989 rules';
 };
 
 // Is (x, y) inside the car-free downtown?

@@ -66,6 +66,16 @@
             <div id="policySetup">
               <p class="policyIntro"><strong>Policy Lab.</strong> Choose how this world works and which laws your city starts with.
                 Leave everything as it is to play the original 1989 rules.</p>
+              <div id="presetBox">
+                <label class="policyRow"><span><b>Start from a preset</b></span>
+                  <select id="pl_preset">
+                    <option value="original" selected>Original 1989 rules</option>
+                    <option value="progressive">Progressive (Sanders-style)</option>
+                    <option value="populist">Conservative-populist (MAGA-style)</option>
+                    <option value="custom">Custom</option>
+                  </select></label>
+                <div id="presetNote"></div>
+              </div>
               <fieldset>
                 <legend>World model: how the world works (fixed all game)</legend>
                 <label class="policyRow"><span>Does poverty (cheap land) drive crime?</span>
@@ -116,6 +126,8 @@
                 <legend>Budget (taxes and funding can change during play)</legend>
                 <label class="policyRow"><span>When can the budget change?</span>
                   <select id="pl_electionCycle"><option value="0" selected>Any time (original)</option><option value="4">Election years only (every 4 years)</option></select></label>
+                <label class="policyRow"><span>Starting tax rate</span>
+                  <select id="pl_taxStart"><option value="3">3%</option><option value="5">5%</option><option value="7" selected>7% (original)</option><option value="9">9%</option><option value="11">11%</option></select></label>
                 <label class="policyRow"><span>Starting social housing funding</span>
                   <select id="pl_housingStart"><option value="0" selected>0% (original)</option><option value="25">25%</option><option value="50">50%</option><option value="100">100%</option></select></label>
                 <label class="policyRow"><span>Starting social services funding</span>

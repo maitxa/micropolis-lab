@@ -41,6 +41,11 @@ a **green belt** law (both drawn on the map); a **social housing** budget line t
 from emptying out; and a **Hospital** tool (key **M**; hospitals the city builds are never removed automatically and
 cost $150 a year).
 
+**Presets** (setup screen): Original 1989 rules, Progressive (Sanders-style) and Conservative-populist (MAGA-style).
+A preset fills in the laws and the starting budget only, never the world model, so no preset can "win" because the
+rules were written to agree with it. Each preset lists the sources its settings are based on (see `src/presets.js`),
+and notes where a setting is an inference rather than a stated position.
+
 The Budget window has new **Social services** and **Social housing** lines. Its effect on crime depends on the chosen world model.
 
 With every setting at its "(original)" default, the simulation rules match the original game.

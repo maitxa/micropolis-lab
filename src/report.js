@@ -189,6 +189,8 @@ var policyReport = function(sim) {
   var wm = worldModelSummary();
   add('Your world', wm.length === 0 ? 'The original SimCity 1989 rules.' :
       'Original 1989 rules, except: ' + esc(wm.join('; ')) + '.');
+  add('Starting laws', 'This city began with the laws and budget of: <b>' + esc(Policy.presetName || 'Original 1989 rules') +
+      '</b>. (Presets never change the world model above.)');
 
   // Crime
   var p = live.crimeParts;

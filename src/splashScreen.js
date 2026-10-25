@@ -17,6 +17,7 @@ import { Config } from './config.js';
 import { Game } from './game.js';
 import { MapGenerator } from './mapGenerator.js';
 import { Policy } from './policy.js';
+import { Presets } from './presets.js';
 import { Simulation } from './simulation.js';
 import { SplashCanvas } from './splashCanvas.js';
 import { Storage } from './storage.js';
@@ -126,8 +127,13 @@ var acquireNameAndDifficulty = function(e) {
   // When the form is submitted, we'll be ready to launch the game
   $('#playForm').submit(play.bind(this));
 
-  // POLICY LAB: "Reset to original rules" button
+  // POLICY LAB: "Reset to original rules" button, and presets
   $('#pl_reset').click(resetPolicyForm);
+  $('#pl_preset').on('change', applyPreset);
+  Presets.fields.forEach(function(f) {
+    $('#pl_' + f).on('change', markCustom);
+  });
+  showPresetNote('original');
 
   // Display the name and difficulty form
   $('#start').toggle();
@@ -151,6 +157,7 @@ var play = function(e) {
   // POLICY LAB: read the setup screen before the simulation starts
   var choices = readPolicyForm();
   Policy.set(choices.policy);
+  Policy.presetName = currentPresetLabel();
   // The green belt is centred on the middle of the map, where the city starts
   Policy.greenBeltCentre = {x: Math.floor(this.map.width / 2), y: Math.floor(this.map.height / 2)};
   Policy.builtHospitals = {};
@@ -161,6 +168,7 @@ var play = function(e) {
   // POLICY LAB: starting social services funding
   g.simulation.budget.socialPercent = choices.socialStart / 100;
   g.simulation.budget.housingPercent = choices.housingStart / 100;
+  g.simulation.budget.setTax(choices.taxStart);
   g.simulation.budget.updateFundEffects();
 };
 
@@ -181,7 +189,64 @@ var readPolicyForm = function() {
     policy[key] = $('#pl_' + key).val();
   });
   return {policy: policy, socialStart: parseFloat($('#pl_socialStart').val()) || 0,
-          housingStart: parseFloat($('#pl_housingStart').val()) || 0};
+          housingStart: parseFloat($('#pl_housingStart').val()) || 0,
+          taxStart: parseInt($('#pl_taxStart').val(), 10) || 7};
+};
+
+
+// POLICY LAB: presets fill in laws and the starting budget (never the world model)
+var basedOn = null;  // the preset the current settings started from
+
+var escapeHTML = function(s) {
+  return String(s).replace(/[&<>"]/g, function(c) {
+    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c];
+  });
+};
+
+var showPresetNote = function(name) {
+  var p = Presets.all[name];
+  if (!p) {
+    $('#presetNote').html('<p>Custom settings' + (basedOn ? ', starting from <b>' + escapeHTML(Presets.all[basedOn].label) +
+                          '</b>' : '') + '.</p>');
+    return;
+  }
+  var html = '<p>' + escapeHTML(p.note) + '</p>';
+  if (p.sources.length)
+    html += '<p class="presetSources">Based on: ' + p.sources.map(function(s) {
+      return '<a href="' + s[1] + '" target="_blank" rel="noopener">' + escapeHTML(s[0]) + '</a>';
+    }).join(' &middot; ') + '</p>';
+  if (name !== 'original')
+    html += '<p class="presetCaveat">' + escapeHTML(Presets.commonNote) + '</p>';
+  $('#presetNote').html(html);
+};
+
+var applyPreset = function() {
+  var name = $('#pl_preset').val();
+  var p = Presets.all[name];
+  if (!p) {
+    showPresetNote(name);
+    return;
+  }
+  basedOn = name;
+  Object.keys(p.values).forEach(function(f) {
+    $('#pl_' + f).val(p.values[f]);
+  });
+  showPresetNote(name);
+};
+
+var markCustom = function() {
+  if ($('#pl_preset').val() !== 'custom') {
+    basedOn = $('#pl_preset').val();
+    $('#pl_preset').val('custom');
+    showPresetNote('custom');
+  }
+};
+
+var currentPresetLabel = function() {
+  var name = $('#pl_preset').val();
+  if (Presets.all[name])
+    return Presets.all[name].label;
+  return 'Custom' + (basedOn && Presets.all[basedOn] ? ' (starting from ' + Presets.all[basedOn].label + ')' : '');
 };
 
 
@@ -197,6 +262,9 @@ var resetPolicyForm = function(e) {
   });
   $('#pl_socialStart').val('0');
   $('#pl_housingStart').val('0');
+  $('#pl_taxStart').val('7');
+  $('#pl_preset').val('original');
+  showPresetNote('original');
 };
 
 

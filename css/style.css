@@ -1215,8 +1215,9 @@ nav li {
 /* POLICY LAB: the setup window has grown; keep it above the footer, scrolling inside itself, with Play always visible */
 #start {
   z-index: 50;
-  max-height: calc(100vh - 30px);
-  top: calc(50% - 10px);
+  /* fit between the page header (55px) and footer (5em), with a little margin */
+  max-height: calc(100vh - 55px - 5em - 24px);
+  top: 50%;
 }
 
 #start #playSubmitDiv {
@@ -1242,4 +1243,26 @@ nav li {
   background-color: white;
   color: #c00;
   border: 1px solid #c00;
+}
+
+/* POLICY LAB: presets */
+#presetBox {
+  background: #eef7f0;
+  border: 1px solid #9c9;
+  padding: 6px 8px;
+  margin-bottom: 10px;
+}
+
+#presetNote p {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+#presetNote .presetSources a {
+  color: #225;
+}
+
+#presetNote .presetCaveat {
+  font-style: italic;
+  color: #555;
 }
