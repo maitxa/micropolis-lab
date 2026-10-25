@@ -1104,3 +1104,110 @@ nav li {
   background-color: #4a6b8a;
   color: white;
 }
+
+
+/* POLICY LAB: City data window and policy report */
+#evalWindow, #cityDataWindow {
+  width: 600px;
+  max-width: 94vw;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+#cityDataContent h3 {
+  margin: 12px 0 4px 0;
+  font-size: 16px;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.dataTable th {
+  text-align: left;
+  font-weight: bold;
+  border-bottom: 1px solid #999;
+  padding: 2px 4px;
+}
+
+.dataTable td {
+  padding: 3px 4px;
+  white-space: nowrap;
+}
+
+.dataBar {
+  display: inline-block;
+  width: 70px;
+  height: 10px;
+  background: #e5e5e5;
+  border: 1px solid #aaa;
+  vertical-align: middle;
+}
+
+.dataBar span {
+  display: block;
+  height: 100%;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border: 1px solid #555;
+}
+
+.dataNote {
+  color: #666;
+  font-size: 12px;
+}
+
+.dataList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+#policyReport {
+  clear: both;
+  margin-top: 10px;
+}
+
+.policyReport {
+  text-align: left;
+  font-size: 14px;
+  padding-left: 18px;
+  margin: 4px 0;
+}
+
+.policyReport li {
+  margin-bottom: 5px;
+}
+
+#cityDataRequest {
+  background-color: #2e7d6b;
+  color: white;
+}
+
+
+/* POLICY LAB: Undo / Keys / City data row under the tools */
+#labButtons {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+#labButtons button {
+  font-size: 12px;
+  padding: 2px 8px;
+  border: 1px solid #333;
+  cursor: pointer;
+}
+
+#problemList {
+  list-style-position: inside;
+  padding-left: 0;
+}

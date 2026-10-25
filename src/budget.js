@@ -180,7 +180,9 @@ Budget.prototype._calculateBestPercentages = function() {
   else
     this.policePercent = 1;
 
-  if (this.socialMaintenanceBudget > 0)
+  // POLICY LAB: only lower the social services percentage if the city genuinely couldn't afford it (otherwise rounding
+  // on small budgets would quietly change the player's chosen percentage)
+  if (this.socialMaintenanceBudget > 0 && socialCost < this.socialSpend)
     this.socialPercent = (socialCost / this.socialMaintenanceBudget).toPrecision(2) - 0;
 
   return {road: roadCost, police: policeCost, fire: fireCost, social: socialCost};
@@ -252,8 +254,9 @@ Budget.prototype.updateFundEffects = function() {
 
   // POLICY LAB: how much of full social services funding is being spent (0-1). Before the first tax year
   // there's no cost estimate yet, so use the chosen percentage directly.
+  // (Capped at the chosen percentage, so rounding a tiny budget up to a whole dollar can't overstate the effect.)
   if (this.socialMaintenanceBudget > 0)
-    this.socialEffect = this.socialSpend / this.socialMaintenanceBudget;
+    this.socialEffect = Math.min(this.socialPercent, this.socialSpend / this.socialMaintenanceBudget);
   else
     this.socialEffect = this.socialPercent;
 
@@ -289,7 +292,10 @@ Budget.prototype.collectTax = function(gameLevel, census) {
 
   this.taxFund = Math.floor(Math.floor(census.totalPop * census.landValueAverage / 120) * this.cityTax * FLevels[gameLevel]);
   // POLICY LAB: business incentives (tax breaks) reduce the share of taxes the city collects (original: all of it)
+  var fullTaxFund = this.taxFund;
   this.taxFund = Math.floor(this.taxFund * Policy.taxShare());
+  // POLICY LAB: how much tax revenue the business incentives cost this year
+  this.taxBreakCost = fullTaxFund - this.taxFund;
 
   if (census.totalPop > 0) {
     this.cashFlow = this.taxFund - (this.policeMaintenanceBudget + this.fireMaintenanceBudget + this.roadMaintenanceBudget +

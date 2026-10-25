@@ -21,6 +21,11 @@ During play: numbers have thousands separators; hovering over a message explains
 an **Undo** button (Ctrl+Z / Cmd+Z) reverses the last click or drag with a refund; number keys pick tools (press **?**
 for the list); and **Shift+click** draws a straight road, rail or power line from the last tile built.
 
+A **City data** window (button under the tools, or press **I**) shows occupancy and demand for residential,
+commercial and industrial zones, jobs per resident, neighbourhood averages, power, services and money. The
+**Evaluation** window adds "Your policies at work": a plain-language report on how the world model and each law are
+affecting the city (e.g. what is driving crime, where pollution comes from, what tax breaks cost).
+
 The Budget window has a new **Social services** line. Its effect on crime depends on the chosen world model.
 
 With every setting at its "(original)" default, the simulation rules match the original game.

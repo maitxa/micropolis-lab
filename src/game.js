@@ -42,6 +42,7 @@ import { Text } from './text.js';
 import { TouchWarnWindow } from './touchWarnWindow.js';
 import { MiscUtils } from './miscUtils.js';
 import * as TileValues from './tileValues.ts';
+import { CityDataWindow } from './cityDataWindow.js';
 
 var disasterTimeout = 20 * 1000;
 
@@ -114,8 +115,17 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
 
   // Hook up listeners to open/close evaluation window
   this.handleEvalRequest = makeWindowOpenHandler('eval', function() {
-    return [this.simulation.evaluation];
+    // POLICY LAB: the simulation is passed too, for the "Your policies at work" report
+    return [this.simulation.evaluation, this.simulation];
   }.bind(this));
+
+  // POLICY LAB: City data window
+  this.handleCityDataRequest = makeWindowOpenHandler('cityData', function() {
+    return [this.simulation];
+  }.bind(this));
+  this.cityDataWindow = new CityDataWindow(opacityLayerID, 'cityDataWindow');
+  this.cityDataWindow.addEventListener(Messages.CITY_DATA_WINDOW_CLOSED, this.genericDialogClosure);
+  this.inputStatus.addEventListener(Messages.CITY_DATA_REQUESTED, this.handleCityDataRequest.bind(this));
 
   this.evalWindow = new EvaluationWindow(opacityLayerID, 'evalWindow');
   this.evalWindow.addEventListener(Messages.EVAL_WINDOW_CLOSED, this.genericDialogClosure);

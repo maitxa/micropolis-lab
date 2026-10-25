@@ -345,6 +345,9 @@ var simulate = function(simData) {
       break;
 
     case 9:
+      // POLICY LAB: the map scan is complete; keep a copy of its counts for the City data window and reports
+      this.lastCensus = this._census.snapshot();
+
       if (this._cityTime % CENSUS_FREQUENCY_10 === 0)
         this._census.take10Census(budget);
 

@@ -127,6 +127,10 @@ Valves.prototype.setValves = function(gameLevel, census, budget) {
   // and keep only part of the difference (original: all of it, i.e. taxGrowth = 1 gives exactly taxTable[z]).
   var zDefault = Math.min((7 + gameLevel), taxMax);
   var taxEffect = taxTable[zDefault] + (taxTable[z] - taxTable[zDefault]) * Policy.taxGrowth;
+  // POLICY LAB: remember the tax effect (and what the default 7% would give) for the Evaluation report
+  this.lastTaxEffect = taxEffect;
+  this.lastDefaultTaxEffect = taxTable[zDefault];
+  this.lastEmployment = employment;
   resRatio = (resRatio - 1) * taxTableScale + taxEffect;
   comRatio = (comRatio - 1) * taxTableScale + taxEffect;
   indRatio = (indRatio - 1) * taxTableScale + taxEffect;

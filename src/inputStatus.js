@@ -78,6 +78,7 @@ var InputStatus = EventEmitter(function(map, tileWidth) {
   // POLICY LAB
   $('#undoRequest').click(makeHandler('UNDO_REQUESTED').bind(this));
   $('#keysRequest').click(makeHandler('KEYS_HELP_REQUESTED').bind(this));
+  $('#cityDataRequest').click(makeHandler('CITY_DATA_REQUESTED').bind(this));
 });
 
 
@@ -112,6 +113,13 @@ var keyDownHandler = function(e) {
     }
 
     if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+      // I: City data (indicators)
+      if (e.keyCode === 73) {
+        this._emitEvent(Messages.CITY_DATA_REQUESTED);
+        e.preventDefault();
+        return;
+      }
+
       // "?" (Shift + /) or H: keyboard help
       if (e.keyCode === 191 || e.keyCode === 72) {
         this._emitEvent(Messages.KEYS_HELP_REQUESTED);

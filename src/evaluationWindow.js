@@ -17,6 +17,7 @@ import { ModalWindow } from './modalWindow.js';
 import { EVAL_WINDOW_CLOSED } from './messages.ts';
 import { Text } from './text.js';
 import { MiscUtils } from './miscUtils.js';
+import { Report } from './report.js';
 
 var EvaluationWindow = ModalWindow(function() {
   $(evaluationFormID).on('submit', submit.bind(this));
@@ -63,8 +64,11 @@ EvaluationWindow.prototype._populateWindow = function(evaluation) {
 };
 
 
-EvaluationWindow.prototype.open = function(evaluation) {
+EvaluationWindow.prototype.open = function(evaluation, simulation) {
   this._populateWindow(evaluation);
+  // POLICY LAB: "Your policies at work"
+  if (simulation)
+    $('#policyReportContent').html(Report.policyReport(simulation));
   this._toggleDisplay();
 };
 

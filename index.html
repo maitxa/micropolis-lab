@@ -159,13 +159,6 @@
             <div>
               <button id="pauseRequest" class="miscButton">Pause</button>
             </div>
-            <!-- POLICY LAB -->
-            <div>
-              <button id="undoRequest" class="miscButton" title="Undo your last build (Ctrl+Z / Cmd+Z)">Undo</button>
-            </div>
-            <div>
-              <button id="keysRequest" class="miscButton" title="Keyboard shortcuts (press ?)">Keys</button>
-            </div>
           </div>
         </div>
         <div id="RCIContainer" class="controlShadow leftedge width140 padding10 mintcream z1 initialHidden"></div>
@@ -188,6 +181,12 @@
             <button id="airportButton" data-size="6" data-tool="airport" data-colour="violet" class="toolButton unselected">Airport $10,000</button>
             <button id="queryButton" data-size="1" data-tool="query" data-colour="cyan" class="toolButton unselected">Query</button>
             <button id="parkButton" data-size="1" data-tool="park" data-colour="darkgreen" class="toolButton unselected">Park $10</button>
+          </div>
+          <!-- POLICY LAB -->
+          <div id="labButtons">
+            <button id="undoRequest" title="Undo your last build (Ctrl+Z / Cmd+Z)">Undo</button>
+            <button id="keysRequest" title="Keyboard shortcuts (press ?)">Keys</button>
+            <button id="cityDataRequest" title="Indicators for your city (press I)">City data</button>
           </div>
         </div>
         <div id="tw" class="z1 rightedge initialHidden">
@@ -221,6 +220,7 @@
             <tr><td><b>4</b> Road</td><td><b>9</b> Fire station</td></tr>
             <tr><td><b>5</b> Rail</td><td><b>0</b> Query (inspect a tile)</td></tr>
             <tr><td><b>B</b> Bulldozer</td><td><b>?</b> or <b>H</b> this help</td></tr>
+            <tr><td><b>I</b> City data</td><td></td></tr>
           </table>
           <p><b>Straight lines:</b> with Road, Rail or Wire, click where the line starts, then hold <b>Shift</b> and click
             where it ends. If the end isn't in line, it turns one corner (an L shape).</p>
@@ -333,8 +333,25 @@
               <dt class="evalItem statisticsItem">Annual change:</dt><dd class=" elided statisticsRight evalItem evalRight" id="evalScoreDelta"></dd>
 	    </dl>
 	  </section>
+          <!-- POLICY LAB -->
+          <section id="policyReport">
+            <h2 class="alignCenter">Your policies at work</h2>
+            <div id="policyReportContent"></div>
+          </section>
           <form id="evalButtons" class="alignCenter margin10">
             <input type="submit" id="evalOK" class="width140 dialogOK" value="OK">
+          </form>
+        </div>
+      </div>
+      <!-- POLICY LAB: City data window -->
+      <div class="hidden modal shadow" id="cityDataWindow">
+        <header id="cityDataHeader" class="evalHeader padding10 chunk alignCenter">
+           City data
+        </header>
+        <div id="cityDataContainer" class="padding10 open">
+          <div id="cityDataContent"></div>
+          <form id="cityDataButtons" class="alignCenter margin10">
+            <input type="submit" id="cityDataOK" class="width140 dialogOK" value="OK">
           </form>
         </div>
       </div>

@@ -158,6 +158,18 @@ var getPollutionValue = function(tileValue) {
 };
 
 
+// POLICY LAB: which kind of source a polluting tile is (mirrors getPollutionValue above)
+var pollutionSourceOf = function(tileValue) {
+  if (tileValue < TileValues.POWERBASE)
+    return tileValue >= TileValues.LTRFBASE ? 'traffic' : 'other';
+  if (tileValue < TileValues.PORTBASE)
+    return 'industry';
+  if (tileValue <= TileValues.LASTPOWERPLANT)
+    return 'power';
+  return 'other';
+};
+
+
 // Compute the Manhattan distance of the given point from the city centre, and force into the range 0-64
 var getCityCentreDistance = function(map, x, y) {
   var xDis, yDis;
@@ -197,6 +209,10 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
   var tempMap3 = blockMaps.tempMap3;
   tempMap3.clear();
 
+  // POLICY LAB: pollution by source
+  var pollutionSources = {traffic: 0, industry: 0, power: 0, other: 0};
+  census.pollutionSources = pollutionSources;
+
   var landValueMap = blockMaps.landValueMap;
   var terrainDensityMap = blockMaps.terrainDensityMap;
   var pollutionDensityMap = blockMaps.pollutionDensityMap;
@@ -232,7 +248,11 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
             continue;
           }
 
-          pollutionLevel += getPollutionValue(tileValue);
+          var pollutionValue = getPollutionValue(tileValue);
+          pollutionLevel += pollutionValue;
+          // POLICY LAB: tally where pollution comes from, for the Evaluation report
+          if (pollutionValue > 0)
+            pollutionSources[pollutionSourceOf(tileValue)] += pollutionValue;
           if (tileValue >= TileValues.ROADBASE)
             developed = true;
         }
@@ -339,6 +359,7 @@ var crimeScan = function(census, blockMaps, budget) {
 
   var totalCrime = 0;
   var crimeZoneCount = 0;
+  var partTotals = {poverty: 0, density: 0, police: 0, social: 0};
 
   // Scan the map, looking for developed land, as it can attract crime.
   // POLICY LAB BUG FIX: the original micropolisJS used crimeRateMap.mapWidth / mapHeight here, which don't exist
@@ -355,25 +376,36 @@ var crimeScan = function(census, blockMaps, budget) {
 
         // Force value in the range -122 to 128. Lower valued pieces of land attract more crime.
         // POLICY LAB: scaled by "Does poverty drive crime?" (original: x1)
-        value = (128 - value) * Policy.povertyCrime;
+        var povertyPart = (128 - value) * Policy.povertyCrime;
+        value = povertyPart;
 
         // Add population density (a value between 0 and 510). value now lies in range -260 - 382.
         // Denser areas attract more crime.
         // POLICY LAB: scaled by "Does density drive crime?" (original: x1)
-        value += populationDensityMap.worldGet(x, y) * Policy.densityCrime;
+        var densityPart = populationDensityMap.worldGet(x, y) * Policy.densityCrime;
+        value += densityPart;
 
         // Clamp in range -260 to 300
         value = Math.min(value, 300);
 
         // If the police are nearby, there's no point committing the crime of the century
         // POLICY LAB: scaled by "How effective are police?" (original: x1)
-        value -= policeStationMap.worldGet(x, y) * Policy.policeStrength;
+        var policePart = policeStationMap.worldGet(x, y) * Policy.policeStrength;
+        value -= policePart;
 
         // POLICY LAB (new factor): social services reduce crime, most in the poorest neighbourhoods
         // (up to 2x the base effect on the cheapest land, almost nothing on the most valuable land).
         // Only active if the world model says social services work, and scaled by how well they're funded.
+        var socialPart = 0;
         if (Policy.socialCrime > 0 && socialFunding > 0)
-          value -= Policy.socialCrime * socialFunding * 2 * (250 - landValue) / 250;
+          socialPart = Policy.socialCrime * socialFunding * 2 * (250 - landValue) / 250;
+        value -= socialPart;
+
+        // POLICY LAB: keep running totals of each factor, for the Evaluation report
+        partTotals.poverty += povertyPart;
+        partTotals.density += densityPart;
+        partTotals.police += policePart;
+        partTotals.social += socialPart;
 
         value = Math.round(value);
 
@@ -386,6 +418,14 @@ var crimeScan = function(census, blockMaps, budget) {
         crimeRateMap.worldSet(x, y, 0);
       }
     }
+  }
+
+  // POLICY LAB: average contribution of each factor per neighbourhood (before the 0-250 limits are applied)
+  census.crimeParts = {poverty: 0, density: 0, police: 0, social: 0};
+  if (crimeZoneCount > 0) {
+    Object.keys(partTotals).forEach(function(k) {
+      census.crimeParts[k] = Math.round(partTotals[k] / crimeZoneCount);
+    });
   }
 
   if (crimeZoneCount > 0)
