@@ -1556,3 +1556,49 @@ nav li {
     transition: background-color 0.12s, border-color 0.12s;
   }
 }
+
+/* POLICY LAB: zoom control */
+#zoomControls {
+  position: absolute;
+  right: 50px;
+  bottom: 65px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  font-family: var(--pl-ui);
+  color: var(--pl-ink);
+  background: var(--pl-paper);
+  border: 1px solid var(--pl-line);
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+#zoomControls button {
+  width: 28px;
+  height: 26px;
+  font-size: 18px;
+  line-height: 1;
+  font-family: var(--pl-ui);
+  color: var(--pl-ink);
+  background: var(--pl-wash);
+  border: 1px solid var(--pl-line);
+  border-radius: 4px;
+}
+
+#zoomControls button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+#zoomControls button:focus-visible {
+  outline: 2px solid var(--pl-utilities);
+}
+
+#zoomLevel {
+  min-width: 44px;
+  text-align: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}

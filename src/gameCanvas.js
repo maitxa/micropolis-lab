@@ -21,6 +21,7 @@ import { Position } from './position.ts';
 import { TileSet } from './tileSet.js';
 import { TILE_INVALID } from "./tileValues.ts";
 import { Policy } from './policy.js';
+import { HDTiles } from './hdTiles.js';
 
 function GameCanvas(id, parentNode) {
   if (!(this instanceof GameCanvas))
@@ -53,6 +54,17 @@ function GameCanvas(id, parentNode) {
   this._canvas.height = rect.height;
   this._canvas.style.margin = '0';
   this._canvas.style.padding = '0';
+
+  // POLICY LAB: sharper graphics. On high-resolution screens the main map is drawn at the screen's real pixel density
+  // (2 device pixels per CSS pixel); the monster TV keeps the original resolution. All internal sizes are in device
+  // pixels. Zoom levels 1-3 multiply the tile size.
+  this._dpr = (id === GameCanvas.DEFAULT_ID && (window.devicePixelRatio || 1) >= 1.5) ? 2 : 1;
+  this._canvas.setAttribute('data-dpr', this._dpr);
+  this._zoom = 1;
+  this._spriteScale = 1;
+  this._pendingSpriteSheet = null;
+  this._pendingCentre = null;
+  this._season = 'normal';
 
   this._pendingTileSet = null;
 
@@ -130,14 +142,18 @@ GameCanvas.prototype._calculateDimensions = function(force) {
   force = force || false;
 
   // The canvas is assumed to fill its container on-screen
-  var canvasWidth = this.canvasWidth = this._canvas.parentNode.clientWidth;
-  var canvasHeight = this.canvasHeight = this._canvas.parentNode.clientHeight;
+  // POLICY LAB: measured in device pixels (CSS pixels x pixel density)
+  var cssWidth = this._canvas.parentNode.clientWidth, cssHeight = this._canvas.parentNode.clientHeight;
+  var canvasWidth = this.canvasWidth = cssWidth * this._dpr;
+  var canvasHeight = this.canvasHeight = cssHeight * this._dpr;
 
   if (canvasHeight === this._lastCanvasHeight && canvasWidth === this._lastCanvasWidth && !force)
     return;
 
   this._canvas.width = canvasWidth;
   this._canvas.height = canvasHeight;
+  this._canvas.style.width = cssWidth + 'px';
+  this._canvas.style.height = cssHeight + 'px';
 
   var w = this._tileSet.tileWidth;
 
@@ -409,29 +425,32 @@ GameCanvas.prototype.shoogle = function() {
 
 GameCanvas.prototype._processSprites = function(ctx, spriteList) {
   var spriteDamage = [];
-  var tileWidth = this._tileSet.tileWidth;
+  // POLICY LAB: sprite positions are in original 16-pixels-per-tile units; scale them to the current tile size, and
+  // read from the enlarged sprite sheet if one is loaded (spriteScale)
+  var scale = this._tileSet.tileWidth / 16;
+  var ss = this._spriteScale || 1;
 
   for (var i = 0, l = spriteList.length; i < l; i++) {
     var sprite = spriteList[i];
     try {
       ctx.drawImage(this._spriteSheet,
-                    (sprite.frame - 1) * 48,
-                    (sprite.type - 1) * 48,
-                    sprite.width,
-                    sprite.width,
-                    sprite.x + sprite.xOffset - this._originX * 16,
-                    sprite.y + sprite.yOffset - this._originY * 16,
-                    sprite.width,
-                    sprite.width);
+                    (sprite.frame - 1) * 48 * ss,
+                    (sprite.type - 1) * 48 * ss,
+                    sprite.width * ss,
+                    sprite.width * ss,
+                    (sprite.x + sprite.xOffset - this._originX * 16) * scale,
+                    (sprite.y + sprite.yOffset - this._originY * 16) * scale,
+                    sprite.width * scale,
+                    sprite.width * scale);
     } catch (e) {
       throw new Error('Failed to draw sprite ' + sprite.type + ' frame ' + sprite.frame + ' at ' + sprite.x +  ', ' + sprite.y);
     }
 
-    // sprite values are in pixels
-    spriteDamage.push({x: Math.floor((sprite.x + sprite.xOffset - this._originX * 16) / tileWidth),
-                       xBound: Math.ceil((sprite.x + sprite.xOffset + sprite.width - this._originX * 16) / tileWidth),
-                       y: Math.floor((sprite.y + sprite.yOffset - this._originY * 16) / tileWidth),
-                       yBound: Math.ceil((sprite.y + sprite.yOffset + sprite.height - this._originY * 16) / tileWidth)});
+    // sprite values are in (16-per-tile) pixels
+    spriteDamage.push({x: Math.floor((sprite.x + sprite.xOffset - this._originX * 16) / 16),
+                       xBound: Math.ceil((sprite.x + sprite.xOffset + sprite.width - this._originX * 16) / 16),
+                       y: Math.floor((sprite.y + sprite.yOffset - this._originY * 16) / 16),
+                       yBound: Math.ceil((sprite.y + sprite.yOffset + sprite.height - this._originY * 16) / 16)});
   }
 
   return spriteDamage;
@@ -592,12 +611,28 @@ GameCanvas.prototype.paint = function(mouse, sprites, isPaused) {
 
   // Recompute our dimensions if there has been a resize since last paint
   if (this._pendingDimensionChange || this._pendingTileSet) {
-    this._calculateDimensions();
+    // POLICY LAB: switch tile set (and sprite sheet) BEFORE measuring, since tile sizes can now differ (zoom)
+    var tileSizeChanged = false;
+    if (this._pendingTileSet !== null) {
+      tileSizeChanged = this._pendingTileSet.tileWidth !== this._tileSet.tileWidth;
+      this._tileSet = this._pendingTileSet;
+    }
+    if (this._pendingSpriteSheet !== null) {
+      this._spriteSheet = this._pendingSpriteSheet;
+      this._spriteScale = this._pendingSpriteScale || 1;
+      this._pendingSpriteSheet = null;
+    }
+
+    this._calculateDimensions(tileSizeChanged);
     this._pendingDimensionChange = false;
 
-    // Change tileSet if necessary
-    if (this._pendingTileSet !== null)
-      this._tileSet = this._pendingTileSet;
+    if (tileSizeChanged) {
+      lastPaintedTiles = this._lastPaintedTiles = null;
+      if (this._pendingCentre)
+        this.centreOn(this._pendingCentre.x, this._pendingCentre.y);
+      this._pendingCentre = null;
+      this._lastOverlayKey = null;
+    }
 
     // If the dimensions or tileset has changed, set each entry in lastPaintedTiles to a bogus value to force a
     // repaint. Note: we use -2 as our bogus value; -1 would paint the black void
@@ -697,8 +732,10 @@ GameCanvas.prototype._paintPolicyOverlay = function() {
   svg.style.display = '';
   svg.style.left = this._canvas.offsetLeft + 'px';
   svg.style.top = this._canvas.offsetTop + 'px';
-  svg.setAttribute('width', this.canvasWidth);
-  svg.setAttribute('height', this.canvasHeight);
+  // Drawn in device pixels, displayed at CSS size
+  svg.setAttribute('width', this.canvasWidth / this._dpr);
+  svg.setAttribute('height', this.canvasHeight / this._dpr);
+  svg.setAttribute('viewBox', '0 0 ' + this.canvasWidth + ' ' + this.canvasHeight);
 
   var originX = this._originX, originY = this._originY;
   var toPx = function(wx, wy) {
@@ -722,6 +759,53 @@ GameCanvas.prototype._paintPolicyOverlay = function() {
                'stroke="rgba(230,120,0,0.9)" stroke-width="2" stroke-dasharray="8 5"/>');
   }
   svg.innerHTML = parts.join('');
+};
+
+
+// POLICY LAB: zoom and sharper graphics ---------------------------------------------------------------------------
+
+// The original 16-pixel graphics, from which the right enlarged set is chosen
+GameCanvas.prototype.setBaseGraphics = function(normalTiles, snowTiles, sprites) {
+  this._baseGraphics = {normal: normalTiles, snow: snowTiles, sprites: sprites};
+  this._requestScale();
+};
+
+// How many device pixels one original pixel takes up right now
+GameCanvas.prototype.getScale = function() {
+  return this._tileSet.tileWidth / 16;
+};
+
+GameCanvas.prototype.getZoom = function() {
+  return this._zoom;
+};
+
+GameCanvas.prototype.setZoom = function(zoom) {
+  zoom = Math.max(1, Math.min(3, zoom));
+  if (zoom === this._zoom)
+    return;
+  this._zoom = zoom;
+  this._requestScale();
+};
+
+GameCanvas.prototype.setSeason = function(season) {
+  this._season = season;
+  this._requestScale();
+};
+
+GameCanvas.prototype._requestScale = function() {
+  if (!this._baseGraphics)
+    return;
+  var want = this._zoom * this._dpr;
+  var self = this;
+  HDTiles.get(this._baseGraphics, this._season, want, function(tiles, sprites, got) {
+    // Keep the same spot in the middle of the screen
+    if (self.ready && self._tileSet)
+      self._pendingCentre = {x: self._originX + Math.floor(self._wholeTilesInViewX / 2),
+                             y: self._originY + Math.floor(self._wholeTilesInViewY / 2)};
+    self._pendingTileSet = tiles;
+    self._pendingSpriteSheet = sprites;
+    self._pendingSpriteScale = got;
+  });
 };
 
 

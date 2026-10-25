@@ -79,6 +79,8 @@ var InputStatus = EventEmitter(function(map, tileWidth) {
   $('#undoRequest').click(makeHandler('UNDO_REQUESTED').bind(this));
   $('#keysRequest').click(makeHandler('KEYS_HELP_REQUESTED').bind(this));
   $('#cityDataRequest').click(makeHandler('CITY_DATA_REQUESTED').bind(this));
+  $('#zoomIn').click(function(e) { e.preventDefault(); this._emitEvent(Messages.ZOOM_REQUESTED, 1); }.bind(this));
+  $('#zoomOut').click(function(e) { e.preventDefault(); this._emitEvent(Messages.ZOOM_REQUESTED, -1); }.bind(this));
 });
 
 
@@ -116,6 +118,18 @@ var keyDownHandler = function(e) {
     }
 
     if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+      // + / - : zoom in and out (the = key is + without Shift)
+      if (e.keyCode === 187 || e.keyCode === 107 || e.keyCode === 61) {
+        this._emitEvent(Messages.ZOOM_REQUESTED, 1);
+        e.preventDefault();
+        return;
+      }
+      if (e.keyCode === 189 || e.keyCode === 109 || e.keyCode === 173) {
+        this._emitEvent(Messages.ZOOM_REQUESTED, -1);
+        e.preventDefault();
+        return;
+      }
+
       // I: City data (indicators)
       if (e.keyCode === 73) {
         this._emitEvent(Messages.CITY_DATA_REQUESTED);
@@ -202,8 +216,17 @@ var keyUpHandler = function(e) {
 
 
 var getRelativeCoordinates = function(e) {
-  var cRect = document.querySelector(this.canvasID).getBoundingClientRect();
-  return {x: e.clientX - cRect.left, y: e.clientY - cRect.top};
+  var canvas = document.querySelector(this.canvasID);
+  var cRect = canvas.getBoundingClientRect();
+  // POLICY LAB: the map is drawn in device pixels on high-resolution screens; convert from CSS pixels
+  var dpr = parseFloat(canvas.getAttribute('data-dpr')) || 1;
+  return {x: (e.clientX - cRect.left) * dpr, y: (e.clientY - cRect.top) * dpr};
+};
+
+
+// POLICY LAB: the tile size changes with zoom, so ask for it rather than remembering it
+InputStatus.prototype._currentTileWidth = function() {
+  return this._tileWidthFn ? this._tileWidthFn() : this._tileWidth;
 };
 
 
@@ -243,8 +266,8 @@ var mouseDownHandler = function(e) {
   this._dragging = true;
   this._emitEvent(Messages.TOOL_CLICKED, {x: this.mouseX, y: this.mouseY});
 
-  this._lastDragX = Math.floor(this.mouseX / this._tileWidth);
-  this._lastDragY = Math.floor(this.mouseY / this._tileWidth);
+  this._lastDragX = Math.floor(this.mouseX / this._currentTileWidth());
+  this._lastDragY = Math.floor(this.mouseY / this._currentTileWidth());
 
   $(this.canvasID).on('mouseup', this.mouseUpHandler);
   e.preventDefault();
@@ -288,8 +311,8 @@ var mouseMoveHandler = function(e) {
   if (this._dragging) {
     // XXX Work up how to patch up the path for fast mouse moves. My first attempt was too slow, and ended up missing
     // mouseUp events
-    var x = Math.floor(this.mouseX / this._tileWidth);
-    var y = Math.floor(this.mouseY / this._tileWidth);
+    var x = Math.floor(this.mouseX / this._currentTileWidth());
+    var y = Math.floor(this.mouseY / this._currentTileWidth());
 
     var lastX = this._lastDragX;
     var lastY = this._lastDragY;

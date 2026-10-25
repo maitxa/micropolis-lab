@@ -75,6 +75,8 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   // Note: must init canvas before inputStatus
   this.gameCanvas = new GameCanvas('canvasContainer');
   this.gameCanvas.init(this.gameMap, this.tileSet, spriteSheet);
+  // POLICY LAB: sharper graphics on high-resolution screens, and zoom
+  this.gameCanvas.setBaseGraphics(this.tileSet, this.snowTileSet, spriteSheet);
   this.inputStatus = new InputStatus(this.gameMap, tileSet.tileWidth);
 
   this.dialogOpen = false;
@@ -222,6 +224,17 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   this.inputStatus.addEventListener(Messages.TOOL_LINE, this.handleToolLine.bind(this));
   this.inputStatus.addEventListener(Messages.UNDO_REQUESTED, this.handleUndo.bind(this));
   this.inputStatus.addEventListener(Messages.KEYS_HELP_REQUESTED, this.toggleKeysHelp.bind(this));
+  this.inputStatus._tileWidthFn = function() { return this.gameCanvas._tileSet.tileWidth; }.bind(this);
+  this.inputStatus.addEventListener(Messages.ZOOM_REQUESTED, function(step) {
+    if (this.dialogOpen)
+      return;
+    this.gameCanvas.setZoom(this.gameCanvas.getZoom() + step);
+    var z = this.gameCanvas.getZoom();
+    $('#zoomLevel').text(z === 1 ? '100%' : (z * 100) + '%');
+    $('#zoomOut').prop('disabled', z <= 1);
+    $('#zoomIn').prop('disabled', z >= 3);
+  }.bind(this));
+  $('#zoomOut').prop('disabled', true);
   $('#keysHelpClose').click(function(e) { e.preventDefault(); $('#keysHelp').hide(); });
   $('#undoRequest').prop('disabled', true);
 
@@ -853,7 +866,10 @@ Game.prototype.calculateMouseForPaint = function() {
 
 Game.prototype.calculateSpritesForPaint = function(canvas) {
   var origin = canvas.getTileOrigin();
-  var spriteList = this.simulation.spriteManager.getSpritesInView(origin.x, origin.y, canvas.canvasWidth, canvas.canvasHeight);
+  // POLICY LAB: sprites are positioned in original (16-per-tile) pixels; convert the view size accordingly
+  var scale = canvas.getScale ? canvas.getScale() : 1;
+  var spriteList = this.simulation.spriteManager.getSpritesInView(origin.x, origin.y, canvas.canvasWidth / scale,
+                                                                   canvas.canvasHeight / scale);
 
   if (spriteList.length === 0)
     return null;

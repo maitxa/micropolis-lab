@@ -47,13 +47,28 @@ TileSet.prototype._verifyImage = function(image, callback, errorCallback) {
   var height = image.height;
 
   // We expect tilesets to be square, and of the required width/height
-  if (width !== height || width !== ACCEPTABLE_DIMENSION) {
+  // POLICY LAB: enlarged tile sheets (sharper graphics, zoom) are accepted at whole multiples of the original size
+  if (width !== height || width % ACCEPTABLE_DIMENSION !== 0) {
     // Spin the event loop
     window.setTimeout(errorCallback, 0);
     return;
   }
 
-  var tileWidth = this.tileWidth = TILE_SIZE;
+  var tileWidth = this.tileWidth = width / TILES_PER_ROW;
+
+  // POLICY LAB: enlarged sheets are cut into canvases directly (much faster than encoding 1,024 images)
+  if (tileWidth !== TILE_SIZE) {
+    for (var t = 0; t < TILE_COUNT; t++) {
+      var tc = document.createElement('canvas');
+      tc.width = tc.height = tileWidth;
+      tc.getContext('2d').drawImage(image, t % TILES_PER_ROW * tileWidth, Math.floor(t / TILES_PER_ROW) * tileWidth,
+                                    tileWidth, tileWidth, 0, 0, tileWidth, tileWidth);
+      this[t] = tc;
+    }
+    this.isValid = true;
+    window.setTimeout(callback, 0);
+    return;
+  }
 
   // We paint the image onto a canvas so we can split it up
   var c = document.createElement('canvas');
