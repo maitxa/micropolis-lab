@@ -153,7 +153,7 @@ var compute = function(map, zx, zy, type, longReach) {
   var found = spread(map, starts, max);
   var dist = found.dist, queue = found.tiles;
 
-  var near = [], far = [], dead = [], dests = {}, bridges = [];
+  var near = [], far = [], dead = [], dests = {}, bridges = [], railBeside = 0;
   var isDest = DEST[type];
   var insideOrigin = function(x, y) { return Math.abs(x - zx) <= 1 && Math.abs(y - zy) <= 1; };
   queue.forEach(function(pos) {
@@ -178,12 +178,24 @@ var compute = function(map, zx, zy, type, longReach) {
       bridges.push({x: x, y: y, open: true});
     // a dead end the car could drive into (not one right at the zone, where the car only starts)
     else if (links <= 1 && d > 1)
-      dead.push([x, y]);
+      dead.push([x, y, d]);
+    // a road with rail running right beside it (not a level crossing): every such tile is an extra junction where
+    // the car can wander off onto the rail
+    if (d <= 10 && TileUtils.isRoad(map.getTileValue(x, y))) {
+      for (var kk = 0; kk < 4; kk++) {
+        var rx = x + DIRS[kk][0], ry = y + DIRS[kk][1];
+        if (map.testBounds(rx, ry) && drivable(map, rx, ry) && !TileUtils.isRoad(map.getTileValue(rx, ry))) {
+          railBeside++;
+          break;
+        }
+      }
+    }
   });
 
   var destList = Object.keys(dests).map(function(k2) { return dests[k2]; });
   destList.sort(function(a, b) { return a.d - b.d; });
-  return {type: type, hasRoad: hasRoad, max: max, near: near, far: far, dead: dead, dests: destList, bridges: bridges};
+  return {type: type, hasRoad: hasRoad, max: max, near: near, far: far, dead: dead, dests: destList, bridges: bridges,
+          railBeside: railBeside};
 };
 
 // Shapes for the map layer (see GameCanvas.setHighlights)

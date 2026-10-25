@@ -507,7 +507,7 @@ var ADVICE_SHOWN = 3;
 Game.prototype.runAdvisor = function(newMonth) {
   var result;
   try {
-    result = Advisor.advise(this.simulation);
+    result = Advisor.advise(this.simulation, newMonth);
   } catch (e) {
     console.warn('Advisor failed', e);
     return;

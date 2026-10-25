@@ -61,6 +61,11 @@ airport), demand compared with empty zones, and money running out. The advice st
 left to the game's original alerts (except the original "More ... zones needed" messages, which only compare zone
 counts and are skipped when the advisor says zones of that kind are still empty). See `src/advisor.js`.
 
+Trip hints are filtered: the game only tests a sample of trips and each car turns at random, so a zone is listed only
+if its trips failed in at least 2 of the last 3 months, and not if its reach shows it is clearly fine (what it needs
+within 10 road tiles, with no dead end or open drawbridge within 10 tiles). If rail runs right beside a failing zone's
+road, the hint says so: every such tile is an extra junction where the car can wander off onto the rail.
+
 Reach: a zone's trips are a car that drives at most 30 road tiles, turning at random at junctions and giving up at
 dead ends (as in 1989). For a "can't reach" hint, and for any zone you click with the Query tool, the map shows that
 zone's reach: roads its car can get to (darker within 15 tiles, lighter up to 30), the places it needs that it could
