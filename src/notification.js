@@ -98,6 +98,12 @@ Notification.prototype._displayText = function(text, x, y) {
 var handleClick = function(e) {
   e.preventDefault();
 
+  // POLICY LAB: clicking a piece of advice highlights its spots on the map
+  if (this._subject === ADVICE && this._advice && this._advice.targets && this._advice.targets.length && this.onAdviceClick) {
+    this.onAdviceClick(this._advice);
+    return;
+  }
+
   if (this._x === -1 || this._y === -1)
     return;
 

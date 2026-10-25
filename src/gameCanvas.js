@@ -665,6 +665,8 @@ GameCanvas.prototype.paint = function(mouse, sprites, isPaused) {
 
   // POLICY LAB: outlines of the car-free downtown and the green belt
   this._paintPolicyOverlay();
+  // POLICY LAB: highlights for the advisor's hints
+  this._paintHighlights();
 
   if (!mouse && !sprites) {
     return;
@@ -759,6 +761,102 @@ GameCanvas.prototype._paintPolicyOverlay = function() {
                'stroke="rgba(230,120,0,0.9)" stroke-width="2" stroke-dasharray="8 5"/>');
   }
   svg.innerHTML = parts.join('');
+};
+
+
+// POLICY LAB: highlights for the advisor's hints --------------------------------------------------------------------
+// shapes: [{kind: 'zone', x, y, label, ring} | {kind: 'circle', x, y, r, label}] in map tiles; focus: index of the
+// shape to pulse (the spot the player is looking at). Pass null to clear.
+GameCanvas.prototype.setHighlights = function(shapes, focus) {
+  this._highlights = shapes && shapes.length ? {shapes: shapes, focus: focus || 0} : null;
+  this._lastHighlightKey = null;
+};
+
+var escapeSVG = function(s) {
+  return String(s).replace(/[&<>"]/g, function(c) {
+    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c];
+  });
+};
+
+GameCanvas.prototype._paintHighlights = function() {
+  if (this._canvas.id !== GameCanvas.DEFAULT_ID)
+    return;
+
+  var svg = this._hintOverlay;
+  var h = this._highlights;
+  if (!h) {
+    if (svg && svg.style.display !== 'none')
+      svg.style.display = 'none';
+    return;
+  }
+
+  if (!svg) {
+    svg = this._hintOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('id', 'hintOverlay');
+    svg.style.position = 'absolute';
+    svg.style.pointerEvents = 'none';
+    this._canvas.parentNode.insertBefore(svg, this._canvas.nextSibling);
+  }
+
+  var tw = this._tileSet.tileWidth;
+  var key = [this._originX, this._originY, tw, this.canvasWidth, this.canvasHeight, h.focus, h.shapes.length,
+             h.shapes.length ? h.shapes[0].label : ''].join(',');
+  if (key === this._lastHighlightKey)
+    return;
+  this._lastHighlightKey = key;
+
+  svg.style.display = '';
+  svg.style.left = this._canvas.offsetLeft + 'px';
+  svg.style.top = this._canvas.offsetTop + 'px';
+  svg.setAttribute('width', this.canvasWidth / this._dpr);
+  svg.setAttribute('height', this.canvasHeight / this._dpr);
+  svg.setAttribute('viewBox', '0 0 ' + this.canvasWidth + ' ' + this.canvasHeight);
+
+  var ox = this._originX, oy = this._originY, dpr = this._dpr;
+  var px = function(wx) { return (wx - ox) * tw; };
+  var py = function(wy) { return (wy - oy) * tw; };
+  var line = Math.max(3, Math.round(tw / 6));
+  var font = Math.round(13 * dpr);
+
+  var label = function(x, y, text) {
+    return '<text x="' + x + '" y="' + y + '" class="hlLabel" font-size="' + font + '" stroke-width="' +
+           Math.round(4 * dpr) + '">' + escapeSVG(text) + '</text>';
+  };
+
+  var out = [], focusParts = [];
+  h.shapes.forEach(function(s, i) {
+    var parts = [];
+    var focused = i === h.focus;
+    if (s.kind === 'zone') {
+      var x0 = px(s.x - 1), y0 = py(s.y - 1), w = 3 * tw;
+      if (s.ring) {
+        // the 12 tiles where a road would count: one tile out along each side (not the corners)
+        var r = px(s.x - 2), t = py(s.y - 2);
+        var ringPath = 'M ' + (r + tw) + ' ' + t + ' h ' + (3 * tw) + ' v ' + tw + ' h ' + tw + ' v ' + (3 * tw) + ' h ' + (-tw) +
+                       ' v ' + tw + ' h ' + (-3 * tw) + ' v ' + (-tw) + ' h ' + (-tw) + ' v ' + (-3 * tw) + ' h ' + tw + ' Z';
+        parts.push('<path d="' + ringPath + '" class="hlRing" stroke-width="' + Math.max(2, Math.round(line / 2)) +
+                   '" stroke-dasharray="' + (2 * line) + ' ' + line + '"/>');
+      }
+      parts.push('<rect x="' + x0 + '" y="' + y0 + '" width="' + w + '" height="' + w + '" class="hlZone" stroke-width="' +
+                 line + '" rx="' + Math.round(tw / 5) + '"/>');
+      if (focused)
+        parts.push(label(x0, y0 - (s.ring ? tw + line : line), s.label));
+    } else if (s.kind === 'circle') {
+      var cx = px(s.x) + tw / 2, cy = py(s.y) + tw / 2, rr = s.r * tw;
+      parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + rr + '" class="hlCircle" stroke-width="' + line +
+                 '" stroke-dasharray="' + (3 * line) + ' ' + (2 * line) + '"/>');
+      parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + (line * 1.5) + '" class="hlDot"/>');
+      if (focused)
+        parts.push(label(cx - rr * 0.7, cy - rr - line, s.label));
+    }
+    var g = '<g class="' + (focused ? 'hlFocus' : 'hlOther') + '">' + parts.join('') + '</g>';
+    if (focused)
+      focusParts.push(g);
+    else
+      out.push(g);
+  });
+  // the spot being looked at is drawn last, on top
+  svg.innerHTML = out.join('') + focusParts.join('');
 };
 
 

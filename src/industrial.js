@@ -118,6 +118,9 @@ var industrialFound = function(map, x, y, simData) {
     if (trafficOK === Traffic.NO_ROUTE_FOUND) {
       simData.census.tripFailInd += 1;
       simData.census.tripFailPos = {x: x, y: y};
+      var fl = simData.census.tripFailList = simData.census.tripFailList || [];
+      if (fl.length < 40)
+        fl.push({x: x, y: y, type: 'ind'});
     }
 
     // Trigger outward migration if not connected to road network (unless the zone is already empty)

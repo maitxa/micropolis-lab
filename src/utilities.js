@@ -74,6 +74,7 @@ var depotFound = function(map, x, y, simData) {
 
   if (!connected) {
     simData.census.depotUnconnected += 1;
+    (simData.census.depotUnconnectedList = simData.census.depotUnconnectedList || []).push({x: x, y: y});
     return;
   }
 
@@ -87,6 +88,7 @@ var waterPlantFound = function(map, x, y, simData) {
 
   if (!map.getTile(x, y).isPowered()) {
     simData.census.waterPlantUnpowered += 1;
+    (simData.census.waterPlantUnpoweredList = simData.census.waterPlantUnpoweredList || []).push({x: x, y: y});
     return;
   }
 

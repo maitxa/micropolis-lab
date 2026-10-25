@@ -102,6 +102,9 @@ var commercialFound = function(map, x, y, simData) {
     if (trafficOK === Traffic.NO_ROUTE_FOUND) {
       simData.census.tripFailCom += 1;
       simData.census.tripFailPos = {x: x, y: y};
+      var fl = simData.census.tripFailList = simData.census.tripFailList || [];
+      if (fl.length < 40)
+        fl.push({x: x, y: y, type: 'com'});
     }
 
     // Trigger outward migration if not connected to road network

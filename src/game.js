@@ -45,6 +45,7 @@ import * as TileValues from './tileValues.ts';
 import { CityDataWindow } from './cityDataWindow.js';
 import { I18n } from './i18n.js';
 import { Advisor } from './advisor.js';
+import { Panels } from './panels.js';
 
 var disasterTimeout = 20 * 1000;
 
@@ -282,6 +283,16 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     $('#advisorToggle').attr('aria-expanded', open ? 'true' : 'false');
   });
   this.simulation.addEventListener(Messages.DATE_UPDATED, (function() { this.runAdvisor(true); }).bind(this));
+  // Hints on the map
+  this._hint = null;
+  $('#hintPrev').on('click', (function(e) { e.preventDefault(); this.stepHint(-1); }).bind(this));
+  $('#hintNext').on('click', (function(e) { e.preventDefault(); this.stepHint(1); }).bind(this));
+  $('#hintHide').on('click', (function(e) { e.preventDefault(); this.hideHint(); }).bind(this));
+  $(document).on('keydown', (function(e) {
+    if (e.keyCode === 27 && this._hint && !this.dialogOpen)
+      this.hideHint();
+  }).bind(this));
+  this._notificationBar.onAdviceClick = this.showHint.bind(this);
   I18n.onChange((function() { this.runAdvisor(false); this.layoutAdvisor(); }).bind(this));
   this.runAdvisor(false);
 
@@ -344,9 +355,13 @@ Game.prototype.revealControls = function() {
    $(this).removeClass('initialHidden');
  });
 
- // POLICY LAB: place the advisor's card under the tool panel, now and whenever the window changes size
+ // POLICY LAB: place the advisor's card under the tool panel, now and whenever the window changes size; then let
+ // the player move and resize the panels
  this.layoutAdvisor();
  $(window).on('resize', this.layoutAdvisor.bind(this));
+ Panels.init();
+ Panels.onChange(this.layoutAdvisor.bind(this));
+ this.layoutAdvisor();
 
  this._notificationBar.news({subject: Messages.WELCOME});
  this.rci.update({residential: 750, commercial: 750, industrial: 750});
@@ -505,10 +520,10 @@ Game.prototype.runAdvisor = function(newMonth) {
 
   // The list
   var list = $('#advisorList').empty();
-  var canvas = this.gameCanvas;
+  var self = this;
   var opened = this._adviceOpen = this._adviceOpen || {};  // items the player has opened stay open after a refresh
   result.items.slice(0, ADVICE_SHOWN).forEach(function(item) {
-    var li = $('<li class="advice"></li>').addClass('tone-' + item.tone);
+    var li = $('<li class="advice"></li>').addClass('tone-' + item.tone).data('adviceId', item.id);
     var head = $('<button type="button" class="adviceText" aria-expanded="false"></button>').text(item.text);
     var details = $('<div class="adviceDetails"></div>').toggle(!!opened[item.id]);
     head.attr('aria-expanded', opened[item.id] ? 'true' : 'false');
@@ -526,17 +541,22 @@ Game.prototype.runAdvisor = function(newMonth) {
       opened[item.id] = open;
     });
     li.append(head);
-    if (item.pos) {
-      var show = $('<button type="button" class="adviceShow"></button>').text(I18n.t('Show on map'));
+    if (item.targets && item.targets.length) {
+      var show = $('<button type="button" class="adviceShow"></button>').text(I18n.t('Show me on the map'));
       show.on('click', function(e) {
         e.preventDefault();
-        canvas.centreOn(item.pos.x, item.pos.y);
+        self.showHint(item);
       });
       li.append(show);
     }
+    if (self._hint && self._hint.item.id === item.id)
+      li.addClass('showing');
     li.append(details);
     list.append(li);
   });
+
+  // Keep a highlighted hint up to date (its spots may have changed), or say it's done
+  this.refreshHint(result.items);
 
   if (!newMonth) {
     // After a language change, redo the advice in the message bar (if it is showing some)
@@ -560,15 +580,94 @@ Game.prototype.runAdvisor = function(newMonth) {
 };
 
 
+// POLICY LAB: highlight a hint's spots on the map, with a bar to step through them
+Game.prototype.showHint = function(item) {
+  if (!item.targets || !item.targets.length)
+    return;
+  window.clearTimeout(this._hintDoneTimer);
+  this._hint = {item: item, index: 0};
+  this.renderHint(true);
+  $('#advisorList > li').removeClass('showing');
+  $('#advisorList > li').each(function() {
+    if ($(this).data('adviceId') === item.id)
+      $(this).addClass('showing');
+  });
+};
+
+Game.prototype.renderHint = function(centre) {
+  var h = this._hint;
+  if (!h)
+    return;
+  var n = h.item.targets.length;
+  h.index = Math.min(h.index, n - 1);
+  var spot = h.item.targets[h.index];
+  this.gameCanvas.setHighlights(h.item.targets, h.index);
+  if (centre)
+    this.gameCanvas.centreOn(spot.x, spot.y);
+  $('#hintText').text(h.item.text);
+  $('#hintCount').text(n > 1 ? I18n.t('{0} of {1}', h.index + 1, n) : '');
+  $('#hintPrev, #hintNext').toggle(n > 1);
+  $('#hintBar').removeClass('done').show();
+};
+
+Game.prototype.stepHint = function(delta) {
+  var h = this._hint;
+  if (!h)
+    return;
+  var n = h.item.targets.length;
+  h.index = (h.index + delta + n) % n;
+  this.renderHint(true);
+};
+
+Game.prototype.hideHint = function() {
+  this._hint = null;
+  window.clearTimeout(this._hintDoneTimer);
+  this.gameCanvas.setHighlights(null);
+  $('#hintBar').hide();
+  $('#advisorList > li').removeClass('showing');
+};
+
+// Called whenever the advisor runs: follow the hint's spots as the city changes; if the problem is gone, say so
+Game.prototype.refreshHint = function(items) {
+  var h = this._hint;
+  if (!h)
+    return;
+  var fresh = items.filter(function(i) { return i.id === h.item.id; })[0];
+  if (fresh && fresh.targets.length) {
+    h.item = fresh;
+    this.renderHint(false);
+    return;
+  }
+  // Fixed!
+  var text = h.item.text;
+  this._hint = null;
+  this.gameCanvas.setHighlights(null);
+  $('#hintText').text(I18n.t('Done: {0}', text));
+  $('#hintCount').text('');
+  $('#hintPrev, #hintNext').hide();
+  $('#hintBar').addClass('done').show();
+  this._hintDoneTimer = window.setTimeout(function() { $('#hintBar').hide(); }, 5000);
+};
+
+
 // POLICY LAB: put the "To do" card just under the tool panel, and keep it clear of the zoom buttons
 Game.prototype.layoutAdvisor = function() {
   var controls = $('#controls');
   if (!controls.length || !controls.is(':visible'))
     return;
-  var top = controls.position().top + controls.outerHeight() + 10;
-  var room = $('#canvasContainer').height() - top - 110;
-  $('#advisor').css({top: top + 'px'});
-  $('#advisorList').css({maxHeight: Math.max(60, room - 30) + 'px'});
+  var advisor = $('#advisor');
+  // If the player has moved or resized the card, leave it where they put it
+  if (!Panels.isPlaced('advisor')) {
+    var scale = parseFloat(controls.attr('data-scale')) || 1;
+    var top = controls.position().top + controls.outerHeight() * scale + 10;
+    advisor.css({top: top + 'px'});
+  }
+  if (Panels.isSized('advisor')) {
+    $('#advisorList').css({maxHeight: ''});
+  } else {
+    var room = $('#canvasContainer').height() - advisor.position().top - 110;
+    $('#advisorList').css({maxHeight: Math.max(60, room - 30) + 'px'});
+  }
 };
 
 

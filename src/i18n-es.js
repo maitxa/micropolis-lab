@@ -364,6 +364,20 @@ var ES = {
   'To do': 'Por hacer',
   'To do: {0}': 'Por hacer: {0}',
   'Show on map': 'Ver en el mapa',
+  'Show me on the map': 'Muéstrame en el mapa',
+  'Previous': 'Anterior',
+  'Next': 'Siguiente',
+  'Hide': 'Ocultar',
+  '{0} of {1}': '{0} de {1}',
+  'Done: {0}': 'Hecho: {0}',
+  'Drag to move': 'Arrastra para mover',
+  'Drag to resize': 'Arrastra para cambiar el tamaño',
+  'Smaller text': 'Texto más pequeño',
+  'Larger text': 'Texto más grande',
+  'Reset layout': 'Restablecer la disposición',
+  'Panels:': 'Paneles:',
+  'drag the dotted strip at the top of a panel to move it; drag its bottom-right corner to resize it.':
+    'arrastra la franja punteada de arriba de un panel para moverlo; arrastra su esquina inferior derecha para cambiar su tamaño.',
 
   // ---- City classes (top bar) ----
   'VILLAGE': 'ALDEA',

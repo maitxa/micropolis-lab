@@ -38,8 +38,10 @@ var EMPTY = {res: TileValues.FREEZ, com: TileValues.COMCLR, ind: TileValues.INDC
 
 // Look at every residential, commercial and industrial zone on the map
 var scanZones = function(map) {
-  var out = {res: {n: 0, empty: 0}, com: {n: 0, empty: 0}, ind: {n: 0, empty: 0},
-             noRoad: 0, noRoadPos: null, noPower: 0, noPowerPos: null, emptyPos: {}};
+  var out = {res: {n: 0, empty: 0, list: [], emptyList: []}, com: {n: 0, empty: 0, list: [], emptyList: []},
+             ind: {n: 0, empty: 0, list: [], emptyList: []},
+             noRoad: 0, noRoadPos: null, noRoadList: [], noPower: 0, noPowerPos: null, noPowerList: [], emptyPos: {}};
+  var MAX = 60;  // at most this many spots of each kind are highlighted
   for (var x = 0; x < map.width; x++) {
     for (var y = 0; y < map.height; y++) {
       var tile = map.getTile(x, y);
@@ -51,20 +53,27 @@ var scanZones = function(map) {
       if (type === null)
         continue;
       out[type].n += 1;
+      out[type].list.push({x: x, y: y});
       if (v === EMPTY[type]) {
         out[type].empty += 1;
         if (!out.emptyPos[type])
           out.emptyPos[type] = {x: x, y: y};
+        if (out[type].emptyList.length < MAX)
+          out[type].emptyList.push({x: x, y: y});
       }
       if (!hasRoad(map, x, y)) {
         out.noRoad += 1;
         if (!out.noRoadPos)
           out.noRoadPos = {x: x, y: y};
+        if (out.noRoadList.length < MAX)
+          out.noRoadList.push({x: x, y: y});
       }
       if (!tile.isPowered()) {
         out.noPower += 1;
         if (!out.noPowerPos)
           out.noPowerPos = {x: x, y: y};
+        if (out.noPowerList.length < MAX)
+          out.noPowerList.push({x: x, y: y});
       }
     }
   }
@@ -295,6 +304,39 @@ var advise = function(sim) {
             'Las zonas tienen electricidad y están conectadas. Mira las barras R/C/I para ver qué quiere la ciudad.'),
           [], null, 'good');
   }
+
+  // ---- What to highlight on the map for each piece of advice ----
+  var frames = function(list, label, ring) {
+    return (list || []).map(function(q) { return {kind: 'zone', x: q.x, y: q.y, label: label, ring: !!ring}; });
+  };
+  var circleAround = function(list, r, label) {
+    if (!list || !list.length)
+      return [];
+    var sx = 0, sy = 0;
+    list.forEach(function(q) { sx += q.x; sy += q.y; });
+    return [{kind: 'circle', x: Math.round(sx / list.length), y: Math.round(sy / list.length), r: r, label: label}];
+  };
+  var targets = {
+    noPower: frames(z.noPowerList, P('No power', 'Sin electricidad')),
+    noRoad: frames(z.noRoadList, P('Needs a road along one side', 'Necesita una calle en un lado'), true),
+    trips: frames(c.tripFailList, P('Its trip found no destination', 'Su viaje no encontró destino')),
+    needHomes: circleAround(z.com.list.concat(z.ind.list), 20, P('Zone homes inside this circle', 'Zonifica viviendas dentro de este círculo')),
+    needJobs: circleAround(z.res.list, 20, P('Zone shops and factories inside this circle', 'Zonifica tiendas y fábricas dentro de este círculo')),
+    stadium: circleAround(z.res.list, 10, P('Build the stadium near here', 'Construye el estadio cerca de aquí')),
+    depot: frames(c.depotUnconnectedList, P('Needs rail right next to it', 'Necesita una vía justo al lado')),
+    water: frames(c.waterPlantUnpoweredList, P('No power', 'Sin electricidad')),
+    pollution: [{kind: 'circle', x: map.pollutionMaxX, y: map.pollutionMaxY, r: 8,
+                 label: P('Most polluted area', 'Zona más contaminada')}]
+  };
+  ['res', 'com', 'ind'].forEach(function(t) {
+    targets['more_' + t] = circleAround(z[t].list, 12, P('Zone more near here', 'Zonifica más cerca de aquí'));
+    targets['wait_' + t] = frames(z[t].emptyList, P('Still empty', 'Sigue vacía'));
+  });
+  items.forEach(function(item) {
+    item.targets = targets[item.id] || [];
+    if (item.targets.length)
+      item.pos = {x: item.targets[0].x, y: item.targets[0].y};
+  });
 
   items.sort(function(a, b2) { return b2.priority - a.priority; });
   return {items: items, estimate: est};

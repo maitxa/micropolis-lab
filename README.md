@@ -62,6 +62,16 @@ or at once when something urgent and new comes up, the top item also appears in 
 ... zones needed" messages (which only compare zone counts) are skipped when the advisor says zones of that kind are
 still empty. See `src/advisor.js`.
 
+Hints on the map: "Show me on the map" (or clicking advice in the message bar) outlines every spot the advice is
+about: zones without power, zones without a road (with a dashed ring showing exactly where a road would count), zones
+whose trips failed, empty zones, or a circle where to build (e.g. "Zone homes inside this circle"). A bar at the top
+steps through the spots (Previous / Next) and Hide (or Esc) clears them; when the problem is solved the bar says
+"Done". Drawn on a layer above the map (`GameCanvas._paintHighlights`).
+
+Panels: the city box, buttons, R/C/I bars, tool legend and To do card can be moved (drag the dotted strip at the top)
+and resized (drag the bottom-right corner; the To do card also has A− / A+ for text size). The layout is remembered in
+this browser; "Reset layout" is in the keyboard help (`src/panels.js`).
+
 Funds are shown large in the city box, with the estimated yearly balance (taxes minus running costs) in green or red.
 
 Trips: as in the 1989 original (`s_traf.c`), a trip from a home may end at any shop, factory or other large building;

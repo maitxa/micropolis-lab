@@ -198,11 +198,23 @@
           </div>
         </div>
         <div id="RCIContainer" class="controlShadow leftedge width140 padding10 mintcream z1 initialHidden"></div>
+        <!-- POLICY LAB: bar shown while a hint is highlighted on the map -->
+        <div id="hintBar" role="status" aria-live="polite" style="display:none">
+          <span id="hintText"></span>
+          <span id="hintCount"></span>
+          <button type="button" id="hintPrev">Previous</button>
+          <button type="button" id="hintNext">Next</button>
+          <button type="button" id="hintHide">Hide</button>
+        </div>
         <!-- POLICY LAB: the city advisor's to-do list -->
         <section id="advisor" class="controlShadow rightedge z1 initialHidden" aria-labelledby="advisorTitle">
-          <button type="button" id="advisorToggle" aria-expanded="true" aria-controls="advisorList">
-            <span id="advisorTitle">To do</span><span class="advisorChevron" aria-hidden="true"></span>
-          </button>
+          <div class="advisorHead">
+            <button type="button" id="advisorToggle" aria-expanded="true" aria-controls="advisorList">
+              <span class="advisorChevron" aria-hidden="true"></span><span id="advisorTitle">To do</span>
+            </button>
+            <button type="button" id="advisorSmaller" class="advisorSize" title="Smaller text" aria-label="Smaller text">A&minus;</button>
+            <button type="button" id="advisorLarger" class="advisorSize" title="Larger text" aria-label="Larger text">A+</button>
+          </div>
           <ol id="advisorList"></ol>
         </section>
         <div id="controls" class="controlShadow mintcream z1 initialHidden rightedge open">
@@ -311,6 +323,8 @@
           <p><b>Undo:</b> Ctrl+Z (Windows) or Cmd+Z (Mac), or the Undo button. Undoes one click or drag at a time and
             refunds the money, as long as the city hasn't already changed those tiles.</p>
           <p><b>Scroll the map:</b> arrow keys or W A S D.</p>
+          <p><b>Panels:</b> drag the dotted strip at the top of a panel to move it; drag its bottom-right corner to resize it.
+            <button type="button" id="resetLayout" class="miscButton">Reset layout</button></p>
           <button id="keysHelpClose" class="miscButton">Close</button>
         </div>
         <!-- POLICY LAB: help shown when hovering over a message -->
