@@ -310,7 +310,7 @@ nav li {
   margin-bottom: 0.5em;
 }
 
-#budgetForm > div:nth-child(9) {
+#budgetForm > #budgetButtons, #budgetForm > #budgetLockNote {
   align: center;
   width: 100%;
 }
@@ -917,4 +917,81 @@ nav li {
   position: absolute;
   left: 5px;
   bottom: 5px;
+}
+
+
+/* ---- POLICY LAB additions ---- */
+#start {
+  width: 600px;
+  max-width: 94vw;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+#policySetup {
+  text-align: left;
+  font-size: 15px;
+  margin: 10px 0;
+}
+
+#policySetup .policyIntro {
+  margin: 6px 0 10px 0;
+}
+
+#policySetup fieldset {
+  margin: 0 0 10px 0;
+  border: 1px solid #999;
+}
+
+#policySetup legend {
+  font-weight: bold;
+  padding: 0 4px;
+}
+
+.policyRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+}
+
+.policyRow select {
+  font-size: 14px;
+  max-width: 260px;
+}
+
+#pl_reset {
+  background-color: darkslategray;
+  color: white;
+  padding: 4px 10px;
+}
+
+#budgetLockNote {
+  display: none;
+  font-weight: bold;
+  color: darkred;
+  margin: 6px 0;
+}
+
+.electionInfo {
+  display: none;
+  font-size: 13px;
+  margin-top: 4px;
+  color: darkslategray;
+}
+
+.bannedTool {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+#policySetup #pl_reset {
+  height: auto;
+  width: auto;
+}
+
+#budgetForm button:disabled, #budgetForm input[type="submit"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

@@ -24,8 +24,9 @@ var BudgetWindow = ModalWindow(function() {
 });
 
 
-var dataKeys = ['roadMaintenanceBudget', 'fireMaintenanceBudget', 'policeMaintenanceBudget'];
-var spendKeys = ['roadRate', 'fireRate', 'policeRate'];
+// POLICY LAB: social services added as a fourth budget line
+var dataKeys = ['roadMaintenanceBudget', 'fireMaintenanceBudget', 'policeMaintenanceBudget', 'socialMaintenanceBudget'];
+var spendKeys = ['roadRate', 'fireRate', 'policeRate', 'socialRate'];
 
 var budgetResetID = '#budgetReset';
 var budgetCancelID = '#budgetCancel';
@@ -89,10 +90,12 @@ var submit = function(e) {
   var roadPercent = $('#roadRate')[0].value;
   var firePercent = $('#fireRate')[0].value;
   var policePercent = $('#policeRate')[0].value;
+  var socialPercent = $('#socialRate')[0].value;
   var taxPercent = $('#taxRate')[0].value;
 
   var data = {cancelled: false, roadPercent: roadPercent, firePercent: firePercent,
-                        policePercent: policePercent, taxPercent: taxPercent, e: e, original: e.type};
+                        policePercent: policePercent, socialPercent: socialPercent,
+                        taxPercent: taxPercent, e: e, original: e.type};
   this.close(data);
 };
 
@@ -140,12 +143,27 @@ BudgetWindow.prototype.open = function(budgetData) {
   if (taxesCollected === undefined)
     throw new Error('Missing budget data (taxesCollected)');
 
-  var cashFlow = taxesCollected - this.roadMaintenanceBudget - this.fireMaintenanceBudget - this.policeMaintenanceBudget;
+  var cashFlow = taxesCollected - this.roadMaintenanceBudget - this.fireMaintenanceBudget - this.policeMaintenanceBudget -
+                 Math.round(this.socialMaintenanceBudget * budgetData.socialRate / 100);
   var currentFunds = previousFunds + cashFlow;
   $('#taxesCollected').text('$' + taxesCollected);
   $('#cashFlow').text((cashFlow < 0 ? '-$' : '$') + cashFlow);
   $('#previousFunds').text((previousFunds < 0 ? '-$' : '$') + previousFunds);
   $('#currentFunds').text('$' + currentFunds);
+
+  // POLICY LAB: outside election years the budget can be viewed but not changed (except in a cash emergency)
+  var locked = !!budgetData.locked;
+  $('#budgetForm input[type="range"]').prop('disabled', locked);
+  $('#budgetOK').prop('disabled', locked);
+  $('#budgetReset').prop('disabled', locked);
+  if (locked) {
+    $('#budgetLockNote').text('Not an election year: you can look, but the budget can only change in ' +
+                              budgetData.nextBudgetYear + '.').show();
+  } else if (budgetData.emergency) {
+    $('#budgetLockNote').text('Emergency session: the city has run out of money, so the budget must be revised now.').show();
+  } else {
+    $('#budgetLockNote').text('').hide();
+  }
 
   this._toggleDisplay();
 };

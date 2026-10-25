@@ -1,0 +1,95 @@
+/* Policy Lab additions to micropolisJS (2026).
+ *
+ * This code is released under the GNU GPL v3, with some additional terms, like the rest of micropolisJS.
+ * Modified version: NOT the original micropolisJS / Micropolis.
+ *
+ * One place that holds the choices made on the setup screen:
+ *   - WORLD MODEL: assumptions about cause and effect (how the world works). Fixed for the whole game.
+ *   - LAWS: structural policies chosen at the start. Fixed for the whole game.
+ *   - BUDGET TIMING: whether the budget can be changed any time, or only in election years.
+ *
+ * The defaults reproduce the original 1989 SimCity rules exactly ("SimCity 1989" world, standard laws).
+ */
+
+var DEFAULTS = {
+  // ---- World model ----
+  // How strongly low land value ("poverty") pushes crime up. 1 = original, 0.5 = weakly, 0 = not at all.
+  povertyCrime: 1,
+  // Whether crowded neighbourhoods attract crime. 1 = yes (original), 0 = no.
+  densityCrime: 1,
+  // Multiplier on how much nearby police stations suppress crime. 1 = original.
+  policeStrength: 1,
+  // Maximum crime points removed by fully funded social services in the poorest areas.
+  // 0 = social services do nothing (original game has none), 30 = somewhat, 60 = strongly.
+  socialCrime: 0,
+  // How strongly taxes above/below the default 7% slow/speed growth. 1 = original, 0.5 = weakly, 0 = not at all.
+  taxGrowth: 1,
+  // Whether environmental regulation changes industrial growth. 1 = yes, 0 = no.
+  regulationGrowth: 1,
+
+  // ---- Laws ----
+  nuclearAllowed: true,
+  // 'none' | 'standard' (original) | 'strict'
+  regulation: 'standard',
+
+  // ---- Budget timing ----
+  // 0 = change the budget any time (original). 4 = only in election years (every 4 years).
+  electionCycle: 0
+};
+
+// How much industrial pollution is multiplied by under each regulation level
+var REGULATION_POLLUTION = {none: 1.5, standard: 1, strict: 0.5};
+// How much industrial growth is nudged under each regulation level (only if the world model says regulation matters).
+// For scale: the original tax table moves growth by about 10-50 points per 1% of tax.
+var REGULATION_GROWTH = {none: 40, standard: 0, strict: -80};
+
+var Policy = Object.assign({}, DEFAULTS);
+
+Policy.DEFAULTS = DEFAULTS;
+
+Policy.set = function(values) {
+  Object.keys(DEFAULTS).forEach(function(key) {
+    if (values && values[key] !== undefined)
+      Policy[key] = values[key];
+    else
+      Policy[key] = DEFAULTS[key];
+  });
+};
+
+Policy.save = function(saveData) {
+  var copy = {};
+  Object.keys(DEFAULTS).forEach(function(key) { copy[key] = Policy[key]; });
+  saveData.policyLab = copy;
+};
+
+Policy.load = function(saveData) {
+  // Games saved before the Policy Lab existed simply get the original rules
+  Policy.set(saveData.policyLab);
+};
+
+Policy.industrialPollutionFactor = function() {
+  return REGULATION_POLLUTION[Policy.regulation] || 1;
+};
+
+Policy.industrialGrowthNudge = function() {
+  return (REGULATION_GROWTH[Policy.regulation] || 0) * Policy.regulationGrowth;
+};
+
+// Is this an election year (i.e. may the player change the budget)?
+Policy.isBudgetYear = function(year) {
+  if (!Policy.electionCycle)
+    return true;
+  return (year - 1900) % Policy.electionCycle === 0;
+};
+
+Policy.nextBudgetYear = function(year) {
+  if (!Policy.electionCycle)
+    return year;
+  var y = year;
+  while (!Policy.isBudgetYear(y))
+    y++;
+  return y;
+};
+
+
+export { Policy };

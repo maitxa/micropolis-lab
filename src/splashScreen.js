@@ -16,6 +16,7 @@ import $ from "jquery";
 import { Config } from './config.js';
 import { Game } from './game.js';
 import { MapGenerator } from './mapGenerator.js';
+import { Policy } from './policy.js';
 import { Simulation } from './simulation.js';
 import { SplashCanvas } from './splashCanvas.js';
 import { Storage } from './storage.js';
@@ -125,6 +126,9 @@ var acquireNameAndDifficulty = function(e) {
   // When the form is submitted, we'll be ready to launch the game
   $('#playForm').submit(play.bind(this));
 
+  // POLICY LAB: "Reset to original rules" button
+  $('#pl_reset').click(resetPolicyForm);
+
   // Display the name and difficulty form
   $('#start').toggle();
   $('#nameForm').focus();
@@ -144,8 +148,43 @@ var play = function(e) {
   var difficulty = $('.difficulty:checked').val() - 0;
   var name = $('#nameForm').val();
 
+  // POLICY LAB: read the setup screen before the simulation starts
+  var choices = readPolicyForm();
+  Policy.set(choices.policy);
+
   // Launch a new game
   var g = new Game(this.map, this.tileSet, this.snowTileSet, this.spriteSheet, difficulty, name);
+
+  // POLICY LAB: starting social services funding
+  g.simulation.budget.socialPercent = choices.socialStart / 100;
+  g.simulation.budget.updateFundEffects();
+};
+
+
+// POLICY LAB: helpers for the setup screen
+var numberFields = ['povertyCrime', 'densityCrime', 'policeStrength', 'socialCrime', 'taxGrowth',
+                    'regulationGrowth', 'electionCycle'];
+
+var readPolicyForm = function() {
+  var policy = {};
+  numberFields.forEach(function(key) {
+    policy[key] = parseFloat($('#pl_' + key).val());
+  });
+  policy.nuclearAllowed = $('#pl_nuclearAllowed').val() === 'true';
+  policy.regulation = $('#pl_regulation').val();
+  return {policy: policy, socialStart: parseFloat($('#pl_socialStart').val()) || 0};
+};
+
+
+var resetPolicyForm = function(e) {
+  if (e)
+    e.preventDefault();
+  numberFields.forEach(function(key) {
+    $('#pl_' + key).val(String(Policy.DEFAULTS[key]));
+  });
+  $('#pl_nuclearAllowed').val('true');
+  $('#pl_regulation').val('standard');
+  $('#pl_socialStart').val('0');
 };
 
 

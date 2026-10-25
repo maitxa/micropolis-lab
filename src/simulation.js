@@ -25,6 +25,7 @@ import { MapScanner } from './mapScanner.js';
 import * as Messages from './messages.ts';
 import { MiscTiles } from './miscTiles.js';
 import { MiscUtils } from './miscUtils.js';
+import { Policy } from './policy.js';
 import { PowerManager } from './powerManager.js';
 import { RepairManager } from './repairManager.js';
 import { Residential } from './residential.js';
@@ -159,10 +160,15 @@ Simulation.prototype.save = function(saveData) {
   this._valves.save(saveData);
   this.budget.save(saveData);
   this._census.save(saveData);
+  // POLICY LAB: remember the world model, laws and budget timing with the saved city
+  Policy.save(saveData);
 };
 
 
 Simulation.prototype.load = function(saveData) {
+  // POLICY LAB: restore the world model, laws and budget timing (older saves get the original rules)
+  Policy.load(saveData);
+
   for (var i = 0, l = saveProps.length; i < l; i++)
     this[saveProps[i]] = saveData[saveProps[i]];
 
@@ -293,7 +299,7 @@ Simulation.prototype.init = function() {
   this._mapScanner.mapScan(0, this._map.width, simData);
   this._powerManager.doPowerScan(this._census);
   BlockMapUtils.pollutionTerrainLandValueScan(this._map, this._census, this.blockMaps);
-  BlockMapUtils.crimeScan(this._census, this.blockMaps);
+  BlockMapUtils.crimeScan(this._census, this.blockMaps, this.budget);
   BlockMapUtils.populationDensityScan(this._map, this.blockMaps);
   BlockMapUtils.fireAnalysis(this.blockMaps);
 };
@@ -346,6 +352,8 @@ var simulate = function(simData) {
         this._census.take120Census(budget);
 
       if (this._cityTime % TAX_FREQUENCY === 0)  {
+        // POLICY LAB: the budget needs to know the year, to decide whether this is an election year
+        this.budget.currentYear = Math.floor(this._cityTime / 48) + this._startingYear;
         this.budget.collectTax(this._gameLevel, this._census);
         this.evaluation.cityEvaluation(simData);
       }
@@ -372,7 +380,7 @@ var simulate = function(simData) {
 
     case 13:
       if ((this._simCycle % speedCrimeScan[speedIndex]) === 0)
-        BlockMapUtils.crimeScan(this._census, this.blockMaps);
+        BlockMapUtils.crimeScan(this._census, this.blockMaps, this.budget);
       break;
 
     case 14:

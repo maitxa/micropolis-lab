@@ -15,6 +15,7 @@ import { BlockMap } from './blockMap.ts';
 import { Commercial } from './commercial.js';
 import { Industrial } from './industrial.js';
 import { MiscUtils } from './miscUtils.js';
+import { Policy } from './policy.js';
 import { Random } from './random.ts';
 import { Residential } from './residential.js';
 import * as TileValues from "./tileValues.ts";
@@ -145,8 +146,9 @@ var getPollutionValue = function(tileValue) {
     return 0;
 
   // Industrial zones, however...
+  // POLICY LAB: environmental regulation scales industrial pollution (original: always 50)
   if (tileValue < TileValues.PORTBASE)
-    return 50;
+    return Math.round(50 * Policy.industrialPollutionFactor());
 
   // Coal power plants are bad
   if (tileValue <= TileValues.LASTPOWERPLANT)
@@ -318,7 +320,13 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
 //    * The zone has a low value
 //    * The zone is a slum
 //    * The zone is far away from those pesky police
-var crimeScan = function(census, blockMaps) {
+//
+// POLICY LAB: each factor below is scaled by the World Model chosen on the setup screen, and a new factor
+// (social services) can reduce crime. With the default world model the result is identical to the original.
+var crimeScan = function(census, blockMaps, budget) {
+  // Fraction (0-1) of full social services funding; 0 if there's no budget information
+  var socialFunding = budget ? budget.socialEffect : 0;
+
   var policeStationMap = blockMaps.policeStationMap;
   var policeStationEffectMap = blockMaps.policeStationEffectMap;
   var crimeRateMap = blockMaps.crimeRateMap;
@@ -333,26 +341,41 @@ var crimeScan = function(census, blockMaps) {
   var crimeZoneCount = 0;
 
   // Scan the map, looking for developed land, as it can attract crime.
-  for (var x = 0, width = crimeRateMap.mapWidth, blockSize = crimeRateMap.blockSize; x < width; x += blockSize) {
-    for (var y = 0, height = crimeRateMap.mapHeight, b; y < height; y += blockSize) {
+  // POLICY LAB BUG FIX: the original micropolisJS used crimeRateMap.mapWidth / mapHeight here, which don't exist
+  // (BlockMap calls them gameMapWidth / gameMapHeight). The loop therefore never ran and crime was always zero.
+  for (var x = 0, width = crimeRateMap.gameMapWidth, blockSize = crimeRateMap.blockSize; x < width; x += blockSize) {
+    for (var y = 0, height = crimeRateMap.gameMapHeight, b; y < height; y += blockSize) {
       // Remember: landValueMap values are in the range 0-250
       var value = landValueMap.worldGet(x, y);
 
       if (value > 0) {
         crimeZoneCount += 1;
 
+        var landValue = value;
+
         // Force value in the range -122 to 128. Lower valued pieces of land attract more crime.
-        value = 128 - value;
+        // POLICY LAB: scaled by "Does poverty drive crime?" (original: x1)
+        value = (128 - value) * Policy.povertyCrime;
 
         // Add population density (a value between 0 and 510). value now lies in range -260 - 382.
         // Denser areas attract more crime.
-        value += populationDensityMap.worldGet(x, y);
+        // POLICY LAB: scaled by "Does density drive crime?" (original: x1)
+        value += populationDensityMap.worldGet(x, y) * Policy.densityCrime;
 
         // Clamp in range -260 to 300
         value = Math.min(value, 300);
 
         // If the police are nearby, there's no point committing the crime of the century
-        value -= policeStationMap.worldGet(x, y);
+        // POLICY LAB: scaled by "How effective are police?" (original: x1)
+        value -= policeStationMap.worldGet(x, y) * Policy.policeStrength;
+
+        // POLICY LAB (new factor): social services reduce crime, most in the poorest neighbourhoods
+        // (up to 2x the base effect on the cheapest land, almost nothing on the most valuable land).
+        // Only active if the world model says social services work, and scaled by how well they're funded.
+        if (Policy.socialCrime > 0 && socialFunding > 0)
+          value -= Policy.socialCrime * socialFunding * 2 * (250 - landValue) / 250;
+
+        value = Math.round(value);
 
         // Force in to range 0-250
         value = MiscUtils.clamp(value, 0, 250);

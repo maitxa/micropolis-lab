@@ -27,6 +27,7 @@ import { InputStatus } from './inputStatus.js';
 import * as Messages from './messages.ts';
 import { MonsterTV } from './monsterTV.js';
 import { NagWindow } from './nagWindow.js';
+import { Policy } from './policy.js';
 import { Notification } from './notification.js';
 import { QueryWindow } from './queryWindow.js';
 import { Random } from './random.ts';
@@ -127,6 +128,12 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
       fireRate: Math.floor(this.simulation.budget.firePercent * 100),
       policeMaintenanceBudget: this.simulation.budget.policeMaintenanceBudget,
       policeRate: Math.floor(this.simulation.budget.policePercent * 100),
+      // POLICY LAB: social services, and whether this is an election year
+      socialMaintenanceBudget: this.simulation.budget.socialMaintenanceBudget,
+      socialRate: Math.round(this.simulation.budget.socialPercent * 100),
+      locked: !this.simNeededBudget && !Policy.isBudgetYear(this.simulation.getDate().year),
+      nextBudgetYear: Policy.nextBudgetYear(this.simulation.getDate().year),
+      emergency: this.simNeededBudget && !Policy.isBudgetYear(this.simulation.getDate().year),
       taxRate: this.simulation.budget.cityTax,
       totalFunds: this.simulation.budget.totalFunds,
       taxesCollected: this.simulation.budget.taxFund
@@ -213,6 +220,11 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     name: this.name
   };
   this.infoBar(this.simulation, initialValues);
+
+  // POLICY LAB: apply the laws to the interface, and show election information
+  this.applyPolicyToInterface();
+  this.updateElectionInfo(this.simulation.getDate());
+  this.simulation.addEventListener(Messages.DATE_UPDATED, this.updateElectionInfo.bind(this));
 
   this._notificationBar = new Notification('#notifications', this.gameCanvas, Text.messageText[Messages.WELCOME]);
 
@@ -394,6 +406,30 @@ Game.prototype.handleScreenshotWindowClosure = function(action) {
 };
 
 
+// POLICY LAB: laws that change what the player can build
+Game.prototype.applyPolicyToInterface = function() {
+  if (!Policy.nuclearAllowed) {
+    $('#nuclearButton').prop('disabled', true).addClass('bannedTool').text('Nuclear: banned');
+  }
+};
+
+
+// POLICY LAB: in election-cycle mode, tell the player when the budget can next be changed
+Game.prototype.updateElectionInfo = function(date) {
+  var elem = $('#electionInfo');
+  if (!Policy.electionCycle) {
+    elem.hide();
+    return;
+  }
+
+  elem.show();
+  if (Policy.isBudgetYear(date.year))
+    elem.text('Election year: budget open');
+  else
+    elem.text('Next budget vote: ' + Policy.nextBudgetYear(date.year));
+};
+
+
 Game.prototype.handleBudgetWindowClosure = function(data) {
   this.dialogOpen = false;
 
@@ -401,6 +437,8 @@ Game.prototype.handleBudgetWindowClosure = function(data) {
     this.simulation.budget.roadPercent = data.roadPercent / 100;
     this.simulation.budget.firePercent = data.firePercent / 100;
     this.simulation.budget.policePercent = data.policePercent / 100;
+    // POLICY LAB
+    this.simulation.budget.socialPercent = data.socialPercent / 100;
     this.simulation.budget.setTax(data.taxPercent - 0);
     if (this.simNeededBudget) {
       this.simulation.budget.doBudgetWindow();

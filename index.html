@@ -20,7 +20,7 @@
     <meta name="viewport" content="width=device-width, height=device-height, user-scalable=no">
     <meta name="description" content="Play micropolisJS and build a virtual city in your browser! micropolisJS is a handwritten HTML5/Javascript port of Micropolis, the open-source release of SimCity (the 1989 version).">
     <link rel="stylesheet" media="screen" type="text/css" href="css/style.css">
-    <title>micropolisJS</title>
+    <title>Micropolis Policy Lab</title>
   </head>
   <body>
     <img id="tiles" class="imageData" src="images/tiles.png" alt="These are the game's principal tiles">
@@ -28,7 +28,7 @@
     <img id="sprites" class="imageData" src="images/sprites.png" alt="These are the game's sprites">
     <header id="header" class="chunk border-bottom padding10">
       <div class="left inlineblock">
-        <h1 id="title" class="white fontlarge">micropolisJS</h1>
+        <h1 id="title" class="white fontlarge">micropolisJS <span style="font-size:60%">Policy Lab (modified version)</span></h1>
       </div>
       <nav class="white right padding10 inlineblock">
         <ul>
@@ -62,6 +62,41 @@
             <input type="radio" class="difficulty" name="difficulty" id="difficultyEasy" value="0" checked="checked"><label for="difficultyEasy">Easy</label>
             <input type="radio" class="difficulty" name="difficulty" id="difficultyMed" value="1"><label for="difficultyMed">Medium</label>
             <input type="radio" class="difficulty" name="difficulty" id="difficultyHard" value="2"><label for="difficultyHard">Hard</label>
+            <!-- POLICY LAB: setup screen -->
+            <div id="policySetup">
+              <p class="policyIntro"><strong>Policy Lab.</strong> Choose how this world works and which laws your city starts with.
+                Leave everything as it is to play the original 1989 rules.</p>
+              <fieldset>
+                <legend>World model: how the world works (fixed all game)</legend>
+                <label class="policyRow"><span>Does poverty (cheap land) drive crime?</span>
+                  <select id="pl_povertyCrime"><option value="1" selected>Strongly (original)</option><option value="0.5">Weakly</option><option value="0">Not at all</option></select></label>
+                <label class="policyRow"><span>Does density drive crime?</span>
+                  <select id="pl_densityCrime"><option value="1" selected>Yes (original)</option><option value="0">No</option></select></label>
+                <label class="policyRow"><span>How effective are police?</span>
+                  <select id="pl_policeStrength"><option value="0.5">Weak</option><option value="1" selected>Normal (original)</option><option value="1.5">Strong</option></select></label>
+                <label class="policyRow"><span>Do social services reduce crime?</span>
+                  <select id="pl_socialCrime"><option value="0" selected>No (original)</option><option value="30">Somewhat</option><option value="60">Strongly</option></select></label>
+                <label class="policyRow"><span>Do high taxes slow growth?</span>
+                  <select id="pl_taxGrowth"><option value="1" selected>Strongly (original)</option><option value="0.5">Weakly</option><option value="0">Not at all</option></select></label>
+                <label class="policyRow"><span>Does regulation slow industry?</span>
+                  <select id="pl_regulationGrowth"><option value="1" selected>Yes</option><option value="0">No</option></select></label>
+              </fieldset>
+              <fieldset>
+                <legend>Laws (fixed all game)</legend>
+                <label class="policyRow"><span>Nuclear power</span>
+                  <select id="pl_nuclearAllowed"><option value="true" selected>Allowed (original)</option><option value="false">Banned</option></select></label>
+                <label class="policyRow"><span>Environmental rules on industry</span>
+                  <select id="pl_regulation"><option value="none">None (more pollution)</option><option value="standard" selected>Standard (original)</option><option value="strict">Strict (half the pollution)</option></select></label>
+              </fieldset>
+              <fieldset>
+                <legend>Budget (taxes and funding can change during play)</legend>
+                <label class="policyRow"><span>When can the budget change?</span>
+                  <select id="pl_electionCycle"><option value="0" selected>Any time (original)</option><option value="4">Election years only (every 4 years)</option></select></label>
+                <label class="policyRow"><span>Starting social services funding</span>
+                  <select id="pl_socialStart"><option value="0" selected>0% (original)</option><option value="25">25%</option><option value="50">50%</option><option value="100">100%</option></select></label>
+              </fieldset>
+              <button type="button" id="pl_reset" class="miscButton">Reset to original rules</button>
+            </div>
             <div id="playSubmitDiv">
               <input id="playit" type="submit" value="Play!">
             </div>
@@ -87,6 +122,8 @@
             <div class="elided">
               Population:<br /> <span id="population">0</span>
             </div>
+            <!-- POLICY LAB: election cycle information -->
+            <div id="electionInfo" class="electionInfo"></div>
           </div>
         </div>
         <div id="miscButtons" class="alignCenter leftedge open controlShadow width140 padding10 mintcream z1 initialHidden">
@@ -206,13 +243,22 @@
                 <label for="policeRate" class="elided budgetData" id="policeRateLabel">100% of $100 = $100</label>
               </div>
             </fieldset>
+            <!-- POLICY LAB: social services -->
             <fieldset class="budgetRight">
+              <legend>Social services</legend>
+              <input type="range" id="socialRate" min="0" max="100" step="1" data-source="socialMaintenanceBudget">
+              <div>
+                <label for="socialRate" class="elided budgetData" id="socialRateLabel">0% of $0 = $0</label>
+              </div>
+            </fieldset>
+            <fieldset>
               <legend>Tax</legend>
               <input type="range" id="taxRate" min="0" max="20" step="1">
               <div>
                 <label for="taxRate" class="elided budgetData" id="taxRateLabel">100% of $100 = $100</label>
               </div>
             </fieldset>
+            <div id="budgetLockNote" class="alignCenter"></div>
             <div id="budgetButtons" class="alignCenter">
               <button id="budgetReset">Reset</button>
               <button id="budgetCancel" class="width140 cancel">Cancel</button>

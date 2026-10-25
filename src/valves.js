@@ -14,6 +14,7 @@
 import { EventEmitter } from './eventEmitter.js';
 import { VALVES_UPDATED } from './messages.ts';
 import { MiscUtils } from './miscUtils.js';
+import { Policy } from './policy.js';
 
 var Valves = EventEmitter(function () {
   this.resValve = 0;
@@ -122,9 +123,17 @@ Valves.prototype.setValves = function(gameLevel, census, budget) {
 
   // Constrain growth according to the tax level.
   var z = Math.min((budget.cityTax + gameLevel), taxMax);
-  resRatio = (resRatio - 1) * taxTableScale + taxTable[z];
-  comRatio = (comRatio - 1) * taxTableScale + taxTable[z];
-  indRatio = (indRatio - 1) * taxTableScale + taxTable[z];
+  // POLICY LAB: "Do taxes slow growth?" Compare the actual tax rate's effect with the effect of the default 7% rate,
+  // and keep only part of the difference (original: all of it, i.e. taxGrowth = 1 gives exactly taxTable[z]).
+  var zDefault = Math.min((7 + gameLevel), taxMax);
+  var taxEffect = taxTable[zDefault] + (taxTable[z] - taxTable[zDefault]) * Policy.taxGrowth;
+  resRatio = (resRatio - 1) * taxTableScale + taxEffect;
+  comRatio = (comRatio - 1) * taxTableScale + taxEffect;
+  indRatio = (indRatio - 1) * taxTableScale + taxEffect;
+
+  // POLICY LAB: environmental regulation can speed up (no regulation) or slow down (strict) industrial growth,
+  // if the world model says regulation matters. Standard regulation = original game = no change.
+  indRatio += Policy.industrialGrowthNudge();
 
   this.resValve = MiscUtils.clamp(this.resValve + Math.round(resRatio), -RES_VALVE_RANGE, RES_VALVE_RANGE);
   this.comValve = MiscUtils.clamp(this.comValve + Math.round(comRatio), -COM_VALVE_RANGE, COM_VALVE_RANGE);
