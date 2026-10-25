@@ -78,11 +78,11 @@ random about a third of the time with no ship near, cutting the road while open)
 ships pass underneath). Drawbridges are labelled in the reach view. Note that when roads are underfunded, bridges can
 also collapse into water (original rule).
 
-Hints on the map: "Show me on the map" (or clicking advice in the message bar) outlines every spot the advice is
-about: zones without power, zones without a road (with a dashed ring showing exactly where a road would count), zones
-whose trips failed, empty zones, or a circle where to build (e.g. "Zone homes inside this circle"). A bar at the top
-steps through the spots (Previous / Next) and Hide (or Esc) clears them; when the problem is solved the bar says
-"Done". Drawn on a layer above the map (`GameCanvas._paintHighlights`).
+Hints on the map: "Show me on the map" in the To do card outlines every spot the advice is about: zones without
+power, zones without a road (with a dashed ring showing exactly where a road would count), zones whose trips failed
+(with their reach), empty zones, or a circle where to build. The spots are frozen when you open the hint, so nothing
+moves until you choose; Previous / Next step through them, and "Hide from map" (the same button, or Esc) clears them.
+All of this is shown inside the To do card; the message bar keeps only the game's original alerts.
 
 Panels: the city box, buttons, R/C/I bars, tool legend and To do card can be moved (drag the dotted strip at the top)
 and resized (drag the bottom-right corner; the To do card also has A− / A+ for text size). The layout is remembered in

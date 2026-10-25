@@ -200,15 +200,6 @@
           </div>
         </div>
         <div id="RCIContainer" class="controlShadow leftedge width140 padding10 mintcream z1 initialHidden"></div>
-        <!-- POLICY LAB: bar shown while a hint is highlighted on the map -->
-        <div id="hintBar" role="status" aria-live="polite" style="display:none">
-          <span id="hintText"></span>
-          <span id="hintCount"></span>
-          <span id="hintVerdict" style="display:none"></span>
-          <button type="button" id="hintPrev">Previous</button>
-          <button type="button" id="hintNext">Next</button>
-          <button type="button" id="hintHide">Hide</button>
-        </div>
         <!-- POLICY LAB: the city advisor's to-do list -->
         <section id="advisor" class="controlShadow rightedge z1 initialHidden" aria-labelledby="advisorTitle">
           <div class="advisorHead">
@@ -217,6 +208,17 @@
             </button>
             <button type="button" id="advisorSmaller" class="advisorSize" title="Smaller text" aria-label="Smaller text">A&minus;</button>
             <button type="button" id="advisorLarger" class="advisorSize" title="Larger text" aria-label="Larger text">A+</button>
+          </div>
+          <!-- POLICY LAB: what is highlighted on the map right now, with controls -->
+          <div id="hintBar" role="status" aria-live="polite" style="display:none">
+            <div id="hintText"></div>
+            <div id="hintVerdict" style="display:none"></div>
+            <div class="hintControls">
+              <button type="button" id="hintPrev">Previous</button>
+              <span id="hintCount"></span>
+              <button type="button" id="hintNext">Next</button>
+              <button type="button" id="hintHide">Hide from map</button>
+            </div>
           </div>
           <ol id="advisorList"></ol>
         </section>

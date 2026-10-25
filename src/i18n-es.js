@@ -376,6 +376,7 @@ var ES = {
   'Previous': 'Anterior',
   'Next': 'Siguiente',
   'Hide': 'Ocultar',
+  'Hide from map': 'Quitar del mapa',
   '{0} of {1}': '{0} de {1}',
   'Done: {0}': 'Hecho: {0}',
   'Drag to move': 'Arrastra para mover',

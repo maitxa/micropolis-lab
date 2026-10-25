@@ -546,12 +546,17 @@ Game.prototype.runAdvisor = function(newMonth) {
       var show = $('<button type="button" class="adviceShow"></button>').text(I18n.t('Show me on the map'));
       show.on('click', function(e) {
         e.preventDefault();
-        self.showHint(item);
+        if (self._hint && self._hint.item.id === item.id)
+          self.hideHint();
+        else
+          self.showHint(item);
       });
       li.append(show);
     }
-    if (self._hint && self._hint.item.id === item.id)
+    if (self._hint && self._hint.item.id === item.id) {
       li.addClass('showing');
+      li.find('.adviceShow').text(I18n.t('Hide from map'));
+    }
     li.append(details);
     list.append(li);
   });
@@ -573,13 +578,21 @@ Game.prototype.runAdvisor = function(newMonth) {
 Game.prototype.showHint = function(item) {
   if (!item.targets || !item.targets.length)
     return;
-  window.clearTimeout(this._hintDoneTimer);
-  this._hint = {item: item, index: 0};
+  // Take a copy of the spots: they stay exactly as they are until the player hides them (no jumping around when the
+  // advisor runs again next month)
+  var frozen = {id: item.id, text: item.text, targets: item.targets.map(function(t) { return Object.assign({}, t); })};
+  this._hint = {item: frozen, index: 0};
   this.renderHint(true);
-  $('#advisorList > li').removeClass('showing');
+  this.markShowing();
+};
+
+// The "Show me on the map" buttons say "Hide from map" for the piece of advice being shown
+Game.prototype.markShowing = function() {
+  var id = this._hint ? this._hint.item.id : null;
   $('#advisorList > li').each(function() {
-    if ($(this).data('adviceId') === item.id)
-      $(this).addClass('showing');
+    var mine = $(this).data('adviceId') === id;
+    $(this).toggleClass('showing', mine);
+    $(this).find('.adviceShow').text(mine ? I18n.t('Hide from map') : I18n.t('Show me on the map'));
   });
 };
 
@@ -592,7 +605,8 @@ Game.prototype.renderHint = function(centre) {
   var spot = h.item.targets[h.index];
   var shapes = h.item.targets;
   var verdict = '';
-  // A zone whose trips matter: also show how far its car can get along the roads, and what it could reach
+  // A zone whose trips matter: also show how far its car can get along the roads, and what it could reach. (Recomputed
+  // for the same spot, so new roads show up, but the spot itself never changes by itself.)
   if (spot.type) {
     var r = Reach.compute(this.simulation._map, spot.x, spot.y, spot.type, this.depotCovers(spot.x, spot.y));
     shapes = shapes.concat(Reach.shapes(r));
@@ -610,11 +624,16 @@ Game.prototype.renderHint = function(centre) {
     h.item.text = spot.road ? I18n.t('Where this road leads (30 tiles)') : I18n.t('How far this {0}\'s trips can go', Reach.noun(spot.type));
     spot.label = spot.road ? I18n.t('You are here') : I18n.t('Trips start here');
   }
+  // Everything about it is shown in the To do card (the card opens if it was folded)
   $('#hintText').text(h.item.text);
   $('#hintVerdict').text(verdict).toggle(verdict !== '');
   $('#hintCount').text(n > 1 ? I18n.t('{0} of {1}', h.index + 1, n) : '');
   $('#hintPrev, #hintNext').toggle(n > 1);
-  $('#hintBar').removeClass('done').show();
+  $('#hintBar').show();
+  if ($('#advisor').hasClass('collapsed')) {
+    $('#advisor').removeClass('collapsed');
+    $('#advisorToggle').attr('aria-expanded', 'true');
+  }
 };
 
 Game.prototype.stepHint = function(delta) {
@@ -628,37 +647,27 @@ Game.prototype.stepHint = function(delta) {
 
 Game.prototype.hideHint = function() {
   this._hint = null;
-  window.clearTimeout(this._hintDoneTimer);
   this.gameCanvas.setHighlights(null);
   $('#hintBar').hide();
-  $('#advisorList > li').removeClass('showing');
+  this.markShowing();
 };
 
-// Called whenever the advisor runs: follow the hint's spots as the city changes; if the problem is gone, say so
+// Called whenever the advisor runs. The highlighted spots never change by themselves; only the reach shading is redrawn
+// (roads may have changed) and, after a language change, the wording.
 Game.prototype.refreshHint = function(items) {
   var h = this._hint;
   if (!h)
     return;
-  // A reach view opened with the Query tool: just redraw it (the roads may have changed)
-  if (h.item.id === 'reach') {
-    this.renderHint(false);
-    return;
+  if (h.item.id !== 'reach') {
+    var fresh = items.filter(function(i) { return i.id === h.item.id; })[0];
+    if (fresh) {
+      h.item.text = fresh.text;
+      if (fresh.targets.length)
+        h.item.targets.forEach(function(t) { t.label = fresh.targets[0].label; });
+    }
   }
-  var fresh = items.filter(function(i) { return i.id === h.item.id; })[0];
-  if (fresh && fresh.targets.length) {
-    h.item = fresh;
-    this.renderHint(false);
-    return;
-  }
-  // Fixed!
-  var text = h.item.text;
-  this._hint = null;
-  this.gameCanvas.setHighlights(null);
-  $('#hintText').text(I18n.t('Done: {0}', text));
-  $('#hintCount').text('');
-  $('#hintPrev, #hintNext').hide();
-  $('#hintBar').addClass('done').show();
-  this._hintDoneTimer = window.setTimeout(function() { $('#hintBar').hide(); }, 5000);
+  this.renderHint(false);
+  this.markShowing();
 };
 
 
@@ -674,11 +683,13 @@ Game.prototype.layoutAdvisor = function() {
     var top = controls.position().top + controls.outerHeight() * scale + 10;
     advisor.css({top: top + 'px'});
   }
+  // Keep the whole card clear of the zoom buttons; its list scrolls if needed
+  $('#advisorList').css({maxHeight: ''});
   if (Panels.isSized('advisor')) {
-    $('#advisorList').css({maxHeight: ''});
+    advisor.css({maxHeight: ''});
   } else {
     var room = $('#canvasContainer').height() - advisor.position().top - 110;
-    $('#advisorList').css({maxHeight: Math.max(60, room - 30) + 'px'});
+    advisor.css({maxHeight: Math.max(140, room) + 'px'});
   }
 };
 
