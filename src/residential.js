@@ -248,7 +248,13 @@ var residentialFound = function(map, x, y, simData) {
   // will never be be bigger than any of the values Random will generate
   if (population > Random.getRandom(35) && !(mixedHere && Random.getChance(1))) {
     // Is there a route from this zone to a commercial zone?
-    trafficOK = simData.trafficManager.makeTraffic(x, y, simData.blockMaps, TileUtils.isCommercial);
+    // POLICY LAB: as in 1989, a trip from home may end at any shop, factory or other big building
+    trafficOK = simData.trafficManager.makeTraffic(x, y, simData.blockMaps, TileUtils.isResidentialTripEnd);
+    // POLICY LAB: remember failed trips for the city advisor
+    if (trafficOK === Traffic.NO_ROUTE_FOUND) {
+      simData.census.tripFailRes += 1;
+      simData.census.tripFailPos = {x: x, y: y};
+    }
 
     // If we're not connected to the road network, then going shopping will be a pain. Move out.
     if (trafficOK === Traffic.NO_ROAD_FOUND) {

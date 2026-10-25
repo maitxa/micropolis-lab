@@ -44,6 +44,7 @@ import { MiscUtils } from './miscUtils.js';
 import * as TileValues from './tileValues.ts';
 import { CityDataWindow } from './cityDataWindow.js';
 import { I18n } from './i18n.js';
+import { Advisor } from './advisor.js';
 
 var disasterTimeout = 20 * 1000;
 
@@ -271,6 +272,19 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
 
   this._notificationBar = new Notification('#notifications', this.gameCanvas, Text.messageText[Messages.WELCOME]);
 
+  // POLICY LAB: the city advisor runs once a game month
+  this._advice = [];
+  this._advisorMonths = 0;
+  this._lastAdviceShown = null;
+  $('#advisorToggle').on('click', function(e) {
+    e.preventDefault();
+    var open = $('#advisor').toggleClass('collapsed').hasClass('collapsed') === false;
+    $('#advisorToggle').attr('aria-expanded', open ? 'true' : 'false');
+  });
+  this.simulation.addEventListener(Messages.DATE_UPDATED, (function() { this.runAdvisor(true); }).bind(this));
+  I18n.onChange((function() { this.runAdvisor(false); this.layoutAdvisor(); }).bind(this));
+  this.runAdvisor(false);
+
   // Track when various milestones are first reached
   this._reachedTown = this._reachedCity = this._reachedCapital = this._reachedMetropolis = this._reacedMegalopolis = false;
   this.congratsWindow = new CongratsWindow(opacityLayerID, 'congratsWindow');
@@ -329,6 +343,10 @@ Game.prototype.revealControls = function() {
  $('.initialHidden').each(function(e) {
    $(this).removeClass('initialHidden');
  });
+
+ // POLICY LAB: place the advisor's card under the tool panel, now and whenever the window changes size
+ this.layoutAdvisor();
+ $(window).on('resize', this.layoutAdvisor.bind(this));
 
  this._notificationBar.news({subject: Messages.WELCOME});
  this.rci.update({residential: 750, commercial: 750, industrial: 750});
@@ -463,6 +481,101 @@ Game.prototype.applyPolicyToInterface = function() {
   $('#commercialButton .price').text(MiscUtils.formatMoney(Policy.businessZoneCost()));
   $('#industrialButton .price').text(MiscUtils.formatMoney(Policy.businessZoneCost()));
   $('#parkButton .price').text(MiscUtils.formatMoney(Policy.parkCost()));
+};
+
+
+// POLICY LAB: the city advisor. Fills the "To do" list, updates the yearly balance under Funds, and every three game
+// months (or straight away when something urgent and new comes up) shows the top item in the message bar.
+var ADVICE_SHOWN = 3;
+
+Game.prototype.runAdvisor = function(newMonth) {
+  var result;
+  try {
+    result = Advisor.advise(this.simulation);
+  } catch (e) {
+    console.warn('Advisor failed', e);
+    return;
+  }
+  this._advice = result.items;
+
+  // Yearly balance under Funds
+  var bal = result.estimate.balance;
+  $('#balance').text((bal > 0 ? '+' : bal < 0 ? '\u2212' : '') + MiscUtils.formatMoney(Math.abs(bal)))
+               .toggleClass('neg', bal < 0).toggleClass('pos', bal > 0);
+
+  // The list
+  var list = $('#advisorList').empty();
+  var canvas = this.gameCanvas;
+  var opened = this._adviceOpen = this._adviceOpen || {};  // items the player has opened stay open after a refresh
+  result.items.slice(0, ADVICE_SHOWN).forEach(function(item) {
+    var li = $('<li class="advice"></li>').addClass('tone-' + item.tone);
+    var head = $('<button type="button" class="adviceText" aria-expanded="false"></button>').text(item.text);
+    var details = $('<div class="adviceDetails"></div>').toggle(!!opened[item.id]);
+    head.attr('aria-expanded', opened[item.id] ? 'true' : 'false');
+    details.append($('<p class="adviceWhy"></p>').text(item.why));
+    if (item.fixes.length) {
+      var ul = $('<ul></ul>');
+      item.fixes.forEach(function(f) { ul.append($('<li></li>').text(f)); });
+      details.append(ul);
+    }
+    head.on('click', function(e) {
+      e.preventDefault();
+      var open = !details.is(':visible');
+      details.toggle(open);
+      head.attr('aria-expanded', open ? 'true' : 'false');
+      opened[item.id] = open;
+    });
+    li.append(head);
+    if (item.pos) {
+      var show = $('<button type="button" class="adviceShow"></button>').text(I18n.t('Show on map'));
+      show.on('click', function(e) {
+        e.preventDefault();
+        canvas.centreOn(item.pos.x, item.pos.y);
+      });
+      li.append(show);
+    }
+    li.append(details);
+    list.append(li);
+  });
+
+  if (!newMonth) {
+    // After a language change, redo the advice in the message bar (if it is showing some)
+    this._notificationBar.refreshAdvice(result.items);
+    return;
+  }
+
+  // The message bar: the top item every three months, or at once if it is urgent and new
+  this._advisorMonths += 1;
+  var top = result.items[0];
+  if (!top || top.priority < 40)
+    return;
+  var urgentAndNew = top.priority >= 80 && top.id !== this._lastAdviceShown;
+  if (urgentAndNew || this._advisorMonths % 3 === 0) {
+    var d = new Date();
+    if (this.lastBadMessageTime === null || d - this.lastBadMessageTime > disasterTimeout) {
+      this._notificationBar.advice(top);
+      this._lastAdviceShown = top.id;
+    }
+  }
+};
+
+
+// POLICY LAB: put the "To do" card just under the tool panel, and keep it clear of the zoom buttons
+Game.prototype.layoutAdvisor = function() {
+  var controls = $('#controls');
+  if (!controls.length || !controls.is(':visible'))
+    return;
+  var top = controls.position().top + controls.outerHeight() + 10;
+  var room = $('#canvasContainer').height() - top - 110;
+  $('#advisor').css({top: top + 'px'});
+  $('#advisorList').css({maxHeight: Math.max(60, room - 30) + 'px'});
+};
+
+
+// POLICY LAB: is the advisor currently saying not to zone more of this kind? (Then the original "more ... zones
+// needed" message, which only compares zone counts, would contradict it.)
+Game.prototype.adviceSays = function(id) {
+  return this._advice.some(function(item) { return item.id === id; });
 };
 
 
@@ -766,14 +879,22 @@ Game.prototype.processFrontEndMessage = function(message) {
   var subject = message.subject;
   var d = new Date();
 
+  // POLICY LAB: skip the original zone-count messages when the advisor says there are already empty zones of that kind
+  if ((subject === Messages.NEED_MORE_RESIDENTIAL && this.adviceSays('wait_res')) ||
+      (subject === Messages.NEED_MORE_COMMERCIAL && this.adviceSays('wait_com')) ||
+      (subject === Messages.NEED_MORE_INDUSTRIAL && this.adviceSays('wait_ind')))
+    return;
+
   if (Text.goodMessages[subject] !== undefined) {
     var cMessage = this.name + ' is now a ';
+    var cMessageES = null;  // POLICY LAB: Spanish version
 
     switch (subject) {
       case Messages.REACHED_CAPITAL:
         if (!this._reachedCapital) {
           this._reachedCapital = true;
           cMessage += 'capital!';
+          cMessageES = '¡{0} ahora es una capital!';
         }
         break;
 
@@ -781,6 +902,7 @@ Game.prototype.processFrontEndMessage = function(message) {
         if (!this._reachedCity) {
           this._reachedCity = true;
           cMessage += 'city!';
+          cMessageES = '¡{0} ahora es una ciudad!';
         }
         break;
 
@@ -788,6 +910,7 @@ Game.prototype.processFrontEndMessage = function(message) {
         if (!this._reachedMegalopolis) {
           this._reachedMegalopolis = true;
           cMessage += 'megalopolis!';
+          cMessageES = '¡{0} ahora es una megalópolis!';
         }
         break;
 
@@ -795,6 +918,7 @@ Game.prototype.processFrontEndMessage = function(message) {
         if (!this._reachedMetropolis) {
           this._reachedMetropolis = true;
           cMessage += 'metropolis!';
+          cMessageES = '¡{0} ahora es una metrópolis!';
         }
         break;
 
@@ -802,6 +926,7 @@ Game.prototype.processFrontEndMessage = function(message) {
         if (!this._reachedTown) {
           this._reachedTown = true;
           cMessage += 'town!';
+          cMessageES = '¡{0} ahora es un pueblo!';
         }
         break;
     }
@@ -814,7 +939,7 @@ Game.prototype.processFrontEndMessage = function(message) {
     if (cMessage !== (this.name + ' is now a ')) {
       this.dialogOpen = true;
       this._openWindow = 'congratsWindow';
-      this.congratsWindow.open(cMessage);
+      this.congratsWindow.open(cMessageES ? I18n.p(cMessage, cMessageES.replace('{0}', this.name)) : cMessage);
     }
 
     return;

@@ -96,7 +96,13 @@ var commercialFound = function(map, x, y, simData) {
   var trafficOK = Traffic.ROUTE_FOUND;
   if (population > Random.getRandom(5)) {
     // Try to find a route from here to an industrial zone
-    trafficOK = simData.trafficManager.makeTraffic(x, y, simData.blockMaps, TileUtils.isIndustrial);
+    // POLICY LAB: as in 1989, a trip from a shop may end at any home, shop or factory
+    trafficOK = simData.trafficManager.makeTraffic(x, y, simData.blockMaps, TileUtils.isCommercialTripEnd);
+    // POLICY LAB: remember failed trips for the city advisor
+    if (trafficOK === Traffic.NO_ROUTE_FOUND) {
+      simData.census.tripFailCom += 1;
+      simData.census.tripFailPos = {x: x, y: y};
+    }
 
     // Trigger outward migration if not connected to road network
     if (trafficOK === Traffic.NO_ROAD_FOUND) {

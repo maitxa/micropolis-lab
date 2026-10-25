@@ -154,17 +154,19 @@
             <div>
               <span id="date">Jan 1900</span>
             </div>
-            <div class="elided">
-              Funds $<span id="funds">20,000</span>
+            <!-- POLICY LAB: funds shown large, with the estimated balance for a year -->
+            <div id="fundsBlock" title="Funds">
+              <div id="fundsBig">$<span id="funds">20,000</span></div>
+              <div id="balanceLine" title="Estimated taxes minus running costs over a year"><span id="balance">$0</span> <span class="perYear">a year</span></div>
             </div>
-            <div class="elided">
+            <div class="elided infoSmall">
               Score: <span id="score">0</span>
             </div>
-            <div>
+            <div class="infoSmall">
               <span id="cclass">VILLAGE</span>
             </div>
-            <div class="elided">
-              Population:<br /> <span id="population">0</span>
+            <div class="elided infoSmall">
+              Population: <span id="population">0</span>
             </div>
             <!-- POLICY LAB: election cycle information -->
             <div id="electionInfo" class="electionInfo"></div>
@@ -196,6 +198,13 @@
           </div>
         </div>
         <div id="RCIContainer" class="controlShadow leftedge width140 padding10 mintcream z1 initialHidden"></div>
+        <!-- POLICY LAB: the city advisor's to-do list -->
+        <section id="advisor" class="controlShadow rightedge z1 initialHidden" aria-labelledby="advisorTitle">
+          <button type="button" id="advisorToggle" aria-expanded="true" aria-controls="advisorList">
+            <span id="advisorTitle">To do</span><span class="advisorChevron" aria-hidden="true"></span>
+          </button>
+          <ol id="advisorList"></ol>
+        </section>
         <div id="controls" class="controlShadow mintcream z1 initialHidden rightedge open">
           <div id="toolInfo" class="alignCenter"><span id="toolOutput">Tools</span></div>
           <div id="buttons">

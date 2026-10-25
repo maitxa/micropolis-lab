@@ -66,7 +66,8 @@ var snapshotProps = ['poweredZoneCount', 'unpoweredZoneCount', 'firePop', 'roadT
                      'indPop', 'resZonePop', 'comZonePop', 'indZonePop', 'hospitalPop', 'churchPop', 'policeStationPop',
                      'fireStationPop', 'stadiumPop', 'coalPowerPop', 'nuclearPowerPop', 'seaportPop', 'airportPop',
                      'depotPop', 'depotUnconnected', 'waterPlantPop', 'waterPlantUnpowered', 'mixedZones',
-                     'housingSaves', 'healthCoveredZones', 'builtHospitalPop'];
+                     'housingSaves', 'healthCoveredZones', 'builtHospitalPop', 'tripFailRes', 'tripFailCom',
+                     'tripFailInd', 'tripFailPos'];
 
 Census.prototype.snapshot = function() {
   var copy = {};
@@ -106,6 +107,10 @@ Census.prototype.clearCensus = function() {
   this.housingSaves = 0;
   this.healthCoveredZones = 0;
   this.builtHospitalPop = 0;
+  this.tripFailRes = 0;
+  this.tripFailCom = 0;
+  this.tripFailInd = 0;
+  this.tripFailPos = null;
 };
 
 

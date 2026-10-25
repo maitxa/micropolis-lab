@@ -113,6 +113,21 @@ var escapeHTML = function(s) {
 };
 
 var showHelp = function() {
+  // POLICY LAB: advice from the city advisor carries its own explanation
+  if (this._subject === ADVICE && this._advice) {
+    if (!this._element.is(':visible'))
+      return;
+    var a = this._advice;
+    var ahtml = '<div class="helpTitle">' + escapeHTML(a.text) + '</div>' +
+                '<div class="helpWhy">' + escapeHTML(a.why) + '</div>';
+    if (a.fixes.length)
+      ahtml += '<div class="helpFixLabel">' + I18n.t('What you can do:') + '</div><ul>' +
+               a.fixes.map(function(f) { return '<li>' + escapeHTML(f) + '</li>'; }).join('') + '</ul>';
+    if (this._x !== -1)
+      ahtml += '<div class="helpHint">' + I18n.t('Click the message to jump to the spot.') + '</div>';
+    this._help.html(ahtml).show();
+    return;
+  }
   var h = Help.forMessage(this._subject);
   if (h === null || !this._element.is(':visible'))
     return;
@@ -129,6 +144,38 @@ var showHelp = function() {
 
 var hideHelp = function() {
   this._help.hide();
+};
+
+
+// POLICY LAB: show a piece of advice from the city advisor
+var ADVICE = 'ADVICE';
+
+Notification.prototype.advice = function(item) {
+  this._element.removeClass('bad');
+  this._element.removeClass('good');
+  this._element.addClass('neutral');
+  this._subject = ADVICE;
+  this._advice = item;
+  this._element.addClass('hasHelp');
+  var text = I18n.t('To do: {0}', item.text);
+  if (item.pos)
+    this._displayLink(text, item.pos.x, item.pos.y);
+  else
+    this._displayText(text);
+};
+
+
+// POLICY LAB: if the bar is showing advice, show the same piece of advice again from a fresh list (e.g. after a
+// language change), without restarting its timer
+Notification.prototype.refreshAdvice = function(items) {
+  if (this._subject !== ADVICE || !this._advice || !this._element.is(':visible'))
+    return;
+  var id = this._advice.id;
+  var fresh = items.filter(function(i) { return i.id === id; })[0];
+  if (!fresh)
+    return;
+  this._advice = fresh;
+  this._element.text(I18n.t('To do: {0}', fresh.text));
 };
 
 

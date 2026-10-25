@@ -54,6 +54,21 @@ Graphics: the map can be zoomed from 100% to 300% (the − / + buttons, or the *
 ("Retina") screens it is drawn at full resolution. Sharper tile and sprite sheets (`images/hd/`, at 2×, 3×, 4× and 6×)
 were made from the original art with the xBRZ pixel-art scaler (`xbrz-js`, GPL) and load only when needed.
 
+City advisor: a **To do** card under the tool panel lists the three most useful things to build or fix, updated every
+game month (click an item for why and what to do; "Show on map" jumps to the spot). It checks the game's own rules:
+zones without power, zones with no road touching them, trips that can't reach a destination, missing workers or jobs,
+growth caps (stadium, seaport, airport), demand compared with empty zones, and money running out. Every three months,
+or at once when something urgent and new comes up, the top item also appears in the message bar. The original "More
+... zones needed" messages (which only compare zone counts) are skipped when the advisor says zones of that kind are
+still empty. See `src/advisor.js`.
+
+Funds are shown large in the city box, with the estimated yearly balance (taxes minus running costs) in green or red.
+
+Trips: as in the 1989 original (`s_traf.c`), a trip from a home may end at any shop, factory or other large building;
+from a shop, at any home, shop or factory; from a factory, at homes. micropolisJS had narrowed these to homes -> shops
+and shops -> factories, which (with the restored rule that shops only grow if their trip succeeds) left shops empty
+whenever factories were far away.
+
 Languages: the **EN | ES** switch in the header changes the whole interface between English and Spanish (U.S.) at any
 time, even mid-game, and remembers the choice (a browser set to Spanish starts in Spanish). Short interface texts are
 in `src/i18n-es.js`; the message help, presets and reports keep their Spanish next to the English in `src/help.js`,

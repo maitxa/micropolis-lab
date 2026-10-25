@@ -37,6 +37,25 @@ var isCommercial = unwrapTile(function(tile) {
 });
 
 
+// POLICY LAB: where each zone's trips may end, exactly as in the 1989 original (s_traf.c, DriveDone:
+// TARGL = {COMBASE, LHTHR, LHTHR}, TARGH = {NUCLEAR, PORT, COMBASE}). micropolisJS had narrowed these to
+// homes -> shops only, shops -> factories only.
+var isResidentialTripEnd = unwrapTile(function(tile) {
+  // homes: any shop, factory or other big building (seaport, airport, power plants, stations, stadium)
+  return tile >= TileValues.COMBASE && tile <= TileValues.NUCLEAR;
+});
+
+var isCommercialTripEnd = unwrapTile(function(tile) {
+  // shops: any home, hospital, church, shop, factory or the seaport
+  return tile >= TileValues.LHTHR && tile <= TileValues.PORT;
+});
+
+var isIndustrialTripEnd = unwrapTile(function(tile) {
+  // factories: any home (workers), hospital or church
+  return tile >= TileValues.LHTHR && tile <= TileValues.COMBASE;
+});
+
+
 var isCommercialZone = function(tile) {
   return tile.isZone() && isCommercial(tile);
 };
@@ -111,6 +130,9 @@ var randomRubble = function() {
 var TileUtils = {
   canBulldoze: canBulldoze,
   isCommercial: isCommercial,
+  isResidentialTripEnd: isResidentialTripEnd,
+  isCommercialTripEnd: isCommercialTripEnd,
+  isIndustrialTripEnd: isIndustrialTripEnd,
   isCommercialZone: isCommercialZone,
   isDriveable: isDriveable,
   isFire: isFire,

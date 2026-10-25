@@ -309,6 +309,28 @@ Budget.prototype.updateFundEffects = function() {
 };
 
 
+// POLICY LAB: estimate a full year's money at the current rates, without changing anything: taxes the city would
+// collect, minus the running costs it would pay at the current funding percentages (same formulas as collectTax).
+// Used for the "a year" balance under Funds and by the city advisor.
+Budget.prototype.estimateYear = function(gameLevel, census) {
+  var taxes = Math.floor(Math.floor(census.totalPop * census.landValueAverage / 120) * this.cityTax * FLevels[gameLevel]);
+  taxes = Math.floor(taxes * Policy.taxShare());
+  var road = Math.floor((census.roadTotal * Policy.transportCosts().roadMaintenance +
+                         census.railTotal * Policy.transportCosts().railMaintenance) * RLevels[gameLevel]);
+  var costs = {
+    road: Math.round(road * this.roadPercent),
+    police: Math.round(census.policeStationPop * policeMaintenanceCost * this.policePercent),
+    fire: Math.round(census.fireStationPop * fireMaintenanceCost * this.firePercent),
+    social: Math.round(Math.floor(census.totalPop * socialMaintenanceCostPerPop) * (this.socialPercent || 0)),
+    housing: Math.round(Math.floor(census.totalPop * housingMaintenanceCostPerPop) * (this.housingPercent || 0)),
+    utilities: census.depotPop * Utilities.DEPOT_MAINTENANCE + census.waterPlantPop * Utilities.WATER_PLANT_MAINTENANCE +
+               (census.builtHospitalPop || 0) * Utilities.HOSPITAL_MAINTENANCE
+  };
+  var total = costs.road + costs.police + costs.fire + costs.social + costs.housing + costs.utilities;
+  return {taxes: taxes, costs: costs, totalCosts: total, balance: taxes - total};
+};
+
+
 Budget.prototype.collectTax = function(gameLevel, census) {
   this.cashFlow = 0;
 

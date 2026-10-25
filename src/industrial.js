@@ -112,7 +112,13 @@ var industrialFound = function(map, x, y, simData) {
   var trafficOK = Traffic.ROUTE_FOUND;
   if (population > Random.getRandom(5)) {
     // Try to find a route from here to a residential zone
-    trafficOK = simData.trafficManager.makeTraffic(x, y, simData.blockMaps, TileUtils.isResidential);
+    // POLICY LAB: as in 1989 (factories need to reach homes, i.e. workers)
+    trafficOK = simData.trafficManager.makeTraffic(x, y, simData.blockMaps, TileUtils.isIndustrialTripEnd);
+    // POLICY LAB: remember failed trips for the city advisor
+    if (trafficOK === Traffic.NO_ROUTE_FOUND) {
+      simData.census.tripFailInd += 1;
+      simData.census.tripFailPos = {x: x, y: y};
+    }
 
     // Trigger outward migration if not connected to road network (unless the zone is already empty)
     if (trafficOK === Traffic.NO_ROAD_FOUND) {

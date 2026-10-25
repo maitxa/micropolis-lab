@@ -357,6 +357,14 @@ var ES = {
   'What you can do:': 'Qué puedes hacer:',
   'Click the message to jump to the spot.': 'Haz clic en el mensaje para ir al lugar.',
 
+  // ---- City box and advisor ----
+  'Funds': 'Fondos',
+  'a year': 'al año',
+  'Estimated taxes minus running costs over a year': 'Impuestos estimados menos gastos de mantenimiento en un año',
+  'To do': 'Por hacer',
+  'To do: {0}': 'Por hacer: {0}',
+  'Show on map': 'Ver en el mapa',
+
   // ---- City classes (top bar) ----
   'VILLAGE': 'ALDEA',
   'TOWN': 'PUEBLO',
