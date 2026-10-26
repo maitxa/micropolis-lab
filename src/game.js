@@ -31,7 +31,6 @@ import { Policy } from './policy.js';
 import { Notification } from './notification.js';
 import { QueryWindow } from './queryWindow.js';
 import { Random } from './random.ts';
-import { RCI } from './rci.js';
 import { SaveWindow } from './saveWindow.js';
 import { ScreenshotLinkWindow } from './screenshotLinkWindow.js';
 import { ScreenshotWindow } from './screenshotWindow.js';
@@ -50,6 +49,7 @@ import { Reach } from './reach.js';
 import { Layers } from './layers.js';
 import { HistoryCharts } from './historyCharts.js';
 import { Status } from './status.js';
+import { NeedChart } from './needChart.js';
 
 var disasterTimeout = 20 * 1000;
 
@@ -77,7 +77,8 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   if (savedGame)
     this.load(savedGame);
 
-  this.rci = new RCI('RCIContainer', this.simulation);
+  // POLICY LAB v22: the original R/C/I demand bars are replaced by the zoning-need bars (src/needChart.js),
+  // drawn by the advisor once a game month
 
   // Note: must init canvas before inputStatus
   this.gameCanvas = new GameCanvas('canvasContainer');
@@ -410,7 +411,7 @@ Game.prototype.revealControls = function() {
  this.layoutAdvisor();
 
  this._notificationBar.news({subject: Messages.WELCOME});
- this.rci.update({residential: 750, commercial: 750, industrial: 750});
+ // (POLICY LAB v22: the original R/C/I bars were drawn here; the zoning-need bars are drawn by the advisor)
 };
 
 
@@ -563,6 +564,9 @@ Game.prototype.runAdvisor = function(newMonth) {
   var bal = result.estimate.balance;
   $('#balance').text((bal > 0 ? '+' : bal < 0 ? '\u2212' : '') + MiscUtils.formatMoney(Math.abs(bal)))
                .toggleClass('neg', bal < 0).toggleClass('pos', bal > 0);
+
+  // POLICY LAB v22: zoning-need bars in the lower left (same rule as the To do card's "Zone more" / "Don't zone" items)
+  NeedChart.render(document.getElementById('needChart'), result.need);
 
   // POLICY LAB v21: status bubbles (pollution, crime, traffic, power, jobs, taxes)
   this.renderStatus(newMonth);
@@ -877,6 +881,7 @@ Game.prototype.layoutAdvisor = function() {
 // POLICY LAB: map layers
 Game.prototype.setLayer = function(name) {
   this._layerName = name;
+  this.updateChannel(false);
   $('#layerControls button[data-layer]').each(function() {
     $(this).attr('aria-pressed', $(this).attr('data-layer') === name ? 'true' : 'false');
   });
@@ -1117,6 +1122,15 @@ Game.prototype.applyToolAt = function(tileX, tileY) {
     this._lastToolTile = {x: tileX, y: tileY, tool: this.inputStatus.toolName};
   }
 
+  // POLICY LAB v22: a road bridge across the shipping channel will be a drawbridge: say so as it is built
+  var drawbridge = false;
+  if (built && this.inputStatus.toolName === 'road' && tool.lastUndo) {
+    var map = this.simulation._map;
+    drawbridge = tool.lastUndo.tiles.some(function(t) { return Reach.isDrawbridge(map, t.x, t.y); });
+    if (drawbridge)
+      this.updateChannel(false);
+  }
+
   // POLICY LAB: explain refusals caused by the laws
   if (tool.blockedBy === 'greenbelt') {
     $('#toolOutput').text('Protected green belt: no building here');
@@ -1133,8 +1147,40 @@ Game.prototype.applyToolAt = function(tileX, tileY) {
       break;
 
     default:
-      $('#toolOutput').html('Tools');
+      if (drawbridge) {
+        $('#toolOutput').removeClass('toolHint').text(I18n.p('Drawbridge: this bridge crosses the shipping channel and will open for ships, cutting the road',
+                                     'Puente levadizo: este puente cruza el canal de navegación y se abrirá para los barcos, cortando la calle'))
+                        .addClass('toolWarn');
+        this._toolWarnUntil = Date.now() + 8000;
+      } else if (!(this._toolWarnUntil > Date.now())) {
+        $('#toolOutput').removeClass('toolWarn');
+        if (this.inputStatus.toolName === 'road' && this._channelShown)
+          this.roadToolHint();
+        else
+          $('#toolOutput').removeClass('toolHint').html('Tools');
+      }
   }
+};
+
+
+// POLICY LAB v22: show the shipping channel while the road tool is selected or the Dead ends layer is on
+Game.prototype.updateChannel = function(toolChanged) {
+  var road = !!this.inputStatus.currentTool && this.inputStatus.toolName === 'road';
+  var show = Policy.bridges !== 'fixed' && (road || this._layerName === 'dead');
+  var cells = show ? Reach.channelTiles(this.simulation._map) : null;
+  this._channelShown = !!(cells && cells.length);
+  this.gameCanvas.setChannel(cells);
+  if (toolChanged) {
+    $('#toolOutput').removeClass('toolWarn toolHint');
+    this._toolWarnUntil = 0;
+    if (road && this._channelShown)
+      this.roadToolHint();
+  }
+};
+
+Game.prototype.roadToolHint = function() {
+  $('#toolOutput').addClass('toolHint').text(I18n.p('Dashed water = shipping channel: a road bridge across it opens for ships',
+                               'Agua con guiones = canal de navegación: un puente de calle que lo cruce se abre para los barcos'));
 };
 
 
@@ -1476,6 +1522,17 @@ var commonAnimate = function() {
 
   if (!this.isPaused)
     this.simulation.spriteManager.moveObjects(this.simulation._constructSimData());
+
+  // POLICY LAB v22: picking (or leaving) the road tool shows (or hides) the shipping channel
+  var toolKey = (this.inputStatus.currentTool ? this.inputStatus.toolName : 'none') + '|' + I18n.lang();
+  if (toolKey !== this._channelToolKey) {
+    this._channelToolKey = toolKey;
+    this.updateChannel(true);
+  }
+  else if (this._channelShown && toolKey.indexOf('road|') === 0 && this._toolOutputEl &&
+           this._toolOutputEl.textContent === 'Tools')
+    this.roadToolHint();   // the road tool was picked again (which resets the text)
+  this._toolOutputEl = this._toolOutputEl || document.getElementById('toolOutput');
 
   var sprites = this.calculateSpritesForPaint(this.gameCanvas);
   this.gameCanvas.paint(this.mouse, sprites, this.isPaused);

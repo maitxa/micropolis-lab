@@ -39,8 +39,8 @@ var EMPTY = {res: TileValues.FREEZ, com: TileValues.COMCLR, ind: TileValues.INDC
 
 // Look at every residential, commercial and industrial zone on the map
 var scanZones = function(map) {
-  var out = {res: {n: 0, empty: 0, list: [], emptyList: []}, com: {n: 0, empty: 0, list: [], emptyList: []},
-             ind: {n: 0, empty: 0, list: [], emptyList: []},
+  var kind = function() { return {n: 0, empty: 0, emptyNoPower: 0, emptyNoRoad: 0, list: [], emptyList: []}; };
+  var out = {res: kind(), com: kind(), ind: kind(),
              noRoad: 0, noRoadPos: null, noRoadList: [], noPower: 0, noPowerPos: null, noPowerList: [], emptyPos: {}};
   var MAX = 60;  // at most this many spots of each kind are highlighted
   for (var x = 0; x < map.width; x++) {
@@ -55,14 +55,17 @@ var scanZones = function(map) {
         continue;
       out[type].n += 1;
       out[type].list.push({x: x, y: y});
+      var road = hasRoad(map, x, y);
       if (v === EMPTY[type]) {
         out[type].empty += 1;
+        if (!tile.isPowered()) out[type].emptyNoPower += 1;
+        if (!road) out[type].emptyNoRoad += 1;
         if (!out.emptyPos[type])
           out.emptyPos[type] = {x: x, y: y};
         if (out[type].emptyList.length < MAX)
           out[type].emptyList.push({x: x, y: y});
       }
-      if (!hasRoad(map, x, y)) {
+      if (!road) {
         out.noRoad += 1;
         if (!out.noRoadPos)
           out.noRoadPos = {x: x, y: y};
@@ -93,6 +96,38 @@ var typeName = function(type, plural) {
     ind: plural ? P('industrial', 'industriales') : P('industrial', 'industrial')
   };
   return names[type];
+};
+
+
+// POLICY LAB v22: "zoning need" for each kind of zone, shown by the bars in the lower left and used by the To do card.
+// Above zero: zone more (the zones you have are full, or nearly, and the game's demand is positive).
+// Below zero: don't (several zones of that kind are empty, or the game's demand is negative).
+// It only describes the city: growth itself still follows the game's original demand.
+var zoningNeed = function(z, v) {
+  var demand = {res: v.resValve / 2000, com: v.comValve / 1500, ind: v.indValve / 1500};
+  var capped = {res: v.resCap, com: v.comCap, ind: v.indCap};
+  var out = {};
+  ['res', 'com', 'ind'].forEach(function(t) {
+    var zt = z[t], d = demand[t];
+    var allowance = Math.max(1, Math.floor(zt.n * 0.1));   // "several empty" = more than this
+    var r = {n: zt.n, empty: zt.empty, emptyNoPower: zt.emptyNoPower, emptyNoRoad: zt.emptyNoRoad, demand: d,
+             emptyPos: zt.emptyPos, allowance: allowance};
+    if (zt.empty > allowance) {
+      r.state = 'empty';
+      r.value = -Math.min(1, Math.max(0.2, zt.empty / zt.n));
+    } else if (capped[t]) {
+      r.state = 'capped';
+      r.value = 0;
+    } else if (d > 0.1) {
+      r.state = 'more';
+      r.value = Math.min(1, Math.max(0.15, d));
+    } else {
+      r.state = d < -0.1 ? 'noNeed' : 'enough';
+      r.value = Math.max(-1, Math.min(0, d));
+    }
+    out[t] = r;
+  });
+  return out;
 };
 
 
@@ -256,27 +291,37 @@ var advise = function(sim, newMonth) {
         P('Commerce this big needs an airport.', 'Un comercio de este tamaño necesita un aeropuerto.'),
         [P('It needs a large flat area, connected by road and power.', 'Necesita un área grande y plana, conectada por calle y con electricidad.')]);
 
-  // ---- Demand compared with empty zones ----
-  var valves = {res: v.resValve / 2000, com: v.comValve / 1500, ind: v.indValve / 1500};
+  // ---- Demand compared with empty zones (the same rule as the zoning-need bars) ----
+  var need = zoningNeed(z, v);
   var keys = {res: '1', com: '2', ind: '3'};
   ['res', 'com', 'ind'].forEach(function(t) {
-    var d = valves[t], zt = z[t];
-    if (d > 0.3 && zt.n > 0 && zt.empty === 0)
-      add('more_' + t, 70, P('Zone more {0} land: demand is high and your {1} zones are full', 'Zonifica más terreno {0}: la demanda es alta y tus zonas {1} están llenas',
+    var nd = need[t], zt = z[t];
+    if (nd.state === 'more' && zt.n > 0)   // (no zones at all yet: the "Zone residential / commercial" items above cover it)
+      add('more_' + t, 70, P('Zone more {0} land: demand is up and your {1} zones are full', 'Zonifica más terreno {0}: hay demanda y tus zonas {1} están llenas',
                              typeName(t), typeName(t, true)),
-          P('The {0} demand bar is high and every {1} zone already has buildings.', 'La barra de demanda {0} está alta y todas las zonas {1} ya tienen edificios.',
-            typeName(t), typeName(t, true)),
+          zt.n ? P('The {0} bar in the lower left is above the line: the city wants more, and the zones you have are full or nearly full.',
+                   'La barra {0} abajo a la izquierda está por encima de la línea: la ciudad quiere más, y las zonas que tienes están llenas o casi.',
+                   typeName(t))
+               : P('The city wants {0} zones and has none yet.', 'La ciudad quiere zonas {0} y todavía no tiene ninguna.', typeName(t, true)),
           [P('Zone new land next to a road, with power (key {0}).', 'Zonifica terreno nuevo junto a una calle, con electricidad (tecla {0}).', keys[t])], null, 'neutral');
-    else if (d < 0 && zt.empty >= 3) {
-      var why = t === 'res' ? P('Few people want to move in right now. Common reasons: not enough jobs, high taxes, pollution or crime.',
-                                'Ahora poca gente quiere mudarse. Razones comunes: falta de empleo, impuestos altos, contaminación o delincuencia.')
-                            : P('Businesses grow with workers and customers: with few residents, there is little demand.',
-                                'Las empresas crecen con trabajadores y clientes: con pocos residentes, hay poca demanda.');
+    else if (nd.state === 'empty') {
+      var blocked = [];
+      if (nd.emptyNoPower)
+        blocked.push(N(nd.emptyNoPower, '{0} has no power', '{0} have no power', '{0} no tiene electricidad', '{0} no tienen electricidad'));
+      if (nd.emptyNoRoad)
+        blocked.push(N(nd.emptyNoRoad, '{0} has no road touching it', '{0} have no road touching them', '{0} no tiene calle que la toque', '{0} no tienen calle que las toque'));
+      var why = blocked.length
+        ? P('Of the empty ones, {0}: they can\'t fill until that is fixed.', 'De las vacías, {0}: no pueden llenarse hasta que eso se arregle.', blocked.join(P(' and ', ' y ')))
+        : t === 'res' ? P('Few people want to move in right now. Common reasons: not enough jobs, high taxes, pollution or crime.',
+                          'Ahora poca gente quiere mudarse. Razones comunes: falta de empleo, impuestos altos, contaminación o delincuencia.')
+                      : P('Businesses grow with workers and customers: with few residents, there is little demand.',
+                          'Las empresas crecen con trabajadores y clientes: con pocos residentes, hay poca demanda.');
       add('wait_' + t, 62, P('Don\'t zone more {0} for now: {1} {2} zones are still empty', 'No zonifiques más terreno {0} por ahora: {1} zonas {2} siguen vacías',
                              typeName(t), fmt(zt.empty), typeName(t, true)),
-          why, [t === 'res' ? P('Add jobs (shops and factories) and keep homes away from pollution.',
-                                'Añade empleo (tiendas y fábricas) y mantén las viviendas lejos de la contaminación.')
-                            : P('Build homes nearby: they bring workers and customers.', 'Construye viviendas cerca: traen trabajadores y clientes.'),
+          why, [blocked.length ? P('Give the empty zones power and a road first.', 'Primero dale electricidad y calle a las zonas vacías.')
+                               : t === 'res' ? P('Add jobs (shops and factories) and keep homes away from pollution.',
+                                                 'Añade empleo (tiendas y fábricas) y mantén las viviendas lejos de la contaminación.')
+                                             : P('Build homes nearby: they bring workers and customers.', 'Construye viviendas cerca: traen trabajadores y clientes.'),
                 P('New zones cost money and upkeep, so fill the empty ones first.', 'Las zonas nuevas cuestan dinero, así que llena primero las vacías.')],
           zt.emptyPos || z.emptyPos[t], 'neutral');
     }
@@ -386,7 +431,7 @@ var advise = function(sim, newMonth) {
   });
 
   items.sort(function(a, b2) { return b2.priority - a.priority; });
-  return {items: items, estimate: est};
+  return {items: items, estimate: est, need: need};
 };
 
 

@@ -86,6 +86,17 @@ var isDrawbridge = function(map, x, y) {
   return false;
 };
 
+// POLICY LAB v22: every tile of the shipping channel (a hidden line down the middle of the big river, drawn with the
+// same picture as ordinary water). A road bridge across it becomes a drawbridge.
+var channelTiles = function(map) {
+  var out = [];
+  for (var x = 0; x < map.width; x++)
+    for (var y = 0; y < map.height; y++)
+      if (map.getTileValue(x, y) === TileValues.CHANNEL)
+        out.push([x, y]);
+  return out;
+};
+
 // Is the road at (x, y) cut off by an open drawbridge right next to it?
 var nextToOpenBridge = function(map, x, y) {
   for (var k = 0; k < 4; k++) {
@@ -416,6 +427,7 @@ var roadReport = function(map, x, y) {
 
 
 var Reach = {
+  channelTiles: channelTiles,
   zoneAt: zoneAt,
   zoneReport: zoneReport,
   roadReport: roadReport,

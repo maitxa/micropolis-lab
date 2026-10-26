@@ -74,6 +74,20 @@ smokestack in a clean city look bad.) Traffic is the share of road tiles with he
 rough comparison of residents and jobs. Thresholds: urgent at 25% of residents (10% for watch); power urgent below 70%
 (the original blackout alert); taxes urgent above 12%. See `src/status.js`.
 
+Zoning need (lower left; replaces the original R / C / I demand bars): one bar each for homes, shops and factories.
+**Above the line: zone more** of that kind (the city's demand is positive and the zones you have are full or nearly
+full). **Below the line: don't** (more than 1 zone, or more than 10%, of that kind is standing empty, or the city doesn't
+want more). A bar can also say that growth is stopped until you build a stadium, airport or seaport. Point at (or tab
+to) a bar for the reason, including how many empty zones lack power or a road, and the game's raw demand. The To do
+card's "Zone more..." and "Don't zone more..." items use exactly the same rule (`zoningNeed` in `src/advisor.js`,
+drawn by `src/needChart.js`). This only describes the city: zones still grow according to the game's original demand.
+
+Shipping channel: the big river has a hidden channel down its middle (drawn with the same picture as ordinary water),
+which ships follow. A road bridge across it becomes a drawbridge (rail bridges and power lines never open). The channel
+is shown as dashed water while the Road tool is selected and on the Dead ends layer, and building a road bridge across
+it says "Drawbridge: this bridge crosses the shipping channel...". Under the Fixed high bridges law none of this
+applies, so the channel isn't shown.
+
 Message bar: messages stay until you press **Got it**; newer ones wait in a queue ("+2 more") instead of replacing the
 one you are reading, and disasters go to the front. After Got it, the same message can't come back for 3 minutes of
 play. The original "More ... zones needed" messages are skipped (or dropped from the queue) while the advisor says zones

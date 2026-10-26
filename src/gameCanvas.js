@@ -912,11 +912,25 @@ GameCanvas.prototype.setLayer = function(shapes) {
   this._lastLayerKey = null;
 };
 
+// POLICY LAB v22: the shipping channel (where road bridges become drawbridges), shown while the road tool is selected
+// or the Dead ends layer is on. cells: [[x, y]] in map tiles, or null.
+GameCanvas.prototype.setChannel = function(cells) {
+  var shapes = cells && cells.length ? cells.map(function(c) { return {kind: 'channel', x: c[0], y: c[1]}; }) : null;
+  var key = shapes ? cells.map(function(c) { return c[0] + ':' + c[1]; }).join(',') : '';
+  if (key === this._channelKey)
+    return;
+  this._channelKey = key;
+  this._channel = shapes;
+  this._layerVersion = (this._layerVersion || 0) + 1;
+  this._lastLayerKey = null;
+};
+
 GameCanvas.prototype._paintLayer = function() {
   if (this._canvas.id !== GameCanvas.DEFAULT_ID)
     return;
   var svg = this._layerOverlay;
-  if (!this._layer) {
+  var allShapes = (this._channel || []).concat(this._layer || []);
+  if (!allShapes.length) {
     if (svg && svg.style.display !== 'none')
       svg.style.display = 'none';
     return;
@@ -949,8 +963,13 @@ GameCanvas.prototype._paintLayer = function() {
   };
   var line = Math.max(2, Math.round(tw / 7));
   var parts = [];
-  this._layer.forEach(function(s) {
-    if (s.kind === 'blocks') {
+  allShapes.forEach(function(s) {
+    if (s.kind === 'channel') {
+      if (visible(s.x, s.y, 1))
+        parts.push('<rect x="' + ((s.x - ox) * tw + line / 2) + '" y="' + ((s.y - oy) * tw + line / 2) + '" width="' + (tw - line) +
+                   '" height="' + (tw - line) + '" stroke-width="' + Math.max(1.5, line / 1.5) + '" stroke-dasharray="' +
+                   Math.round(tw / 4) + ' ' + Math.round(tw / 6) + '" class="lyChannel"/>');
+    } else if (s.kind === 'blocks') {
       s.cells.forEach(function(c) {
         if (visible(c[0], c[1], s.size))
           parts.push('<rect x="' + (c[0] - ox) * tw + '" y="' + (c[1] - oy) * tw + '" width="' + s.size * tw + '" height="' +

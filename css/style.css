@@ -2647,3 +2647,133 @@ nav li {
 #statusRow {
   flex: none;
 }
+
+/* POLICY LAB v22: zoning-need bars (replace the original R/C/I demand bars) */
+#RCIContainer {
+  height: auto;
+  min-height: 140px;
+}
+
+#needChart {
+  font-family: var(--pl-ui);
+  color: var(--pl-ink);
+}
+
+#needChart .needTitle {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+#needChart .needAxis {
+  font-size: 10.5px;
+  color: var(--pl-ink-soft);
+  line-height: 1.2;
+}
+
+#needChart .needCols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+#needChart .needCol {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+#needChart .needCol:hover, #needChart .needCol.pinned {
+  border-color: var(--pl-line);
+  background: var(--pl-wash);
+}
+
+#needChart .needCol:focus-visible {
+  outline: 2px solid var(--pl-utilities);
+  outline-offset: 1px;
+}
+
+#needChart .needSvg {
+  display: block;
+  width: 100%;
+  height: 76px;
+}
+
+#needChart .needZero {
+  stroke: #4b5f61;
+  stroke-width: 1.5;
+}
+
+#needChart .needBar.need-res { fill: #2e9e4f; }
+#needChart .needBar.need-com { fill: #2a5fc2; }
+#needChart .needBar.need-ind { fill: #e0b000; stroke: #8a6c00; stroke-width: 0.8; }
+#needChart .needBar.neg { opacity: 0.55; }
+
+#needChart .needCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  line-height: 1.15;
+}
+
+#needChart .needName {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+#needChart .needStatus {
+  font-size: 10px;
+  margin-top: 1px;
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+#needChart .needCell.st-more .needStatus { background: #e2f3e5; color: #1a5229; font-weight: 600; }
+#needChart .needCell.st-empty .needStatus, #needChart .needCell.st-capped .needStatus { background: #fff0d3; color: #6b3f00; font-weight: 600; }
+#needChart .needCell.st-noNeed .needStatus, #needChart .needCell.st-enough .needStatus { color: var(--pl-ink-soft); }
+
+#needChart .needNote {
+  margin: 5px 0 0 0;
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--pl-ink);
+  min-height: 4em;
+}
+
+/* POLICY LAB v22: the shipping channel (where road bridges become drawbridges) */
+#layerOverlay .lyChannel { fill: rgba(10, 30, 110, 0.35); stroke: #ffffff; }
+.lg-channel { background: rgba(10, 30, 110, 0.35); border: 2px dashed #ffffff; outline: 1px solid rgba(10, 30, 110, 0.6); }
+
+#toolOutput.toolWarn {
+  background: #fff0d3;
+  color: #6b3f00;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+#toolOutput.toolHint {
+  font-weight: 500;
+  font-size: 12px;
+  color: #0a1e6e;
+}
+
+#RCIContainer {
+  width: 164px;
+}
+
+#needChart .needCols:not(.needLabels) {
+  gap: 0;
+}
+
+#needChart .needName {
+  font-size: 10.5px;
+}
