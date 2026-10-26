@@ -665,7 +665,8 @@ GameCanvas.prototype.paint = function(mouse, sprites, isPaused) {
 
   // POLICY LAB: outlines of the car-free downtown and the green belt
   this._paintPolicyOverlay();
-  // POLICY LAB: highlights for the advisor's hints
+  // POLICY LAB: map layers (pollution, dead ends, workers nearby), then highlights for the advisor's hints on top
+  this._paintLayer();
   this._paintHighlights();
 
   if (!mouse && !sprites) {
@@ -796,7 +797,8 @@ GameCanvas.prototype._paintHighlights = function() {
     svg.setAttribute('id', 'hintOverlay');
     svg.style.position = 'absolute';
     svg.style.pointerEvents = 'none';
-    this._canvas.parentNode.insertBefore(svg, this._canvas.nextSibling);
+    // always above the map layer
+    this._canvas.parentNode.insertBefore(svg, this._layerOverlay ? this._layerOverlay.nextSibling : this._canvas.nextSibling);
   }
 
   var tw = this._tileSet.tileWidth;
@@ -898,6 +900,75 @@ GameCanvas.prototype._paintHighlights = function() {
   });
   // the spot being looked at is drawn last, on top
   svg.innerHTML = under.join('') + out.join('') + focusParts.join('');
+};
+
+
+// POLICY LAB: map layers ----------------------------------------------------------------------------------------
+// shapes: [{kind: 'blocks', size, cells: [[x, y, level 1-3]]} | {kind: 'dead' | 'bridge', x, y, open} |
+//          {kind: 'zone', x, y, tone: 'good' | 'warn' | 'bad'}] in map tiles. Pass null to clear.
+GameCanvas.prototype.setLayer = function(shapes) {
+  this._layerVersion = (this._layerVersion || 0) + 1;
+  this._layer = shapes && shapes.length ? shapes : null;
+  this._lastLayerKey = null;
+};
+
+GameCanvas.prototype._paintLayer = function() {
+  if (this._canvas.id !== GameCanvas.DEFAULT_ID)
+    return;
+  var svg = this._layerOverlay;
+  if (!this._layer) {
+    if (svg && svg.style.display !== 'none')
+      svg.style.display = 'none';
+    return;
+  }
+  if (!svg) {
+    svg = this._layerOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('id', 'layerOverlay');
+    svg.style.position = 'absolute';
+    svg.style.pointerEvents = 'none';
+    // always under the hint highlights
+    this._canvas.parentNode.insertBefore(svg, this._hintOverlay || this._canvas.nextSibling);
+  }
+  var tw = this._tileSet.tileWidth;
+  var key = [this._originX, this._originY, tw, this.canvasWidth, this.canvasHeight, this._layerVersion].join(',');
+  if (key === this._lastLayerKey)
+    return;
+  this._lastLayerKey = key;
+
+  svg.style.display = '';
+  svg.style.left = this._canvas.offsetLeft + 'px';
+  svg.style.top = this._canvas.offsetTop + 'px';
+  svg.setAttribute('width', this.canvasWidth / this._dpr);
+  svg.setAttribute('height', this.canvasHeight / this._dpr);
+  svg.setAttribute('viewBox', '0 0 ' + this.canvasWidth + ' ' + this.canvasHeight);
+
+  var ox = this._originX, oy = this._originY;
+  var viewW = this._totalTilesInViewX + 2, viewH = this._totalTilesInViewY + 2;
+  var visible = function(x, y, size) {
+    return x + size >= ox && y + size >= oy && x <= ox + viewW && y <= oy + viewH;
+  };
+  var line = Math.max(2, Math.round(tw / 7));
+  var parts = [];
+  this._layer.forEach(function(s) {
+    if (s.kind === 'blocks') {
+      s.cells.forEach(function(c) {
+        if (visible(c[0], c[1], s.size))
+          parts.push('<rect x="' + (c[0] - ox) * tw + '" y="' + (c[1] - oy) * tw + '" width="' + s.size * tw + '" height="' +
+                     s.size * tw + '" class="pol' + c[2] + '"/>');
+      });
+    } else if (s.kind === 'dead' || s.kind === 'bridge') {
+      if (visible(s.x, s.y, 1))
+        parts.push('<rect x="' + ((s.x - ox) * tw + line / 2) + '" y="' + ((s.y - oy) * tw + line / 2) + '" width="' + (tw - line) +
+                   '" height="' + (tw - line) + '" stroke-width="' + line + '" class="' +
+                   (s.kind === 'dead' ? 'lyDead' : s.open ? 'lyBridgeOpen' : 'lyBridge') + '"/>');
+    } else if (s.kind === 'zone') {
+      if (visible(s.x - 1, s.y - 1, 3))
+        parts.push('<rect x="' + ((s.x - 1 - ox) * tw + line / 2) + '" y="' + ((s.y - 1 - oy) * tw + line / 2) + '" width="' +
+                   (3 * tw - line) + '" height="' + (3 * tw - line) + '" rx="' + Math.round(tw / 5) + '" stroke-width="' + line +
+                   '" class="ly-' + s.tone + '"/>');
+    }
+  });
+  svg.innerHTML = parts.join('');
 };
 
 

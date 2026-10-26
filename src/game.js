@@ -47,6 +47,8 @@ import { I18n } from './i18n.js';
 import { Advisor } from './advisor.js';
 import { Panels } from './panels.js';
 import { Reach } from './reach.js';
+import { Layers } from './layers.js';
+import { HistoryCharts } from './historyCharts.js';
 
 var disasterTimeout = 20 * 1000;
 
@@ -283,7 +285,42 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     var open = $('#advisor').toggleClass('collapsed').hasClass('collapsed') === false;
     $('#advisorToggle').attr('aria-expanded', open ? 'true' : 'false');
   });
-  this.simulation.addEventListener(Messages.DATE_UPDATED, (function() { this.runAdvisor(true); }).bind(this));
+  this.simulation.addEventListener(Messages.DATE_UPDATED, (function(date) {
+    this.recordHistory(date);
+    this.runAdvisor(true);
+  }).bind(this));
+
+  // Map layers (one at a time; click again to turn off)
+  this._layerName = null;
+  var game = this;
+  $('#layerControls button[data-layer]').on('click', function(e) {
+    e.preventDefault();
+    var name = $(this).attr('data-layer');
+    game.setLayer(game._layerName === name ? null : name);
+  });
+
+  // History charts when hovering over (or focusing, or clicking) the funds
+  var hideTimer = null;
+  var showCharts = function() {
+    window.clearTimeout(hideTimer);
+    // draw only when it opens, so hovering inside the charts isn't interrupted
+    if (!$('#historyPopup').is(':visible'))
+      game.showHistory();
+  };
+  var hideCharts = function() {
+    window.clearTimeout(hideTimer);
+    hideTimer = window.setTimeout(function() {
+      if (!$('#historyPopup').hasClass('pinned'))
+        $('#historyPopup').hide();
+    }, 250);
+  };
+  $('#fundsBlock').on('mouseenter focus', showCharts).on('mouseleave blur', hideCharts)
+                  .on('click', function() { $('#historyPopup').toggleClass('pinned'); showCharts(); });
+  $('#historyPopup').on('mouseenter', showCharts).on('mouseleave', hideCharts);
+  $('#historyClose').on('click', function(e) {
+    e.preventDefault();
+    $('#historyPopup').removeClass('pinned').hide();
+  });
   // Hints on the map
   this._hint = null;
   $('#hintPrev').on('click', (function(e) { e.preventDefault(); this.stepHint(-1); }).bind(this));
@@ -561,8 +598,10 @@ Game.prototype.runAdvisor = function(newMonth) {
     list.append(li);
   });
 
-  // Keep a highlighted hint up to date (its spots may have changed), or say it's done
+  // Keep a highlighted hint up to date, and redraw the map layer with this month's figures
   this.refreshHint(result.items);
+  if (this._layerName)
+    this.refreshLayer();
 
   if (!newMonth) {
     // After a language change, redo the advice in the message bar (if it is showing some)
@@ -691,6 +730,79 @@ Game.prototype.layoutAdvisor = function() {
     var room = $('#canvasContainer').height() - advisor.position().top - 110;
     advisor.css({maxHeight: Math.max(140, room) + 'px'});
   }
+};
+
+
+// POLICY LAB: map layers
+Game.prototype.setLayer = function(name) {
+  this._layerName = name;
+  $('#layerControls button[data-layer]').each(function() {
+    $(this).attr('aria-pressed', $(this).attr('data-layer') === name ? 'true' : 'false');
+  });
+  this.refreshLayer();
+};
+
+Game.prototype.refreshLayer = function() {
+  var name = this._layerName;
+  if (!name || !Layers[name]) {
+    this.gameCanvas.setLayer(null);
+    $('#layerLegend').hide();
+    return;
+  }
+  var result = Layers[name](this.simulation);
+  this.gameCanvas.setLayer(result.shapes);
+  var list = $('#layerLegendList').empty();
+  result.legend.forEach(function(item) {
+    var li = $('<li></li>');
+    li.append($('<span class="lgSwatch"></span>').addClass('lg-' + item.swatch));
+    li.append($('<span></span>').text(item.text));
+    list.append(li);
+  });
+  $('#layerLegendTitle').text($('#layerControls button[data-layer="' + name + '"]').text());
+  $('#layerLegendNote').text(result.note);
+  $('#layerLegend').show();
+  if ($('#advisor').hasClass('collapsed')) {
+    $('#advisor').removeClass('collapsed');
+    $('#advisorToggle').attr('aria-expanded', 'true');
+  }
+};
+
+
+// POLICY LAB: history for the charts under Funds (one point a month; each year's surplus or deficit in January)
+Game.prototype.recordHistory = function(date) {
+  var h = Policy.history = Policy.history || {months: [], years: []};
+  var sim = this.simulation, b = sim.budget;
+  var last = h.months[h.months.length - 1];
+  if (last && last.y === date.year && last.m === date.month)
+    return;
+  // population as the game counts it (computed here, so the game's own yearly figures are not disturbed)
+  var c = sim.lastCensus || sim._census.snapshot();
+  h.months.push({y: date.year, m: date.month, funds: b.totalFunds,
+                 pop: (c.resPop + (c.comPop + c.indPop) * 8) * 20, tax: b.cityTax});
+  if (h.months.length > 1200)
+    h.months.shift();
+  // In January, the tax year that just ended: taxes collected minus what was spent on upkeep
+  if (date.month === 0 && h.months.length > 1) {
+    var spent = (b.roadSpend || 0) + (b.fireSpend || 0) + (b.policeSpend || 0) + (b.socialSpend || 0) +
+                (b.housingSpend || 0) + (b.utilityCost || 0);
+    var lastYear = h.years[h.years.length - 1];
+    if (!lastYear || lastYear.y !== date.year - 1)
+      h.years.push({y: date.year - 1, v: (b.taxFund || 0) - spent});
+  }
+  if ($('#historyPopup').is(':visible'))
+    this.showHistory();
+};
+
+Game.prototype.showHistory = function() {
+  var popup = $('#historyPopup');
+  HistoryCharts.render(document.getElementById('historyCharts'), Policy.history || {months: [], years: []});
+  // next to the city box, wherever the player has put it
+  var box = document.getElementById('infobar').getBoundingClientRect();
+  var host = document.getElementById('canvasContainer').getBoundingClientRect();
+  var left = box.right - host.left + 10;
+  if (left + 340 > host.width)
+    left = Math.max(10, box.left - host.left - 340);
+  popup.css({left: left + 'px', top: Math.max(10, box.top - host.top) + 'px'}).show();
 };
 
 

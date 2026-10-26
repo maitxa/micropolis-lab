@@ -171,14 +171,14 @@ var advise = function(sim, newMonth) {
   var hasJobs = z.com.n + z.ind.n > 0;
   if (hasJobs && z.res.n === 0)
     add('needHomes', 88, P('Zone residential land: shops and factories need workers', 'Zonifica terreno residencial: las tiendas y fábricas necesitan trabajadores'),
-        P('Factories only grow if their trips reach homes, and businesses grow only as far as there are people to work in them.',
-          'Las fábricas solo crecen si sus viajes llegan a viviendas, y las empresas solo crecen hasta donde hay gente para trabajar en ellas.'),
+        P('Businesses grow only as far as there are people to work in them: the game\'s demand for shops and factories counts the workers available.',
+          'Las empresas solo crecen hasta donde hay gente para trabajar en ellas: la demanda de tiendas y fábricas del juego cuenta los trabajadores disponibles.'),
         [P('Zone residential land within about 20 tiles of your shops and factories, connected by road (key 1).',
            'Zonifica terreno residencial a menos de unas 20 casillas de tus tiendas y fábricas, conectado por calle (tecla 1).')]);
   if (z.res.n > 0 && !hasJobs)
     add('needJobs', 87, P('Zone commercial and industrial land: residents need jobs', 'Zonifica terreno comercial e industrial: los residentes necesitan empleo'),
-        P('Homes only grow if their trips reach a shop, factory or other big building, and people move in for jobs.',
-          'Las viviendas solo crecen si sus viajes llegan a una tienda, fábrica u otro edificio grande, y la gente llega por el empleo.'),
+        P('People move in for jobs: with no shops or factories, few people want to live here.',
+          'La gente llega por el empleo: sin tiendas ni fábricas, poca gente quiere vivir aquí.'),
         [P('Zone some commercial (key 2) and industrial (key 3) land within about 20 tiles, connected by road.',
            'Zonifica algo de terreno comercial (tecla 2) e industrial (tecla 3) a menos de unas 20 casillas, conectado por calle.'),
          P('Keep factories a little apart from homes: they pollute.', 'Deja algo de distancia entre las fábricas y las viviendas: contaminan.')]);
@@ -216,7 +216,8 @@ var advise = function(sim, newMonth) {
     var clearlyFine = r.dests.length && r.dests[0].d <= 10 &&
                       !r.dead.some(function(d) { return d[2] <= 10; }) &&
                       !r.bridges.some(function(b2) { return b2.open; });
-    if (!clearlyFine)
+    // only shops need their trips to succeed to grow (as in 1989)
+    if (!clearlyFine && zone.type === 'com')
       tripZones.push({x: zone.x, y: zone.y, type: zone.type, rail: r.railBeside >= 3});
   });
   var fails = {res: 0, com: 0, ind: 0};
@@ -229,8 +230,8 @@ var advise = function(sim, newMonth) {
       com: P('Some shops keep failing to reach a home, shop or factory within 30 tiles of road', 'Algunas tiendas no logran llegar a una vivienda, tienda o fábrica a menos de 30 casillas de calle'),
       ind: P('Some factories keep failing to reach homes (workers) within 30 tiles of road', 'Algunas fábricas no logran llegar a viviendas (trabajadores) a menos de 30 casillas de calle')
     }[worst];
-    var tripWhy = P('Every so often each occupied zone sends a car along the roads. It turns at random at each junction, never turns back, and gives up at a dead end or after 30 tiles. If it passes no place it needs, the trip fails and the zone cannot grow. Homes need a shop, factory or big building; shops need a home, shop or factory; factories need homes (workers). Only zones that failed in at least 2 of the last 3 months are listed.',
-                    'Cada cierto tiempo, cada zona ocupada envía un carro por las calles. Gira al azar en cada cruce, nunca da la vuelta y se rinde en una calle sin salida o después de 30 casillas. Si no pasa junto a ningún lugar que necesita, el viaje falla y la zona no puede crecer. Las viviendas necesitan una tienda, fábrica o edificio grande; las tiendas, una vivienda, tienda o fábrica; las fábricas, viviendas (trabajadores). Solo se listan las zonas que fallaron en al menos 2 de los últimos 3 meses.');
+    var tripWhy = P('Every so often each occupied shop sends a car along the roads. It turns at random at each junction, never turns back, and gives up at a dead end or after 30 tiles. If it passes no home, shop or factory, the trip fails, and a shop whose trip fails cannot grow (as in 1989; homes and factories only need a road and power). Only shops that failed in at least 2 of the last 3 months are listed.',
+                    'Cada cierto tiempo, cada tienda ocupada envía un carro por las calles. Gira al azar en cada cruce, nunca da la vuelta y se rinde en una calle sin salida o después de 30 casillas. Si no pasa junto a ninguna vivienda, tienda o fábrica, el viaje falla, y una tienda cuyo viaje falla no puede crecer (como en 1989; las viviendas y fábricas solo necesitan calle y electricidad). Solo se listan las tiendas que fallaron en al menos 2 de los últimos 3 meses.');
     var tripFixes = [P('Click "Show me on the map": the shaded roads show how far the car can get, green frames show places it can reach, and orange marks show dead ends.',
                        'Haz clic en "Muéstrame en el mapa": las calles sombreadas muestran hasta dónde llega el carro, los marcos verdes los lugares a los que puede llegar y las marcas naranjas las calles sin salida.'),
                      P('Put what the zone needs closer (within about 15 road tiles), along the same roads.',

@@ -230,10 +230,18 @@ var noun = function(type) {
 // One or two sentences describing the reach
 var verdict = function(r) {
   if (!r.hasRoad)
-    return P('No road touches this zone, so its trips can\'t start. Build a road along one side.',
-             'Ninguna calle toca esta zona, así que sus viajes no pueden empezar. Construye una calle en uno de sus lados.');
+    return P('No road touches this zone, so it can\'t grow. Build a road along one side.',
+             'Ninguna calle toca esta zona, así que no puede crecer. Construye una calle en uno de sus lados.');
   var n = r.dests.length;
   var text;
+  if (r.type !== 'com') {
+    // homes and factories: information only (their trips don't affect growth)
+    text = n ? P('Within reach of its cars: {0} ({1}); closest {2} road tiles away.',
+                 'Al alcance de sus carros: {0} ({1}); el más cercano a {2} casillas de calle.', what(r.type), fmt(n), r.dests[0].d)
+             : P('No {0} within {1} road tiles.', 'No hay {0} a menos de {1} casillas de calle.', what(r.type), r.max);
+    return text + ' ' + P('This only affects traffic: homes and factories grow with a road and power.',
+                          'Esto solo afecta al tráfico: las viviendas y fábricas crecen con calle y electricidad.');
+  }
   if (n === 0) {
     text = P('No {0} within {1} road tiles. Zone some along the shaded roads.',
              'No hay {0} a menos de {1} casillas de calle. Zonifica algunas junto a las calles sombreadas.', what(r.type), r.max);
@@ -305,14 +313,21 @@ var zoneReport = function(map, zone, longReach) {
   lines.push(powered ? {mark: 'ok', text: P('Has power', 'Tiene electricidad')}
                      : {mark: 'no', text: P('No power', 'Sin electricidad')});
   var closest = r.dests.length ? r.dests[0].d : null;
+  // As in 1989, only SHOPS need their trips to succeed in order to grow. For homes and factories a failed trip changes
+  // nothing for growth (it only means fewer cars on the road), so their reach is shown as information.
+  var tripsMatter = zone.type === 'com';
   if (r.hasRoad) {
     if (r.dests.length)
-      lines.push({mark: closest > NEAR ? 'warn' : 'ok',
+      lines.push({mark: !tripsMatter ? 'info' : (closest > NEAR ? 'warn' : 'ok'),
                   text: P('Can reach {0} ({1}); closest {2} road tiles away', 'Llega a {0} ({1}); el más cercano a {2} casillas de calle',
                           what(r.type), fmt(r.dests.length), closest)});
     else
-      lines.push({mark: 'no', text: P('No {0} within {1} road tiles', 'No hay {0} a menos de {1} casillas de calle', what(r.type), r.max)});
-    bridgeLines(r, lines);
+      lines.push({mark: tripsMatter ? 'no' : 'info', text: P('No {0} within {1} road tiles', 'No hay {0} a menos de {1} casillas de calle', what(r.type), r.max)});
+    if (!tripsMatter)
+      lines.push({mark: 'info', text: P('In this game that doesn\'t affect whether it grows (only shops need their trips to succeed); it affects how much traffic it makes.',
+                                        'En este juego eso no afecta a su crecimiento (solo las tiendas necesitan que sus viajes tengan éxito); afecta al tráfico que genera.')});
+    if (tripsMatter)
+      bridgeLines(r, lines);
   }
   if (!isBuilt(map, zone))
     lines.push({mark: 'info', text: P('Still empty: its trips start once it has buildings.', 'Todavía vacía: sus viajes empiezan cuando tenga edificios.')});
@@ -322,6 +337,9 @@ var zoneReport = function(map, zone, longReach) {
     verdict = {mark: 'no', text: P('Not connected: build a road along one side.', 'No está conectada: construye una calle en uno de sus lados.')};
   else if (!powered)
     verdict = {mark: 'no', text: P('Not connected to power: run a power line to it.', 'Sin conexión eléctrica: llévale un cable eléctrico.')};
+  else if (!tripsMatter)
+    verdict = {mark: 'ok', text: P('Connected: this {0} has a road and power, which is all it needs to grow.',
+                                   'Conectada: esta {0} tiene calle y electricidad, que es todo lo que necesita para crecer.', noun(r.type))};
   else if (!r.dests.length)
     verdict = {mark: 'no', text: P('Not connected to what it needs: put {0} along the shaded roads.',
                                    'No está conectada a lo que necesita: pon {0} junto a las calles sombreadas.', what(r.type))};
@@ -402,6 +420,10 @@ var Reach = {
   zoneReport: zoneReport,
   roadReport: roadReport,
   isDrivable: drivable,
+  countLinks: countLinks,
+  isDrawbridge: isDrawbridge,
+  nextToOpenBridge: nextToOpenBridge,
+  isBuilt: isBuilt,
   compute: compute,
   shapes: shapes,
   verdict: verdict,

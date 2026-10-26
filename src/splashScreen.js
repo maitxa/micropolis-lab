@@ -168,6 +168,7 @@ var play = function(e) {
   // The green belt is centred on the middle of the map, where the city starts
   Policy.greenBeltCentre = {x: Math.floor(this.map.width / 2), y: Math.floor(this.map.height / 2)};
   Policy.builtHospitals = {};
+  Policy.history = {months: [], years: []};
 
   // Launch a new game
   var g = new Game(this.map, this.tileSet, this.snowTileSet, this.spriteSheet, difficulty, name);

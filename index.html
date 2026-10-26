@@ -157,7 +157,7 @@
               <span id="date">Jan 1900</span>
             </div>
             <!-- POLICY LAB: funds shown large, with the estimated balance for a year -->
-            <div id="fundsBlock" title="Funds">
+            <div id="fundsBlock" title="Funds: hover or click for charts over the years" tabindex="0" role="button" aria-controls="historyPopup">
               <div id="fundsBig">$<span id="funds">20,000</span></div>
               <div id="balanceLine" title="Estimated taxes minus running costs over a year"><span id="balance">$0</span> <span class="perYear">a year</span></div>
             </div>
@@ -200,6 +200,12 @@
           </div>
         </div>
         <div id="RCIContainer" class="controlShadow leftedge width140 padding10 mintcream z1 initialHidden"></div>
+        <!-- POLICY LAB: map layers -->
+        <!-- POLICY LAB: charts over the years, shown from the funds in the city box -->
+        <div id="historyPopup" style="display:none" role="dialog" aria-label="City history">
+          <div class="historyHead"><span>City history</span><button type="button" id="historyClose" aria-label="Close">&times;</button></div>
+          <div id="historyCharts"></div>
+        </div>
         <!-- POLICY LAB: the city advisor's to-do list -->
         <section id="advisor" class="controlShadow rightedge z1 initialHidden" aria-labelledby="advisorTitle">
           <div class="advisorHead">
@@ -208,6 +214,13 @@
             </button>
             <button type="button" id="advisorSmaller" class="advisorSize" title="Smaller text" aria-label="Smaller text">A&minus;</button>
             <button type="button" id="advisorLarger" class="advisorSize" title="Larger text" aria-label="Larger text">A+</button>
+          </div>
+          <!-- POLICY LAB: map layers -->
+          <div id="layerControls" role="group" aria-label="Map layers">
+            <span class="layerLabel">Show on map:</span>
+            <button type="button" data-layer="pollution" aria-pressed="false">Pollution</button>
+            <button type="button" data-layer="dead" aria-pressed="false">Dead ends</button>
+            <button type="button" data-layer="workers" aria-pressed="false">Workers nearby</button>
           </div>
           <!-- POLICY LAB: what is highlighted on the map right now, with controls -->
           <div id="hintBar" role="status" aria-live="polite" style="display:none">
@@ -219,6 +232,12 @@
               <button type="button" id="hintNext">Next</button>
               <button type="button" id="hintHide">Hide from map</button>
             </div>
+          </div>
+          <!-- POLICY LAB: key for the map layer that is on -->
+          <div id="layerLegend" style="display:none" aria-live="polite">
+            <div id="layerLegendTitle"></div>
+            <ul id="layerLegendList"></ul>
+            <p id="layerLegendNote"></p>
           </div>
           <ol id="advisorList"></ol>
         </section>

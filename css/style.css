@@ -2209,3 +2209,256 @@ nav li {
 #advisor #hintHide {
   margin-left: auto;
 }
+
+/* POLICY LAB: map layers */
+#layerControls {
+  position: absolute;
+  right: 175px;
+  bottom: 65px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 8px;
+  font-family: var(--pl-ui);
+  font-size: 12px;
+  color: var(--pl-ink);
+  background: var(--pl-paper);
+  border: 1px solid var(--pl-line);
+  border-radius: 6px;
+}
+
+#layerControls .layerLabel {
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+#layerControls button {
+  width: auto;
+  height: auto;
+  padding: 3px 9px;
+  border: 1px solid var(--pl-line);
+  border-radius: 12px;
+  background: var(--pl-paper);
+  color: var(--pl-ink);
+  font-family: var(--pl-ui);
+  font-size: 12px;
+}
+
+#layerControls button[aria-pressed="true"] {
+  background: var(--pl-ink);
+  border-color: var(--pl-ink);
+  color: #fff;
+  font-weight: 600;
+}
+
+#layerControls button:focus-visible {
+  outline: 2px solid var(--pl-utilities);
+  outline-offset: 1px;
+}
+
+#layerLegend {
+  position: absolute;
+  right: 175px;
+  bottom: 105px;
+  z-index: 2;
+  width: 300px;
+  padding: 8px 10px;
+  font-family: var(--pl-ui);
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--pl-ink);
+  background: var(--pl-paper);
+  border: 1px solid var(--pl-line);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+#layerLegendTitle {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+#layerLegendList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#layerLegendList li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 2px 0;
+}
+
+.lgSwatch {
+  flex: 0 0 14px;
+  height: 14px;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+
+#layerLegendNote {
+  margin: 5px 0 0 0;
+  color: var(--pl-ink-soft);
+}
+
+/* one hue (red) for pollution, darker = worse */
+#layerOverlay .pol1, .lg-pol1 { fill: rgba(208, 59, 59, 0.22); background: rgba(208, 59, 59, 0.22); }
+#layerOverlay .pol2, .lg-pol2 { fill: rgba(208, 59, 59, 0.45); background: rgba(208, 59, 59, 0.45); }
+#layerOverlay .pol3, .lg-pol3 { fill: rgba(150, 20, 20, 0.68); background: rgba(150, 20, 20, 0.68); }
+
+#layerOverlay .lyDead { fill: rgba(255, 140, 0, 0.55); stroke: #ff8c00; }
+.lg-dead { background: rgba(255, 140, 0, 0.55); border: 2px solid #ff8c00; }
+#layerOverlay .lyBridge { fill: rgba(255, 200, 0, 0.45); stroke: #ffc800; }
+#layerOverlay .lyBridgeOpen { fill: rgba(255, 60, 0, 0.5); stroke: #ff3c00; }
+.lg-bridge { background: rgba(255, 200, 0, 0.45); border: 2px solid #ffc800; }
+
+/* status colours for "workers nearby" (always with a label in the legend) */
+#layerOverlay .ly-good { fill: rgba(12, 163, 12, 0.18); stroke: #0ca30c; }
+#layerOverlay .ly-warn { fill: rgba(250, 178, 25, 0.22); stroke: #fab219; }
+#layerOverlay .ly-bad { fill: rgba(208, 59, 59, 0.22); stroke: #d03b3b; }
+.lg-good { background: rgba(12, 163, 12, 0.18); border: 2px solid #0ca30c; }
+.lg-warn { background: rgba(250, 178, 25, 0.22); border: 2px solid #fab219; }
+.lg-bad { background: rgba(208, 59, 59, 0.22); border: 2px solid #d03b3b; }
+
+/* POLICY LAB: history charts next to the city box */
+#fundsBlock {
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+#fundsBlock:hover, #fundsBlock:focus-visible {
+  background: rgba(30, 52, 54, 0.06);
+  outline: none;
+}
+
+#historyPopup {
+  position: absolute;
+  z-index: 6;
+  width: 330px;
+  padding: 8px 10px 10px 10px;
+  font-family: var(--pl-ui);
+  color: var(--pl-ink);
+  background: #fcfcfb;
+  border: 1px solid var(--pl-line);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.historyHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+#historyClose {
+  width: auto;
+  height: auto;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: var(--pl-ink-soft);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.hcBlock {
+  margin-top: 6px;
+}
+
+.hcHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.hcTitle {
+  font-weight: 600;
+}
+
+.hcReadout {
+  color: #52514e;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hcBlock svg {
+  display: block;
+  overflow: visible;
+}
+
+.hcGrid { stroke: #e4e3df; stroke-width: 1; }
+.hcZero { stroke: #a9a8a3; stroke-width: 1; }
+.hcAxis { fill: #6b6a66; font-size: 10px; font-family: var(--pl-ui); font-variant-numeric: tabular-nums; }
+.hcLine { fill: none; stroke: #2a78d6; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.hcDot { fill: #2a78d6; stroke: #fcfcfb; stroke-width: 2; }
+.hcHair { stroke: #8a8984; stroke-width: 1; }
+.hcPos { fill: #2a78d6; }
+.hcNeg { fill: #e34948; }
+.hcHot { opacity: 0.75; }
+
+.hcKey {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #52514e;
+}
+
+.hcSw {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin: 0 3px 0 4px;
+}
+
+.hcSw.hcPos { background: #2a78d6; }
+.hcSw.hcNeg { background: #e34948; }
+
+.hcKeyNote {
+  color: #6b6a66;
+}
+
+.hcEmpty {
+  font-size: 12px;
+  color: #52514e;
+  margin: 4px 0;
+}
+
+/* POLICY LAB: the layer key lives in the To do card */
+#advisor #layerLegend {
+  position: static;
+  width: auto;
+  margin: 4px 8px 2px 8px;
+  padding: 7px 9px;
+  border: 1px solid var(--pl-line);
+  border-radius: 4px;
+  box-shadow: none;
+  background: var(--pl-wash);
+  font-size: calc(var(--advice-size, 14px) - 2px);
+}
+
+#advisor #layerLegend[style*="display: none"] {
+  display: none !important;
+}
+
+/* POLICY LAB: layer buttons as a row inside the To do card */
+#advisor #layerControls {
+  position: static;
+  flex-wrap: wrap;
+  margin: 2px 8px 2px 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+#advisor.collapsed #layerControls, #advisor.collapsed #layerLegend, #advisor.collapsed #hintBar {
+  display: none !important;
+}

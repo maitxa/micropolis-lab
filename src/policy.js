@@ -102,6 +102,9 @@ Policy.greenBeltCentre = {x: 60, y: 50};
 Policy.builtHospitals = {};
 // Which preset the city's laws started from (for the report)
 Policy.presetName = 'Original 1989 rules';
+// The city's history for the charts under Funds: monthly funds, population and tax rate, and each year's surplus or
+// deficit (saved with the city)
+Policy.history = {months: [], years: []};
 
 Policy.DEFAULTS = DEFAULTS;
 
@@ -120,6 +123,7 @@ Policy.save = function(saveData) {
   copy.greenBeltCentre = Policy.greenBeltCentre;
   copy.builtHospitals = Policy.builtHospitals;
   copy.presetName = Policy.presetName;
+  copy.history = Policy.history;
   saveData.policyLab = copy;
 };
 
@@ -130,6 +134,7 @@ Policy.load = function(saveData) {
   Policy.greenBeltCentre = extra.greenBeltCentre || {x: 60, y: 50};
   Policy.builtHospitals = extra.builtHospitals || {};
   Policy.presetName = extra.presetName || 'Original 1989 rules';
+  Policy.history = extra.history && extra.history.months ? extra.history : {months: [], years: []};
 };
 
 // Is this tile a road bridge (closed, any traffic level)?

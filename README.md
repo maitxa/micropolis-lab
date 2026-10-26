@@ -61,16 +61,17 @@ airport), demand compared with empty zones, and money running out. The advice st
 left to the game's original alerts (except the original "More ... zones needed" messages, which only compare zone
 counts and are skipped when the advisor says zones of that kind are still empty). See `src/advisor.js`.
 
-Trip hints are filtered: the game only tests a sample of trips and each car turns at random, so a zone is listed only
-if its trips failed in at least 2 of the last 3 months, and not if its reach shows it is clearly fine (what it needs
-within 10 road tiles, with no dead end or open drawbridge within 10 tiles). If rail runs right beside a failing zone's
-road, the hint says so: every such tile is an extra junction where the car can wander off onto the rail.
+Trips (as in 1989, `s_zone.c`): every occupied zone now and then sends a car along the roads, but only SHOPS need
+that trip to succeed in order to grow (EvalRes and EvalInd only penalise "no road at all"; DoCommercial grows only if
+TrfGood). Homes and factories just need a road touching one side and power; their trips only make traffic. So the
+advisor's "can't reach" hints are for shops only, listed if a shop failed in at least 2 of the last 3 months and its
+reach is not clearly fine (a home, shop or factory within 10 road tiles, no dead end or open drawbridge within 10).
+If rail runs right beside the road, the hint says so: every such tile is an extra junction for the car.
 
-Reach: a zone's trips are a car that drives at most 30 road tiles, turning at random at junctions and giving up at
-dead ends (as in 1989). For a "can't reach" hint, and for any zone you click with the Query tool, the map shows that
-zone's reach: roads its car can get to (darker within 15 tiles, lighter up to 30), the places it needs that it could
-reach (green frames), and dead ends (orange), with a one-line verdict. This is the best case; random turns mean far
-destinations are still missed some of the time (`src/reach.js`).
+Reach: for a "can't reach" hint, and for any zone or road you click with the Query tool, the map shows how far a car
+can get along the roads (darker within 15 tiles, lighter up to 30), the places it could reach (green frames), and dead
+ends (orange). This is the best case: the car turns at random, so far destinations are still missed some of the time
+(`src/reach.js`). For homes and factories it is information about traffic, not a condition for growth.
 
 Query tool: inspecting a home, shop or factory adds a **Connections** section to the info window (road touching a
 side, power, whether it can reach what it needs within 30 road tiles, dead ends and drawbridges on its routes, and a
@@ -92,6 +93,15 @@ All of this is shown inside the To do card; the message bar keeps only the game'
 Panels: the city box, buttons, R/C/I bars, tool legend and To do card can be moved (drag the dotted strip at the top)
 and resized (drag the bottom-right corner; the To do card also has A− / A+ for text size). The layout is remembered in
 this browser; "Reset layout" is in the keyboard help (`src/panels.js`).
+
+Map layers (buttons in the To do card, one at a time, stay on until clicked again): **Pollution** (the game's pollution
+map in its levels: moderate, heavy, very heavy), **Dead ends** (every dead-end road or rail tile, and drawbridges) and
+**Workers nearby** (every shop and factory framed by how far, along the roads, the nearest built homes are: within 15,
+15 to 30, or none within 30). Keys are shown in the card (`src/layers.js`).
+
+City history: hovering over (or clicking) the funds opens charts over the years: funds, each year's surplus or
+deficit (taxes minus running costs), population and tax rate. Recorded monthly and saved with the city
+(`src/historyCharts.js`).
 
 Funds are shown large in the city box, with the estimated yearly balance (taxes minus running costs) in green or red.
 
