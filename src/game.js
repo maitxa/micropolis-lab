@@ -243,13 +243,12 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   this.inputStatus.addEventListener(Messages.ZOOM_REQUESTED, function(step) {
     if (this.dialogOpen)
       return;
-    this.gameCanvas.setZoom(this.gameCanvas.getZoom() + step);
+    this.gameCanvas.zoomStep(step);
     var z = this.gameCanvas.getZoom();
-    $('#zoomLevel').text(z === 1 ? '100%' : (z * 100) + '%');
-    $('#zoomOut').prop('disabled', z <= 1);
+    $('#zoomLevel').text(Math.round(z * 100) + '%');
+    $('#zoomOut').prop('disabled', z <= GameCanvas.ZOOM_LEVELS[0]);
     $('#zoomIn').prop('disabled', z >= 3);
   }.bind(this));
-  $('#zoomOut').prop('disabled', true);
   $('#keysHelpClose').click(function(e) { e.preventDefault(); $('#keysHelp').hide(); });
   $('#undoRequest').prop('disabled', true);
 

@@ -9,6 +9,7 @@
  */
 
 import { TileSet } from './tileSet.js';
+import { TILE_COUNT } from './tileValues.ts';
 
 // Scales for which enlarged sheets exist
 var SCALES = [2, 3, 4, 6];
@@ -25,7 +26,35 @@ var loadImage = function(src, onLoad, onError) {
 // Get the tile set (and matching sprite sheet) for a season ('normal' or 'snow') at a given scale.
 // base = {normal: TileSet, snow: TileSet, sprites: Image} holds the original 16-pixel versions (scale 1).
 // callback(tileSet, spriteSheet) is called when ready; if anything fails, the original 16-pixel graphics are used.
+// A smaller copy of a 16-pixel tile set (for zooming out): each tile is redrawn at 16 x scale pixels, smoothed so
+// that small details average out instead of flickering
+var shrink = function(tileSet, scale) {
+  var w = Math.round(16 * scale);
+  var out = Object.create(TileSet.prototype);
+  out.tileWidth = w;
+  for (var t = 0; t < TILE_COUNT; t++) {
+    var c = document.createElement('canvas');
+    c.width = c.height = w;
+    var cx = c.getContext('2d');
+    cx.imageSmoothingEnabled = true;
+    cx.imageSmoothingQuality = 'high';
+    if (tileSet[t])
+      cx.drawImage(tileSet[t], 0, 0, 16, 16, 0, 0, w, w);
+    out[t] = c;
+  }
+  out.isValid = true;
+  return out;
+};
+
 var get = function(base, season, scale, callback) {
+  // POLICY LAB: zooming out (scale below 1): shrink the original tiles once and keep them
+  if (scale < 1) {
+    var small = 'small:' + season + '@' + scale;
+    if (!cache[small])
+      cache[small] = shrink(base[season] || base.normal, scale);
+    callback(cache[small], base.sprites, 1);
+    return;
+  }
   if (scale === 1 || SCALES.indexOf(scale) === -1) {
     callback(base[season] || base.normal, base.sprites, 1);
     return;
