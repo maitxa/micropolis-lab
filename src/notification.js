@@ -19,15 +19,28 @@ import { Help } from './help.js';
 import { I18n } from './i18n.js';
 import * as Messages from './messages.ts';
 
-var TIMEOUT_SECS = 30;
+// POLICY LAB v21: messages no longer disappear after 30 seconds or get pushed off by the next one. Each stays until the
+// player presses "Got it"; later messages wait in a queue ("+2 more"). Disasters and crashes go to the front. After
+// "Got it", the same kind of message can't come back for 3 minutes of play (time while paused doesn't count).
+var SNOOZE_SECS = 180;
+var MAX_QUEUE = 12;
+
+var isUrgent = function(subject) {
+  return Messages.DISASTER_MESSAGES.indexOf(subject) !== -1 || Messages.CRASHES.indexOf(subject) !== -1;
+};
 
 
-function Notification(element, map, initialText) {
+function Notification(element, map, initialText, playClock, stillTrue) {
   element = MiscUtils.normaliseDOMid(element);
 
   this._map = map;
   this._element = $(element);
-  this._timeout = null;
+  this._clock = playClock || function() { return Date.now() / 1000; };
+  // asked again when a queued message comes to the front, so stale advice is dropped
+  this._stillTrue = stillTrue || function() { return true; };
+  this._queue = [];
+  this._current = null;
+  this._snoozed = {};
 
   this._handleClick = handleClick.bind(this);
 
@@ -35,14 +48,26 @@ function Notification(element, map, initialText) {
   this._x = -1;
   this._y = -1;
 
-  this._element.click(this._handleClick);
+  // text, "+N more" and the button
+  this._element.empty();
+  this._text = $('<span class="msgText"></span>');
+  this._more = $('<span class="msgMore notranslate"></span>');
+  this._gotIt = $('<button type="button" class="msgGotIt">Got it</button>');
+  this._element.append(this._text, this._more, this._gotIt);
+  this._gotIt.on('click', (function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.dismiss();
+  }).bind(this));
+  this._text.click(this._handleClick);
 
   // POLICY LAB: hover help ("why is this happening, and what can I do?")
   this._subject = Messages.WELCOME;
   this._help = $('#messageHelp');
-  this._element.on('mouseenter', showHelp.bind(this));
-  this._element.on('mouseleave', hideHelp.bind(this));
+  this._text.on('mouseenter', showHelp.bind(this));
+  this._text.on('mouseleave', hideHelp.bind(this));
   this.close = close.bind(this);
+  I18n.onChange(this._showCount.bind(this));
   if (this._element.is(':visible'))
     this._element.toggle();
 }
@@ -57,41 +82,107 @@ var close = function(e) {
 };
 
 
-Notification.prototype._displayLink = function(text, x, y) {
-  if (this._timeout !== null) {
-    window.clearTimeout(this._timeout);
-    this._timeout = null;
-  }
-
-  this._element.text(text);
-
-  this._x = x;
-  this._y = y;
-
-  this._element.addClass('pointer');
-
-  if (!this._element.is(':visible'))
-    this._element.toggle();
-
-  this._timeout = window.setTimeout(function() {this._timeout = null; this.close();}.bind(this), TIMEOUT_SECS * 1000);
+Notification.prototype._showCount = function() {
+  var n = this._queue.length;
+  this._more.text(n ? I18n.p('+{0} more', '+{0} más', n) : '').toggle(n > 0);
+  this._gotIt.text(I18n.p('Got it', 'Entendido'));
 };
 
 
-Notification.prototype._displayText = function(text, x, y) {
-  if (this._timeout !== null) {
-    window.clearTimeout(this._timeout);
-    this._timeout = null;
+// Put a message on screen (or in the queue)
+Notification.prototype._post = function(message, tone) {
+  var subject = message.subject;
+  var urgent = isUrgent(subject);
+  if (!urgent && this._snoozed[subject] && this._snoozed[subject] > this._clock())
+    return;
+  var entry = {message: message, tone: tone};
+  // The same message again: just update where it points
+  if (this._current && this._current.message.subject === subject) {
+    this._current = entry;
+    this._render();
+    return;
   }
+  for (var i = 0; i < this._queue.length; i++) {
+    if (this._queue[i].message.subject === subject) {
+      this._queue[i] = entry;
+      return;
+    }
+  }
+  if (this._current === null) {
+    this._current = entry;
+  } else if (urgent && !isUrgent(this._current.message.subject)) {
+    this._queue.unshift(this._current);
+    this._current = entry;
+  } else {
+    this._queue.push(entry);
+    if (this._queue.length > MAX_QUEUE)
+      this._queue.shift();
+  }
+  this._render();
+};
 
-  this._element.removeClass('pointer');
-  this._element.text(text);
-  this._x = -1;
-  this._y = -1;
+
+// "Got it": hide this one, keep it away for 3 minutes of play, and show the next
+Notification.prototype.dismiss = function() {
+  if (this._current && !isUrgent(this._current.message.subject))
+    this._snoozed[this._current.message.subject] = this._clock() + SNOOZE_SECS;
+  this._current = null;
+  var now = this._clock();
+  while (this._queue.length) {
+    var next = this._queue.shift();
+    var subj = next.message.subject;
+    if (isUrgent(subj) || (!(this._snoozed[subj] > now) && this._stillTrue(subj))) {
+      this._current = next;
+      break;
+    }
+  }
+  hideHelp.call(this);
+  if (this._current)
+    this._render();
+  else
+    this.close();
+};
+
+
+// Drop messages that are no longer true (asked once a game month). Only the zone-count advice can go stale like this.
+Notification.prototype.recheck = function() {
+  var self = this;
+  this._queue = this._queue.filter(function(e) { return self._stillTrue(e.message.subject); });
+  if (this._current && !this._stillTrue(this._current.message.subject)) {
+    this._current = null;
+    this.dismiss();
+  } else {
+    this._showCount();
+  }
+};
+
+
+Notification.prototype._render = function() {
+  var entry = this._current;
+  if (!entry)
+    return;
+  var message = entry.message;
+  this._element.removeClass('neutral good bad').addClass(entry.tone);
+
+  // remember which message this is, for the hover help
+  this._subject = message.subject;
+  this._element.toggleClass('hasHelp', Help.forMessage(message.subject) !== null);
+
+  var text = Text.messageText[message.subject];
+  if (message.hasOwnProperty('data') && message.data !== undefined && message.data.hasOwnProperty('x') && message.data.hasOwnProperty('y')) {
+    this._x = message.data.x;
+    this._y = message.data.y;
+    this._element.addClass('pointer');
+  } else {
+    this._x = -1;
+    this._y = -1;
+    this._element.removeClass('pointer');
+  }
+  this._text.text(text);
+  this._showCount();
 
   if (!this._element.is(':visible'))
     this._element.toggle();
-
-  this._timeout = window.setTimeout(function() {this._timeout = null; this.close();}.bind(this), TIMEOUT_SECS * 1000);
 };
 
 
@@ -133,40 +224,22 @@ var hideHelp = function() {
 
 
 Notification.prototype.createMessage = function(message) {
-  // POLICY LAB: remember which message this is, for the hover help
-  this._subject = message.subject;
-  this._element.toggleClass('hasHelp', Help.forMessage(message.subject) !== null);
-
-  if (message.hasOwnProperty('data') && message.data !== undefined && message.data.hasOwnProperty('x') && message.data.hasOwnProperty('y')) {
-    this._displayLink(Text.messageText[message.subject], message.data.x, message.data.y);
-    return;
-  }
-
-  this._displayText(Text.messageText[message.subject]);
+  this._post(message, 'neutral');
 };
 
 
 Notification.prototype.badNews = function(message) {
-  this._element.removeClass('neutral');
-  this._element.removeClass('good');
-  this._element.addClass('bad');
-  this.createMessage(message);
+  this._post(message, 'bad');
 };
 
 
 Notification.prototype.goodNews = function(message) {
-  this._element.removeClass('neutral');
-  this._element.removeClass('bad');
-  this._element.addClass('good');
-  this.createMessage(message);
+  this._post(message, 'good');
 };
 
 
 Notification.prototype.news = function(message) {
-  this._element.removeClass('good');
-  this._element.removeClass('bad');
-  this._element.addClass('neutral');
-  this.createMessage(message);
+  this._post(message, 'neutral');
 };
 
 

@@ -49,6 +49,7 @@ import { Panels } from './panels.js';
 import { Reach } from './reach.js';
 import { Layers } from './layers.js';
 import { HistoryCharts } from './historyCharts.js';
+import { Status } from './status.js';
 
 var disasterTimeout = 20 * 1000;
 
@@ -274,7 +275,15 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   this.updateElectionInfo(this.simulation.getDate());
   this.simulation.addEventListener(Messages.DATE_UPDATED, this.updateElectionInfo.bind(this));
 
-  this._notificationBar = new Notification('#notifications', this.gameCanvas, Text.messageText[Messages.WELCOME]);
+  // POLICY LAB v21: a clock that only runs while the game does (for "Got it": back after 3 minutes of play)
+  this._playSeconds = 0;
+  window.setInterval((function() {
+    if (!this.simulation.isPaused())
+      this._playSeconds += 1;
+  }).bind(this), 1000);
+  this._notificationBar = new Notification('#notifications', this.gameCanvas, Text.messageText[Messages.WELCOME],
+                                           (function() { return this._playSeconds; }).bind(this),
+                                           (function(subject) { return !this.skipMessage(subject); }).bind(this));
 
   // POLICY LAB: the city advisor runs once a game month
   this._advice = [];
@@ -555,11 +564,47 @@ Game.prototype.runAdvisor = function(newMonth) {
   $('#balance').text((bal > 0 ? '+' : bal < 0 ? '\u2212' : '') + MiscUtils.formatMoney(Math.abs(bal)))
                .toggleClass('neg', bal < 0).toggleClass('pos', bal > 0);
 
-  // The list
+  // POLICY LAB v21: status bubbles (pollution, crime, traffic, power, jobs, taxes)
+  this.renderStatus(newMonth);
+  if (newMonth && this._notificationBar)
+    this._notificationBar.recheck();
+
+  // The list. It stays put: an item keeps its place until it is fixed or the player presses "Got it" (then it can't
+  // come back for 3 minutes of play). Only something very urgent and new (priority 90+) can take the place of the
+  // least important item.
+  var now = this._playSeconds || 0;
+  var snoozed = this._todoSnoozed = this._todoSnoozed || {};
+  var avail = result.items.filter(function(i) { return !(snoozed[i.id] > now); });
+  var byId = {};
+  avail.forEach(function(i) { byId[i.id] = i; });
+  var shown = (this._todoIds || []).filter(function(id) { return byId[id]; });
+  var real = avail.filter(function(i) { return i.id !== 'ok' && i.id !== 'start'; });
+  if (real.length)
+    shown = shown.filter(function(id) { return id !== 'ok' && id !== 'start'; });
+  avail.forEach(function(i) {
+    if (shown.indexOf(i.id) !== -1)
+      return;
+    if (real.length && (i.id === 'ok' || i.id === 'start'))
+      return;
+    if (shown.length < ADVICE_SHOWN) {
+      shown.push(i.id);
+    } else if (i.priority >= 90) {
+      var low = null;
+      shown.forEach(function(id, k) { if (low === null || byId[id].priority < byId[shown[low]].priority) low = k; });
+      if (byId[shown[low]].priority < i.priority - 20)
+        shown[low] = i.id;
+    }
+  });
+  this._todoIds = shown;
+  var showItems = shown.map(function(id) { return byId[id]; });
+
   var list = $('#advisorList').empty();
   var self = this;
   var opened = this._adviceOpen = this._adviceOpen || {};  // items the player has opened stay open after a refresh
-  result.items.slice(0, ADVICE_SHOWN).forEach(function(item) {
+  if (!showItems.length && result.items.length)
+    list.append($('<li class="adviceNone"></li>').text(I18n.p('Nothing else for now (you dismissed the rest; they come back in a few minutes if still true).',
+                                                               'Nada más por ahora (descartaste el resto; vuelven en unos minutos si siguen siendo ciertos).')));
+  showItems.forEach(function(item) {
     var li = $('<li class="advice"></li>').addClass('tone-' + item.tone).data('adviceId', item.id);
     var head = $('<button type="button" class="adviceText" aria-expanded="false"></button>').text(item.text);
     var details = $('<div class="adviceDetails"></div>').toggle(!!opened[item.id]);
@@ -578,6 +623,7 @@ Game.prototype.runAdvisor = function(newMonth) {
       opened[item.id] = open;
     });
     li.append(head);
+    var actions = $('<div class="adviceActions"></div>');
     if (item.targets && item.targets.length) {
       var show = $('<button type="button" class="adviceShow"></button>').text(I18n.t('Show me on the map'));
       show.on('click', function(e) {
@@ -587,8 +633,21 @@ Game.prototype.runAdvisor = function(newMonth) {
         else
           self.showHint(item);
       });
-      li.append(show);
+      actions.append(show);
     }
+    if (item.id !== 'ok' && item.id !== 'start') {
+      var got = $('<button type="button" class="adviceGotIt"></button>').text(I18n.p('Got it', 'Entendido'))
+                  .attr('title', I18n.p('Hide this for 3 minutes of play', 'Ocultar durante 3 minutos de juego'));
+      got.on('click', function(e) {
+        e.preventDefault();
+        snoozed[item.id] = (self._playSeconds || 0) + 180;
+        if (self._hint && self._hint.item.id === item.id)
+          self.hideHint();
+        self.runAdvisor(false);
+      });
+      actions.append(got);
+    }
+    li.append(actions);
     if (self._hint && self._hint.item.id === item.id) {
       li.addClass('showing');
       li.find('.adviceShow').text(I18n.t('Hide from map'));
@@ -606,6 +665,92 @@ Game.prototype.runAdvisor = function(newMonth) {
     return;
 
   // (The advice stays in the To do list only: the message bar is left to the game's original alerts.)
+};
+
+
+// POLICY LAB v21: the status bubbles at the top of the To do card
+Game.prototype.renderStatus = function(newMonth) {
+  var res;
+  try {
+    res = Status.compute(this.simulation, Policy.history);
+  } catch (e) {
+    console.warn('Status failed', e);
+    return;
+  }
+  this._status = res.list;
+  // keep this month's key figures in the city's history, for "a year ago" (saved with the city)
+  if (newMonth && Policy.history && Policy.history.months.length)
+    Policy.history.months[Policy.history.months.length - 1].st = res.figures;
+  var row = $('#statusRow').empty();
+  var self = this;
+  var glyph = {urgent: '!!', watch: '!', good: '✓'};
+  res.list.forEach(function(st) {
+    var chip = $('<button type="button" class="statusChip"></button>').addClass('st-' + st.level)
+                 .attr('aria-expanded', self._statusOpen === st.id ? 'true' : 'false')
+                 .attr('aria-label', st.name + ': ' + st.word + (st.summary ? '. ' + st.summary : ''))
+                 .attr('title', st.word + (st.summary ? ': ' + st.summary : ''));
+    chip.append($('<span class="stGlyph" aria-hidden="true"></span>').text(glyph[st.level]));
+    chip.append($('<span class="stName"></span>').text(st.name));
+    if (st.value)
+      chip.append($('<span class="stValue" aria-hidden="true"></span>').text(st.value));
+    chip.toggleClass('open', self._statusOpen === st.id);
+    chip.on('click', function(e) {
+      e.preventDefault();
+      self._statusOpen = self._statusOpen === st.id ? null : st.id;
+      self.renderStatus(false);
+      $('#advisorBody').scrollTop(0);
+    });
+    row.append(chip);
+  });
+  this.renderStatusDetail();
+};
+
+Game.prototype.renderStatusDetail = function() {
+  var box = $('#statusDetail');
+  var st = (this._status || []).filter((function(s) { return s.id === this._statusOpen; }).bind(this))[0];
+  if (!st) {
+    box.hide().empty();
+    return;
+  }
+  var self = this;
+  box.empty().removeClass('st-urgent st-watch st-good').addClass('st-' + st.level);
+  box.append($('<div class="stdHead"></div>').text(st.name + ': ' + st.word));
+  if (st.lines.length) {
+    var ul = $('<ul class="stdLines"></ul>');
+    st.lines.forEach(function(l) { ul.append($('<li></li>').text(l)); });
+    box.append(ul);
+  } else if (st.summary) {
+    box.append($('<p class="stdWhy"></p>').text(st.summary));
+  }
+  if (st.why)
+    box.append($('<p class="stdWhy"></p>').text(st.why));
+  if (st.fixes.length) {
+    box.append($('<div class="stdFixLabel"></div>').text(I18n.t('What you can do:')));
+    var fx = $('<ul class="stdFixes"></ul>');
+    st.fixes.forEach(function(f) { fx.append($('<li></li>').text(f)); });
+    box.append(fx);
+  }
+  var actions = $('<div class="stdActions"></div>');
+  if (st.layer && Layers[st.layer]) {
+    var on = this._layerName === st.layer;
+    var btn = $('<button type="button" class="stdMap"></button>')
+                .text(on ? I18n.t('Hide from map') : I18n.p('Show on map', 'Mostrar en el mapa'));
+    btn.on('click', function(e) {
+      e.preventDefault();
+      self.setLayer(self._layerName === st.layer ? null : st.layer);
+      self.renderStatusDetail();
+    });
+    actions.append(btn);
+  }
+  var close = $('<button type="button" class="stdClose"></button>').text(I18n.p('Close', 'Cerrar'));
+  close.on('click', function(e) {
+    e.preventDefault();
+    self._statusOpen = null;
+    self.renderStatus(false);
+  });
+  actions.append(close);
+  box.append(actions);
+  box.show();
 };
 
 
@@ -736,6 +881,8 @@ Game.prototype.setLayer = function(name) {
     $(this).attr('aria-pressed', $(this).attr('data-layer') === name ? 'true' : 'false');
   });
   this.refreshLayer();
+  if (this._statusOpen)
+    this.renderStatusDetail();
 };
 
 Game.prototype.refreshLayer = function() {
@@ -754,7 +901,12 @@ Game.prototype.refreshLayer = function() {
     li.append($('<span></span>').text(item.text));
     list.append(li);
   });
-  $('#layerLegendTitle').text($('#layerControls button[data-layer="' + name + '"]').text());
+  var title = $('#layerControls button[data-layer="' + name + '"]').text();
+  if (!title) {
+    var st = (this._status || []).filter(function(x) { return x.layer === name; })[0];
+    title = st ? st.name : '';
+  }
+  $('#layerLegendTitle').text(title);
   $('#layerLegendNote').text(result.note);
   $('#layerLegend').show();
   if ($('#advisor').hasClass('collapsed')) {
@@ -1153,14 +1305,26 @@ var touchListener = function(e) {
 };
 
 
+// POLICY LAB: the original zone-count messages are skipped while the advisor says zones of that kind are still empty
+Game.prototype.skipMessage = function(subject) {
+  return (subject === Messages.NEED_MORE_RESIDENTIAL && this.adviceSays('wait_res')) ||
+         (subject === Messages.NEED_MORE_COMMERCIAL && this.adviceSays('wait_com')) ||
+         (subject === Messages.NEED_MORE_INDUSTRIAL && this.adviceSays('wait_ind'));
+};
+
+var STATUS_SUBJECTS = [Messages.HIGH_POLLUTION, Messages.HIGH_CRIME, Messages.TRAFFIC_JAMS, Messages.TAX_TOO_HIGH,
+                       Messages.BLACKOUTS_REPORTED, Messages.NOT_ENOUGH_POWER];
+
 Game.prototype.processFrontEndMessage = function(message) {
   var subject = message.subject;
   var d = new Date();
 
+  // POLICY LAB v21: city conditions are shown by the status bubbles in the To do card, not in the message bar
+  if (STATUS_SUBJECTS.indexOf(subject) !== -1)
+    return;
+
   // POLICY LAB: skip the original zone-count messages when the advisor says there are already empty zones of that kind
-  if ((subject === Messages.NEED_MORE_RESIDENTIAL && this.adviceSays('wait_res')) ||
-      (subject === Messages.NEED_MORE_COMMERCIAL && this.adviceSays('wait_com')) ||
-      (subject === Messages.NEED_MORE_INDUSTRIAL && this.adviceSays('wait_ind')))
+  if (this.skipMessage(subject))
     return;
 
   if (Text.goodMessages[subject] !== undefined) {
@@ -1209,10 +1373,8 @@ Game.prototype.processFrontEndMessage = function(message) {
         break;
     }
 
-    if (this.lastBadMessageTime === null || d - this.lastBadMessageTime > disasterTimeout) {
-      this.lastBadMessageTime = null;
-      this._notificationBar.goodNews(message);
-    }
+    // POLICY LAB v21: messages queue instead of replacing each other, so nothing is held back after a disaster
+    this._notificationBar.goodNews(message);
 
     if (cMessage !== (this.name + ' is now a ')) {
       this.dialogOpen = true;
@@ -1239,10 +1401,7 @@ Game.prototype.processFrontEndMessage = function(message) {
   }
 
   if (Text.neutralMessages[subject] !== undefined) {
-    if (this.lastBadMessageTime === null || d - this.lastBadMessageTime > disasterTimeout) {
-      this.lastBadMessageTime = null;
-      this._notificationBar.news(message);
-    }
+    this._notificationBar.news(message);
     return;
   }
 

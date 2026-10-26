@@ -56,12 +56,28 @@ Graphics: the map can be zoomed from 100% to 300% (the − / + buttons, or the *
 ("Retina") screens it is drawn at full resolution. Sharper tile and sprite sheets (`images/hd/`, at 2×, 3×, 4× and 6×)
 were made from the original art with the xBRZ pixel-art scaler (`xbrz-js`, GPL) and load only when needed.
 
-City advisor: a **To do** card under the tool panel lists the three most useful things to build or fix, updated every
-game month (click an item for why and what to do). It checks the game's own rules: zones without power, zones with no
-road touching them, trips that can't reach a destination, missing workers or jobs, growth caps (stadium, seaport,
-airport), demand compared with empty zones, and money running out, and train depots not linked by rail to another depot. The advice stays in the card; the message bar is
-left to the game's original alerts (except the original "More ... zones needed" messages, which only compare zone
-counts and are skipped when the advisor says zones of that kind are still empty). See `src/advisor.js`.
+City advisor: a **To do** card under the tool panel lists the three most useful things to build or fix (click an item
+for why and what to do). It checks the game's own rules: zones without power, zones with no road touching them, trips
+that can't reach a destination, missing workers or jobs, growth caps (stadium, seaport, airport), demand compared with
+empty zones, money running out, and train depots not linked by rail to another depot (`src/advisor.js`). The list stays
+put: an item keeps its place until it is fixed or you press **Got it**, which hides it for 3 minutes of play (paused
+time doesn't count); only something very urgent and new can take the place of the least important item.
+
+Status bubbles (top of the To do card): **Pollution, Crime, Traffic, Power, Jobs, Taxes**, each red (urgent, "!!"),
+orange (watch, "!") or green (good, "✓"); the symbol and a word go with the colour. Click one for its figures, a year-ago
+comparison, what drives it, what to do, and a map layer (pollution, crime, traffic, power, or workers nearby). These
+conditions are no longer posted as messages. The 1989 model has no real crime or pollution rates: each 2×2
+neighbourhood gets a score from 0 to 250. So the bubbles show the **share of residents** living where the score is
+high (the Query tool's "Heavy" pollution or "Moderate" crime and worse), and the average score where people live on a
+0-100 scale. (The game's own "average pollution" only averages neighbourhoods with some pollution, which makes one
+smokestack in a clean city look bad.) Traffic is the share of road tiles with heavy traffic; Jobs is the game's own
+rough comparison of residents and jobs. Thresholds: urgent at 25% of residents (10% for watch); power urgent below 70%
+(the original blackout alert); taxes urgent above 12%. See `src/status.js`.
+
+Message bar: messages stay until you press **Got it**; newer ones wait in a queue ("+2 more") instead of replacing the
+one you are reading, and disasters go to the front. After Got it, the same message can't come back for 3 minutes of
+play. The original "More ... zones needed" messages are skipped (or dropped from the queue) while the advisor says zones
+of that kind are still empty.
 
 Trips (as in 1989, `s_zone.c`): every occupied zone now and then sends a car along the roads, but only SHOPS need
 that trip to succeed in order to grow (EvalRes and EvalInd only penalise "no road at all"; DoCommercial grows only if
@@ -90,7 +106,7 @@ Hints on the map: "Show me on the map" in the To do card outlines every spot the
 power, zones without a road (with a dashed ring showing exactly where a road would count), zones whose trips failed
 (with their reach), empty zones, or a circle where to build. The spots are frozen when you open the hint, so nothing
 moves until you choose; Previous / Next step through them, and "Hide from map" (the same button, or Esc) clears them.
-All of this is shown inside the To do card; the message bar keeps only the game's original alerts.
+All of this is shown inside the To do card.
 
 Panels: the city box, buttons, R/C/I bars, tool legend and To do card can be moved (drag the dotted strip at the top)
 and resized (drag the bottom-right corner; the To do card also has A− / A+ for text size). The layout is remembered in

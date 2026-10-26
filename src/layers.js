@@ -102,10 +102,76 @@ var workers = function(sim) {
 };
 
 
+// POLICY LAB v21: crime, traffic and power layers (opened from the status bubbles)
+var levelBlocks = function(bm, cls) {
+  var cells = [];
+  for (var bx = 0; bx < bm.width; bx++)
+    for (var by = 0; by < bm.height; by++) {
+      var level = MiscUtils.clamp(Math.floor(bm.get(bx, by) / 64), 0, 3);
+      if (level > 0)
+        cells.push([bx * bm.blockSize, by * bm.blockSize, level]);
+    }
+  return {kind: 'blocks', size: bm.blockSize, cells: cells, cls: cls};
+};
+
+var crime = function(sim) {
+  return {
+    shapes: [levelBlocks(sim.blockMaps.crimeRateMap, 'cri')],
+    legend: [
+      {swatch: 'cri1', text: P('Light', 'Leve')},
+      {swatch: 'cri2', text: P('Moderate', 'Moderada')},
+      {swatch: 'cri3', text: P('Dangerous', 'Peligrosa')}
+    ],
+    note: P('No colour = safe. Same levels as the Query tool. Only built-up land has a crime score.',
+            'Sin color = segura. Los mismos niveles que la herramienta Consultar. Solo el suelo construido tiene puntuación de delincuencia.')
+  };
+};
+
+var traffic = function(sim) {
+  return {
+    shapes: [levelBlocks(sim.blockMaps.trafficDensityMap, 'tra')],
+    legend: [
+      {swatch: 'tra1', text: P('Light', 'Ligero')},
+      {swatch: 'tra2', text: P('Heavy', 'Intenso')},
+      {swatch: 'tra3', text: P('Very heavy', 'Muy intenso')}
+    ],
+    note: P('Where cars have been driving lately (the game\'s traffic map).', 'Por dónde han circulado los carros últimamente (el mapa de tráfico del juego).')
+  };
+};
+
+var power = function(sim) {
+  var map = sim._map, shapes = [], on = 0, off = 0;
+  for (var x = 0; x < map.width; x++) {
+    for (var y = 0; y < map.height; y++) {
+      var tile = map.getTile(x, y);
+      if (!tile.isZone())
+        continue;
+      var v = tile.getValue();
+      if (!TileUtils.isResidential(v) && !TileUtils.isCommercial(v) && !TileUtils.isIndustrial(v))
+        continue;
+      var ok = tile.isPowered();
+      if (ok) on++; else off++;
+      shapes.push({kind: 'zone', x: x, y: y, tone: ok ? 'good' : 'bad', label: ''});
+    }
+  }
+  return {
+    shapes: shapes,
+    legend: [
+      {swatch: 'good', text: P('Zones with power: {0}', 'Zonas con electricidad: {0}', fmt(on))},
+      {swatch: 'bad', text: P('Zones without power: {0}', 'Zonas sin electricidad: {0}', fmt(off))}
+    ],
+    note: P('Zones only grow with power.', 'Las zonas solo crecen con electricidad.')
+  };
+};
+
+
 var Layers = {
   pollution: pollution,
   dead: deadEnds,
-  workers: workers
+  workers: workers,
+  crime: crime,
+  traffic: traffic,
+  power: power
 };
 
 

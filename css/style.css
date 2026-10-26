@@ -2462,3 +2462,188 @@ nav li {
 #advisor.collapsed #layerControls, #advisor.collapsed #layerLegend, #advisor.collapsed #hintBar {
   display: none !important;
 }
+
+/* POLICY LAB v21: city status bubbles at the top of the To do card */
+#statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 8px 2px 8px;
+}
+
+#statusRow .statusChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  width: auto;
+  height: auto;
+  padding: 2px 8px 2px 6px;
+  border: 1.5px solid;
+  border-radius: 12px;
+  font-family: var(--pl-ui);
+  font-size: calc(var(--advice-size, 14px) - 2px);
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+#statusRow .stGlyph {
+  font-weight: 800;
+  min-width: 0.9em;
+  text-align: center;
+}
+
+#statusRow .stName {
+  font-weight: 600;
+}
+
+#statusRow .stValue {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+#statusRow .st-urgent, #statusDetail.st-urgent { background: #fde3e1; border-color: #c62d22; color: #7d1710; }
+#statusRow .st-watch, #statusDetail.st-watch { background: #fff0d3; border-color: #d98200; color: #6b3f00; }
+#statusRow .st-good, #statusDetail.st-good { background: #e2f3e5; border-color: #2e8b47; color: #1a5229; }
+
+#statusRow .statusChip.open {
+  box-shadow: 0 0 0 2px var(--pl-paper), 0 0 0 4px currentColor;
+}
+
+#statusRow .statusChip:focus-visible {
+  outline: 2px solid var(--pl-utilities);
+  outline-offset: 2px;
+}
+
+#statusDetail {
+  margin: 4px 8px 2px 8px;
+  padding: 7px 9px;
+  border: 1.5px solid;
+  border-radius: 4px;
+  font-family: var(--pl-ui);
+  font-size: calc(var(--advice-size, 14px) - 2px);
+  line-height: 1.35;
+}
+
+#statusDetail[style*="display: none"] {
+  display: none !important;
+}
+
+#statusDetail .stdHead {
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+#statusDetail ul {
+  margin: 0 0 4px 0;
+  padding-left: 16px;
+}
+
+#statusDetail .stdWhy {
+  margin: 0 0 4px 0;
+  color: var(--pl-ink);
+}
+
+#statusDetail .stdFixLabel {
+  font-weight: 600;
+  color: var(--pl-ink);
+}
+
+#statusDetail .stdFixes {
+  color: var(--pl-ink);
+}
+
+#statusDetail .stdActions, #advisorList .adviceActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+#statusDetail .stdActions button, #advisorList .adviceGotIt {
+  width: auto;
+  height: auto;
+  padding: 1px 8px;
+  border: 1px solid var(--pl-line);
+  border-radius: 10px;
+  background: var(--pl-paper);
+  color: var(--pl-ink);
+  font-family: var(--pl-ui);
+  font-size: calc(var(--advice-size, 14px) - 2px) !important;
+}
+
+#advisorList .adviceActions .adviceShow {
+  margin-top: 0;
+}
+
+#statusDetail .stdActions button:hover, #advisorList .adviceGotIt:hover {
+  border-color: var(--pl-ink-soft);
+}
+
+#advisorList > li.adviceNone {
+  margin-top: 4px;
+  padding: 5px 8px;
+  font-size: calc(var(--advice-size, 14px) - 2px);
+  color: var(--pl-ink-soft);
+}
+
+#advisor.collapsed #statusDetail {
+  display: none !important;
+}
+
+/* crime (purple) and traffic (brown) map layers */
+#layerOverlay .cri1, .lg-cri1 { fill: rgba(120, 60, 170, 0.22); background: rgba(120, 60, 170, 0.22); }
+#layerOverlay .cri2, .lg-cri2 { fill: rgba(120, 60, 170, 0.45); background: rgba(120, 60, 170, 0.45); }
+#layerOverlay .cri3, .lg-cri3 { fill: rgba(80, 20, 130, 0.68); background: rgba(80, 20, 130, 0.68); }
+#layerOverlay .tra1, .lg-tra1 { fill: rgba(200, 120, 20, 0.25); background: rgba(200, 120, 20, 0.25); }
+#layerOverlay .tra2, .lg-tra2 { fill: rgba(200, 120, 20, 0.5); background: rgba(200, 120, 20, 0.5); }
+#layerOverlay .tra3, .lg-tra3 { fill: rgba(140, 70, 0, 0.72); background: rgba(140, 70, 0, 0.72); }
+
+/* the message bar: text, "+N more" and "Got it" (it now stays until dismissed) */
+#notifications:not(.initialHidden) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: auto !important;
+  min-height: 19px;
+  white-space: normal;
+}
+
+#notifications .msgText {
+  flex: 1;
+  text-align: center;
+}
+
+#notifications .msgMore {
+  font-size: 12px;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+#notifications .msgGotIt {
+  width: auto;
+  height: auto;
+  padding: 1px 9px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #1d2a2b;
+  font-family: var(--pl-ui);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* the To do card: header and bubbles stay put, the rest scrolls */
+#advisorBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#advisorBody #advisorList {
+  overflow: visible;
+}
+
+#statusRow {
+  flex: none;
+}

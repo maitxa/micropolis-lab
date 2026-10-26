@@ -954,7 +954,7 @@ GameCanvas.prototype._paintLayer = function() {
       s.cells.forEach(function(c) {
         if (visible(c[0], c[1], s.size))
           parts.push('<rect x="' + (c[0] - ox) * tw + '" y="' + (c[1] - oy) * tw + '" width="' + s.size * tw + '" height="' +
-                     s.size * tw + '" class="pol' + c[2] + '"/>');
+                     s.size * tw + '" class="' + (s.cls || 'pol') + c[2] + '"/>');
       });
     } else if (s.kind === 'dead' || s.kind === 'bridge') {
       if (visible(s.x, s.y, 1))

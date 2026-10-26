@@ -291,30 +291,14 @@ var advise = function(sim, newMonth) {
     add('fire', 54, P('Build a fire station', 'Construye una estación de bomberos'),
         P('Without fire stations, fires spread freely.', 'Sin estaciones de bomberos, los incendios se extienden sin control.'),
         [P('Spread them out: their reach fades with distance (key 9).', 'Repártelas: su alcance disminuye con la distancia (tecla 9).')]);
-  if (b.cityTax > 12)
-    add('tax', 65, P('Lower taxes: above 12% residents get upset', 'Baja los impuestos: por encima del 12% los residentes se molestan'),
-        P('The tax rate is {0}%.', 'La tasa de impuestos es del {0}%.', b.cityTax),
-        [P('Lower it in the Budget window and cut costs instead.', 'Bájala en la ventana de Presupuesto y recorta gastos en su lugar.')]);
+  // (The tax rate is shown in the Taxes bubble at the top of the card: POLICY LAB v21.)
   if (c.roadTotal > 30 && b.roadPercent < 0.9)
     add('roadFunds', 45, P('Roads are underfunded and will crumble', 'Las calles tienen pocos fondos y se van a deteriorar'),
         P('Road funding is at {0}%.', 'Los fondos para calles están al {0}%.', Math.round(b.roadPercent * 100)),
         [P('Raise road funding in the Budget window, or build fewer roads.', 'Sube los fondos de las calles en la ventana de Presupuesto, o construye menos calles.')]);
 
   // ---- Problems ----
-  if (live.pollutionAverage > 60)
-    add('pollution', 50, P('Pollution is high', 'La contaminación es alta'),
-        P('Pollution lowers land value and drives residents away.', 'La contaminación baja el valor del suelo y aleja a los residentes.'),
-        [P('Keep industry and coal plants away from homes; leave parks or trees in between.',
-           'Mantén la industria y las plantas de carbón lejos de las viviendas; deja parques o árboles entre medio.')],
-        {x: map.pollutionMaxX, y: map.pollutionMaxY});
-  if (live.crimeAverage > 100)
-    add('crime', 50, P('Crime is high', 'La delincuencia es alta'),
-        P('Crime grows on cheap land and in crowded areas, and falls near funded police.', 'La delincuencia crece en suelo barato y en zonas abarrotadas, y baja cerca de policía con fondos.'),
-        [P('Add police stations where it is worst, and raise land value with parks.', 'Añade estaciones de policía donde es peor, y sube el valor del suelo con parques.')]);
-  if (live.trafficAverage > 60)
-    add('traffic', 45, P('Traffic is heavy', 'El tráfico es intenso'),
-        P('Congested roads pollute and lower land value.', 'Las calles congestionadas contaminan y bajan el valor del suelo.'),
-        [P('Add rail and train depots, or parallel roads.', 'Añade vías férreas y estaciones de tren, o calles paralelas.')]);
+  // Pollution, crime and traffic are shown as status bubbles at the top of the card (src/status.js), not as items.
 
   // ---- Policy Lab buildings ----
   if (c.depotUnconnected)

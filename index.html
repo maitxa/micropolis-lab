@@ -215,6 +215,11 @@
             <button type="button" id="advisorSmaller" class="advisorSize" title="Smaller text" aria-label="Smaller text">A&minus;</button>
             <button type="button" id="advisorLarger" class="advisorSize" title="Larger text" aria-label="Larger text">A+</button>
           </div>
+          <!-- POLICY LAB v21: city status bubbles (click one for the figures) -->
+          <div id="statusRow" role="group" aria-label="City status"></div>
+          <!-- everything below the bubbles scrolls; the header and bubbles stay in view -->
+          <div id="advisorBody">
+          <div id="statusDetail" style="display:none" aria-live="polite"></div>
           <!-- POLICY LAB: map layers -->
           <div id="layerControls" role="group" aria-label="Map layers">
             <span class="layerLabel">Show on map:</span>
@@ -240,6 +245,7 @@
             <p id="layerLegendNote"></p>
           </div>
           <ol id="advisorList"></ol>
+          </div>
         </section>
         <div id="controls" class="controlShadow mintcream z1 initialHidden rightedge open">
           <div id="toolInfo" class="alignCenter"><span id="toolOutput">Tools</span></div>
