@@ -67,7 +67,8 @@ var snapshotProps = ['poweredZoneCount', 'unpoweredZoneCount', 'firePop', 'roadT
                      'fireStationPop', 'stadiumPop', 'coalPowerPop', 'nuclearPowerPop', 'seaportPop', 'airportPop',
                      'depotPop', 'depotUnconnected', 'waterPlantPop', 'waterPlantUnpowered', 'mixedZones',
                      'housingSaves', 'healthCoveredZones', 'builtHospitalPop', 'tripFailRes', 'tripFailCom',
-                     'tripFailInd', 'tripFailPos', 'tripFailList', 'depotUnconnectedList', 'waterPlantUnpoweredList'];
+                     'tripFailInd', 'tripFailPos', 'tripFailList', 'depotUnconnectedList', 'waterPlantUnpoweredList',
+                     'depotUnlinked', 'depotUnlinkedList'];
 
 Census.prototype.snapshot = function() {
   var copy = {};
@@ -113,6 +114,8 @@ Census.prototype.clearCensus = function() {
   this.tripFailPos = null;
   this.tripFailList = [];
   this.depotUnconnectedList = [];
+  this.depotUnlinked = 0;
+  this.depotUnlinkedList = [];
   this.waterPlantUnpoweredList = [];
 };
 

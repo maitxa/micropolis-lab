@@ -5,7 +5,8 @@
  *
  * Two new buildings:
  *
- *  TRAIN DEPOT (3x3). Works if there is rail next to it. Zones within about 16 tiles can commute by train: their trips
+ *  TRAIN DEPOT (3x3). Works if rail touches it and that rail leads to at least one other depot (a train needs somewhere
+ *  to go). Zones within 16 tiles can commute by train: their trips
  *  may travel twice as far (60 tiles instead of 30), and half as much of their traffic ends up on the roads.
  *
  *  WATER TREATMENT PLANT (3x3). Needs power. Treats the sewage of every zone within about 24 tiles.
@@ -42,39 +43,80 @@ var isRail = function(tileValue) {
          tileValue === TileValues.HRAILROAD || tileValue === TileValues.VRAILROAD;
 };
 
-// Mark every block of a coverage map within `radius` tiles of (x, y)
+// Mark every block of a coverage map whose centre is within `radius` tiles of (x, y). (Measured from each block's
+// centre, so with small blocks the covered area is a proper circle.)
 var markCoverage = function(blockMap, x, y, radius) {
   var size = blockMap.blockSize;
-  for (var wx = x - radius; wx <= x + radius; wx += size) {
-    for (var wy = y - radius; wy <= y + radius; wy += size) {
-      if (wx < 0 || wy < 0 || wx >= blockMap.gameMapWidth || wy >= blockMap.gameMapHeight)
-        continue;
-      var dx = wx - x, dy = wy - y;
+  var bx0 = Math.max(0, Math.floor((x - radius) / size)), bx1 = Math.min(blockMap.width - 1, Math.floor((x + radius) / size));
+  var by0 = Math.max(0, Math.floor((y - radius) / size)), by1 = Math.min(blockMap.height - 1, Math.floor((y + radius) / size));
+  var half = (size - 1) / 2;
+  for (var bx = bx0; bx <= bx1; bx++) {
+    for (var by = by0; by <= by1; by++) {
+      var dx = bx * size + half - x, dy = by * size + half - y;
       if (dx * dx + dy * dy <= radius * radius)
-        blockMap.worldSet(wx, wy, 1);
+        blockMap.set(bx, by, 1);
     }
   }
 };
 
+var isDepotTile = function(v) {
+  return v >= TileValues.DEPOTBASE && v <= TileValues.DEPOTBASE + 8;
+};
 
-// Called by the map scanner when it finds the centre tile of a train depot
+// Is this depot linked by rail to at least one other depot? (A train line needs two stations.) Follows the rail from
+// the tiles touching the depot, up to a long distance.
+var MAX_LINE = 600;
+var linkedToAnotherDepot = function(map, x, y, starts) {
+  var seen = {}, queue = starts.slice();
+  starts.forEach(function(s) { seen[s[0] + ',' + s[1]] = true; });
+  var dirs = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+  for (var q = 0; q < queue.length && q < MAX_LINE; q++) {
+    var cx = queue[q][0], cy = queue[q][1];
+    for (var k = 0; k < 4; k++) {
+      var nx = cx + dirs[k][0], ny = cy + dirs[k][1];
+      if (!map.testBounds(nx, ny))
+        continue;
+      var v = map.getTileValue(nx, ny);
+      // another depot's building (not this one's own 3x3)
+      if (isDepotTile(v) && (Math.abs(nx - x) > 1 || Math.abs(ny - y) > 1))
+        return true;
+      var key = nx + ',' + ny;
+      if (!seen[key] && isRail(v)) {
+        seen[key] = true;
+        queue.push([nx, ny]);
+      }
+    }
+  }
+  return false;
+};
+
+
+// Called by the map scanner when it finds the centre tile of a train depot. It works (its zones commute by train) if
+// rail touches it and that rail leads to at least one other depot.
 var depotFound = function(map, x, y, simData) {
   simData.census.depotPop += 1;
 
-  // The depot only works if a rail line touches it (any tile in the ring just outside the 3x3 building)
-  var connected = false;
-  for (var dx = -2; dx <= 2 && !connected; dx++) {
-    for (var dy = -2; dy <= 2 && !connected; dy++) {
+  // The depot needs a rail line touching it (any tile in the ring just outside the 3x3 building)...
+  var starts = [];
+  for (var dx = -2; dx <= 2; dx++) {
+    for (var dy = -2; dy <= 2; dy++) {
       if (Math.abs(dx) < 2 && Math.abs(dy) < 2)
         continue;
       if (map.testBounds(x + dx, y + dy) && isRail(map.getTileValue(x + dx, y + dy)))
-        connected = true;
+        starts.push([x + dx, y + dy]);
     }
   }
 
-  if (!connected) {
+  if (!starts.length) {
     simData.census.depotUnconnected += 1;
     (simData.census.depotUnconnectedList = simData.census.depotUnconnectedList || []).push({x: x, y: y});
+    return;
+  }
+
+  // ...and that line must lead to another depot: a train needs somewhere to go
+  if (!linkedToAnotherDepot(map, x, y, starts)) {
+    simData.census.depotUnlinked = (simData.census.depotUnlinked || 0) + 1;
+    (simData.census.depotUnlinkedList = simData.census.depotUnlinkedList || []).push({x: x, y: y});
     return;
   }
 

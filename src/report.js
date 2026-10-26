@@ -167,6 +167,7 @@ var cityData = function(sim) {
                      'Casillas de calle: {0} &middot; Casillas de vía férrea: {1} &middot; Estaciones de tren: {2}',
                      fmt(c.roadTotal), fmt(c.railTotal), fmt(c.depotPop || 0)) +
           (c.depotUnconnected ? ' ' + P('({0} not touching rail)', '({0} sin tocar la vía)', fmt(c.depotUnconnected)) : '') +
+          (c.depotUnlinked ? ' ' + P('({0} not linked by rail to another depot)', '({0} sin vía hasta otra estación)', fmt(c.depotUnlinked)) : '') +
           '</li>';
   var treated = live.sewageTreatedZones || 0, untreated = live.sewageUntreatedZones || 0;
   html += '<li>' + P('Water treatment plants: {0}', 'Plantas de tratamiento de aguas: {0}', fmt(c.waterPlantPop || 0)) +
@@ -453,8 +454,10 @@ var policyReport = function(sim) {
         P('You have {0} train depot(s)', 'Tienes {0} estación(es) de tren', fmt(c.depotPop)) +
         (c.depotUnconnected ? P(', of which {0} do not touch a rail line and so do nothing',
                                 ', de las cuales {0} no tocan una vía férrea y por eso no sirven de nada', fmt(c.depotUnconnected)) : '') +
-        P('. Zones within about 16 tiles of a working depot can commute twice as far, and only half of their traffic goes on the roads. Running cost: {0} per depot per year.',
-          '. Las zonas a unas 16 casillas de una estación que funcione pueden viajar el doble de lejos, y solo la mitad de su tráfico va por las calles. Costo de funcionamiento: {0} por estación al año.',
+        (c.depotUnlinked ? P('; {0} are not linked by rail to another depot, so their trains have nowhere to go',
+                             '; {0} no están unidas por vía férrea a otra estación, así que sus trenes no tienen adónde ir', fmt(c.depotUnlinked)) : '') +
+        P('. A depot works when rail links it to at least one other depot. Zones within 16 tiles of a working depot can commute twice as far, and only half of their traffic goes on the roads. Running cost: {0} per depot per year.',
+          '. Una estación funciona cuando una vía férrea la une al menos a otra estación. Las zonas a menos de 16 casillas de una estación que funcione pueden viajar el doble de lejos, y solo la mitad de su tráfico va por las calles. Costo de funcionamiento: {0} por estación al año.',
           money(50)));
   }
 

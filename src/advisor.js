@@ -225,11 +225,8 @@ var advise = function(sim, newMonth) {
   var worst = ['res', 'com', 'ind'].sort(function(a, b2) { return fails[b2] - fails[a]; })[0];
   var railNote = tripZones.some(function(t) { return t.rail; });
   if (fails[worst] > 0) {
-    var tripText = {
-      res: P('Some homes keep failing to reach a shop or factory within 30 tiles of road', 'Algunas viviendas no logran llegar a una tienda o fábrica a menos de 30 casillas de calle'),
-      com: P('Some shops keep failing to reach a home, shop or factory within 30 tiles of road', 'Algunas tiendas no logran llegar a una vivienda, tienda o fábrica a menos de 30 casillas de calle'),
-      ind: P('Some factories keep failing to reach homes (workers) within 30 tiles of road', 'Algunas fábricas no logran llegar a viviendas (trabajadores) a menos de 30 casillas de calle')
-    }[worst];
+    var tripText = P('Some shops keep failing to reach a home, shop or factory within 30 tiles of road',
+                     'Algunas tiendas no logran llegar a una vivienda, tienda o fábrica a menos de 30 casillas de calle');
     var tripWhy = P('Every so often each occupied shop sends a car along the roads. It turns at random at each junction, never turns back, and gives up at a dead end or after 30 tiles. If it passes no home, shop or factory, the trip fails, and a shop whose trip fails cannot grow (as in 1989; homes and factories only need a road and power). Only shops that failed in at least 2 of the last 3 months are listed.',
                     'Cada cierto tiempo, cada tienda ocupada envía un carro por las calles. Gira al azar en cada cruce, nunca da la vuelta y se rinde en una calle sin salida o después de 30 casillas. Si no pasa junto a ninguna vivienda, tienda o fábrica, el viaje falla, y una tienda cuyo viaje falla no puede crecer (como en 1989; las viviendas y fábricas solo necesitan calle y electricidad). Solo se listan las tiendas que fallaron en al menos 2 de los últimos 3 meses.');
     var tripFixes = [P('Click "Show me on the map": the shaded roads show how far the car can get, green frames show places it can reach, and orange marks show dead ends.',
@@ -325,6 +322,14 @@ var advise = function(sim, newMonth) {
                        '{0} estación de tren no toca una vía férrea', '{0} estaciones de tren no tocan una vía férrea'),
         P('A depot only works with rail right next to it.', 'Una estación solo funciona con una vía justo al lado.'),
         [P('Run rail (key 5) up to the depot.', 'Lleva una vía férrea (tecla 5) hasta la estación.')]);
+  if (c.depotUnlinked)
+    add('depotLink', 66, N(c.depotUnlinked, '{0} train depot isn\'t linked by rail to another depot', '{0} train depots aren\'t linked by rail to another depot',
+                           '{0} estación de tren no está unida por vía férrea a otra estación', '{0} estaciones de tren no están unidas por vía férrea a otra estación'),
+        P('A train needs somewhere to go: a depot only works when its rail line reaches at least one other depot.',
+          'Un tren necesita adónde ir: una estación solo funciona cuando su vía llega al menos a otra estación.'),
+        [P('Build a second depot (key T) in another neighbourhood and join the two with rail (key 5).',
+           'Construye una segunda estación (tecla T) en otro vecindario y une las dos con vía férrea (tecla 5).'),
+         P('Keep the rail clear of roads, crossing them only at right angles.', 'Mantén la vía separada de las calles, cruzándolas solo en ángulo recto.')]);
   if (c.waterPlantUnpowered)
     add('water', 68, N(c.waterPlantUnpowered, '{0} water plant has no power', '{0} water plants have no power',
                        '{0} planta de agua no tiene electricidad', '{0} plantas de agua no tienen electricidad'),
@@ -381,6 +386,7 @@ var advise = function(sim, newMonth) {
     needJobs: circleAround(z.res.list, 20, P('Zone shops and factories inside this circle', 'Zonifica tiendas y fábricas dentro de este círculo')),
     stadium: circleAround(z.res.list, 10, P('Build the stadium near here', 'Construye el estadio cerca de aquí')),
     depot: frames(c.depotUnconnectedList, P('Needs rail right next to it', 'Necesita una vía justo al lado')),
+    depotLink: frames(c.depotUnlinkedList, P('Not linked by rail to another depot', 'Sin vía hasta otra estación')),
     water: frames(c.waterPlantUnpoweredList, P('No power', 'Sin electricidad')),
     pollution: [{kind: 'circle', x: map.pollutionMaxX, y: map.pollutionMaxY, r: 8,
                  label: P('Most polluted area', 'Zona más contaminada')}]

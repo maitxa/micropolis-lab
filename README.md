@@ -27,8 +27,10 @@ commercial and industrial zones, jobs per resident, neighbourhood averages, powe
 affecting the city (e.g. what is driving crime, where pollution comes from, what tax breaks cost).
 
 Two new buildings (drawn in the original style, in tile slots 956-973 that micropolisJS reserved but never used):
-**Train depot** ($1,000, key **T**): must touch a rail line; zones within ~16 tiles can commute twice as far and put
-half as much traffic on the roads. **Water treatment plant** ($2,000, key **U**): needs power; treats the sewage of
+**Train depot** ($1,000, key **T**): must touch a rail line that leads to at least one other depot (a train needs
+somewhere to go, so a single depot does nothing); zones within 16 tiles (a true circle, measured in 2×2 blocks) can
+commute twice as far and put half as much traffic on the roads. The water plant, hospital and shop coverage also use
+2×2 blocks now, instead of the coarse 8×8 blocks of the first versions. **Water treatment plant** ($2,000, key **U**): needs power; treats the sewage of
 zones within ~24 tiles. A new world-model question, "Does untreated sewage pollute rivers?", makes untreated zones send
 their sewage to the nearest water, polluting it and its banks (the map has no direction of flow, so "nearest water"
 stands in for "downstream").
@@ -57,7 +59,7 @@ were made from the original art with the xBRZ pixel-art scaler (`xbrz-js`, GPL) 
 City advisor: a **To do** card under the tool panel lists the three most useful things to build or fix, updated every
 game month (click an item for why and what to do). It checks the game's own rules: zones without power, zones with no
 road touching them, trips that can't reach a destination, missing workers or jobs, growth caps (stadium, seaport,
-airport), demand compared with empty zones, and money running out. The advice stays in the card; the message bar is
+airport), demand compared with empty zones, and money running out, and train depots not linked by rail to another depot. The advice stays in the card; the message bar is
 left to the game's original alerts (except the original "More ... zones needed" messages, which only compare zone
 counts and are skipped when the advisor says zones of that kind are still empty). See `src/advisor.js`.
 

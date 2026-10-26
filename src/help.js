@@ -28,7 +28,7 @@ add(Messages.NEED_MORE_COMMERCIAL,
 add(Messages.NEED_MORE_INDUSTRIAL,
     'The outside market wants more of what your city produces, and there are workers available.',
     ['Zone more Industrial land, away from homes (factories pollute).',
-     'Connect industry to residential areas by road or rail so workers can reach it.']);
+     'Keep industry within reach of homes by road or rail: workers commute, and long commutes add traffic.']);
 add(Messages.NEED_MORE_ROADS,
     'Many zones have no road access. Zones without a road on their edge cannot grow and will shrink.',
     ['Run a road along at least one edge of every zone.',
@@ -164,7 +164,7 @@ addES(Messages.NEED_MORE_COMMERCIAL,
       ['Zonifica más terreno comercial, mejor cerca del centro (allí las tiendas puntúan más).', 'Las tiendas tienen que poder llegar en carro a sus clientes: conéctalas por calle con las viviendas y la industria.']);
 addES(Messages.NEED_MORE_INDUSTRIAL,
       'El mercado exterior quiere más de lo que produce tu ciudad, y hay trabajadores disponibles.',
-      ['Zonifica más terreno industrial, lejos de las viviendas (las fábricas contaminan).', 'Conecta la industria con las zonas residenciales por calle o vía férrea para que los trabajadores puedan llegar.']);
+      ['Zonifica más terreno industrial, lejos de las viviendas (las fábricas contaminan).', 'Mantén la industria al alcance de las viviendas por calle o vía férrea: los trabajadores van y vienen, y los trayectos largos generan tráfico.']);
 addES(Messages.NEED_MORE_ROADS,
       'Muchas zonas no tienen acceso por calle. Las zonas sin una calle en su borde no pueden crecer y se reducen.',
       ['Pon una calle a lo largo de al menos un borde de cada zona.', 'Consejo: haz clic en una casilla de inicio y luego Shift+clic en el final para trazar una calle recta.']);

@@ -330,7 +330,6 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     if (e.keyCode === 27 && this._hint && !this.dialogOpen)
       this.hideHint();
   }).bind(this));
-  this._notificationBar.onAdviceClick = this.showHint.bind(this);
   I18n.onChange((function() { this.runAdvisor(false); this.layoutAdvisor(); }).bind(this));
   this.runAdvisor(false);
 
@@ -603,11 +602,8 @@ Game.prototype.runAdvisor = function(newMonth) {
   if (this._layerName)
     this.refreshLayer();
 
-  if (!newMonth) {
-    // After a language change, redo the advice in the message bar (if it is showing some)
-    this._notificationBar.refreshAdvice(result.items);
+  if (!newMonth)
     return;
-  }
 
   // (The advice stays in the To do list only: the message bar is left to the game's original alerts.)
 };

@@ -110,21 +110,22 @@ var Simulation = EventEmitter(function (gameMap, gameLevel, speed, savedGame) {
     tempMap2: new BlockMap(this._map.width, this._map.height, 2),
     tempMap3: new BlockMap(this._map.width, this._map.height, 4),
 
-    // POLICY LAB: train depot coverage (1 = within reach of a working depot). Filled into depotMapNext during each
+    // POLICY LAB: coverage maps use 2x2-tile blocks so coverage is a proper circle.
+    // Train depot coverage (1 = within reach of a working depot). Filled into depotMapNext during each
     // map scan, then copied into depotMap once the scan is complete, so zones always see a complete map.
-    depotMap: new BlockMap(this._map.width, this._map.height, 8),
-    depotMapNext: new BlockMap(this._map.width, this._map.height, 8),
+    depotMap: new BlockMap(this._map.width, this._map.height, 2),
+    depotMapNext: new BlockMap(this._map.width, this._map.height, 2),
     // POLICY LAB: water treatment coverage (1 = served by a powered treatment plant), same arrangement
-    waterMap: new BlockMap(this._map.width, this._map.height, 8),
-    waterMapNext: new BlockMap(this._map.width, this._map.height, 8),
+    waterMap: new BlockMap(this._map.width, this._map.height, 2),
+    waterMapNext: new BlockMap(this._map.width, this._map.height, 2),
     // POLICY LAB: untreated sewage reaching the water, 0-255
     sewageMap: new BlockMap(this._map.width, this._map.height, 4),
     // POLICY LAB: shops within walking distance (1 = yes), same double-buffered arrangement as depotMap
-    shopMap: new BlockMap(this._map.width, this._map.height, 4),
-    shopMapNext: new BlockMap(this._map.width, this._map.height, 4),
+    shopMap: new BlockMap(this._map.width, this._map.height, 2),
+    shopMapNext: new BlockMap(this._map.width, this._map.height, 2),
     // POLICY LAB: hospital coverage (1 = within reach of a powered hospital)
-    healthMap: new BlockMap(this._map.width, this._map.height, 8),
-    healthMapNext: new BlockMap(this._map.width, this._map.height, 8)
+    healthMap: new BlockMap(this._map.width, this._map.height, 2),
+    healthMapNext: new BlockMap(this._map.width, this._map.height, 2)
   };
 
   this._clearCensus();
