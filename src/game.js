@@ -565,6 +565,9 @@ Game.prototype.runAdvisor = function(newMonth) {
   $('#balance').text((bal > 0 ? '+' : bal < 0 ? '\u2212' : '') + MiscUtils.formatMoney(Math.abs(bal)))
                .toggleClass('neg', bal < 0).toggleClass('pos', bal > 0);
 
+  // POLICY LAB v23: shops that can't reach customers, outlined on the map all the time
+  this.renderStuckShops(result.stuckShops || []);
+
   // POLICY LAB v22: zoning-need bars in the lower left (same rule as the To do card's "Zone more" / "Don't zone" items)
   NeedChart.render(document.getElementById('needChart'), result.need);
 
@@ -669,6 +672,43 @@ Game.prototype.runAdvisor = function(newMonth) {
     return;
 
   // (The advice stays in the To do list only: the message bar is left to the game's original alerts.)
+};
+
+
+// POLICY LAB v23: shops whose trips keep failing (they can't grow) get a red frame on the map, with a key and a switch
+Game.prototype.renderStuckShops = function(list) {
+  if (this._outlinesOn === undefined) {
+    var saved = null;
+    try { saved = window.localStorage.getItem('policyLabOutlines'); } catch (e) {}
+    this._outlinesOn = saved !== 'off';
+  }
+  this._stuckShops = list;
+  this.gameCanvas.setOutlines(this._outlinesOn ? list : null);
+  var key = $('#outlineKey').empty();
+  if (!list.length) {
+    key.hide();
+    return;
+  }
+  var self = this;
+  var text = $('<span class="okText"></span>');
+  if (this._outlinesOn) {
+    text.append($('<span class="okSwatch" aria-hidden="true"></span>'));
+    text.append(document.createTextNode(list.length === 1
+      ? I18n.p('Red frame: a shop that can\'t reach customers, so it can\'t grow.', 'Marco rojo: una tienda que no llega a sus clientes, así que no puede crecer.')
+      : I18n.p('Red frames: {0} shops that can\'t reach customers, so they can\'t grow.', 'Marcos rojos: {0} tiendas que no llegan a sus clientes, así que no pueden crecer.', list.length)));
+  } else {
+    text.text(list.length === 1 ? I18n.p('1 shop can\'t reach customers (frame hidden).', '1 tienda no llega a sus clientes (marco oculto).')
+                                : I18n.p('{0} shops can\'t reach customers (frames hidden).', '{0} tiendas no llegan a sus clientes (marcos ocultos).', list.length));
+  }
+  var btn = $('<button type="button" class="okToggle"></button>')
+              .text(this._outlinesOn ? I18n.p('Hide', 'Ocultar') : I18n.p('Show', 'Mostrar'));
+  btn.on('click', function(e) {
+    e.preventDefault();
+    self._outlinesOn = !self._outlinesOn;
+    try { window.localStorage.setItem('policyLabOutlines', self._outlinesOn ? 'on' : 'off'); } catch (err) {}
+    self.renderStuckShops(self._stuckShops || []);
+  });
+  key.append(text, btn).show();
 };
 
 
@@ -1351,11 +1391,11 @@ var touchListener = function(e) {
 };
 
 
-// POLICY LAB: the original zone-count messages are skipped while the advisor says zones of that kind are still empty
+// POLICY LAB v23: not at all now: the zoning-need bars in the lower left say when to zone more, and these messages only
+// compared zone counts
 Game.prototype.skipMessage = function(subject) {
-  return (subject === Messages.NEED_MORE_RESIDENTIAL && this.adviceSays('wait_res')) ||
-         (subject === Messages.NEED_MORE_COMMERCIAL && this.adviceSays('wait_com')) ||
-         (subject === Messages.NEED_MORE_INDUSTRIAL && this.adviceSays('wait_ind'));
+  return subject === Messages.NEED_MORE_RESIDENTIAL || subject === Messages.NEED_MORE_COMMERCIAL ||
+         subject === Messages.NEED_MORE_INDUSTRIAL;
 };
 
 var STATUS_SUBJECTS = [Messages.HIGH_POLLUTION, Messages.HIGH_CRIME, Messages.TRAFFIC_JAMS, Messages.TAX_TOO_HIGH,

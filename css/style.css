@@ -2777,3 +2777,55 @@ nav li {
 #needChart .needName {
   font-size: 10.5px;
 }
+
+/* POLICY LAB v23: red frames on shops that can't reach customers (always on, unless hidden) */
+#layerOverlay .lyStuck { fill: rgba(198, 45, 34, 0.10); stroke: #c62d22; }
+
+#outlineKey {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 4px 8px 2px 8px;
+  padding: 5px 8px;
+  border-left: 3px solid #c62d22;
+  background: #fdf1f0;
+  border-radius: 0 4px 4px 0;
+  font-family: var(--pl-ui);
+  font-size: calc(var(--advice-size, 14px) - 2px);
+  line-height: 1.3;
+  color: var(--pl-ink);
+}
+
+#outlineKey[style*="display: none"] {
+  display: none !important;
+}
+
+#outlineKey .okSwatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border: 2px solid #c62d22;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+
+#outlineKey .okText {
+  flex: 1;
+}
+
+#outlineKey .okToggle {
+  width: auto;
+  height: auto;
+  padding: 1px 8px;
+  border: 1px solid var(--pl-line);
+  border-radius: 10px;
+  background: var(--pl-paper);
+  color: var(--pl-ink);
+  font-family: var(--pl-ui);
+  font-size: calc(var(--advice-size, 14px) - 2px);
+}
+
+#advisor.collapsed #outlineKey {
+  display: none !important;
+}

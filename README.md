@@ -78,9 +78,14 @@ Zoning need (lower left; replaces the original R / C / I demand bars): one bar e
 **Above the line: zone more** of that kind (the city's demand is positive and the zones you have are full or nearly
 full). **Below the line: don't** (more than 1 zone, or more than 10%, of that kind is standing empty, or the city doesn't
 want more). A bar can also say that growth is stopped until you build a stadium, airport or seaport. Point at (or tab
-to) a bar for the reason, including how many empty zones lack power or a road, and the game's raw demand. The To do
-card's "Zone more..." and "Don't zone more..." items use exactly the same rule (`zoningNeed` in `src/advisor.js`,
-drawn by `src/needChart.js`). This only describes the city: zones still grow according to the game's original demand.
+to) a bar for the reason, including how many empty zones lack power or a road, and the game's raw demand. This is the only place
+zoning advice appears: the To do card has no "Zone more" / "Don't zone" items, and the original "More ... zones
+needed" messages are no longer shown (`zoningNeed` in `src/advisor.js`, drawn by `src/needChart.js`).
+
+Shops that can't reach customers: a shop whose trips failed in at least 2 of the last 3 months (and whose reach isn't
+clearly fine) gets a red frame on the map all the time, with a key in the To do card and a Hide / Show switch
+(remembered in this browser). In the 1989 rules these shops can't grow. Homes and factories are not flagged: being far
+from shops, jobs or workers doesn't stop them growing (they only need a road and power). This only describes the city: zones still grow according to the game's original demand.
 
 Shipping channel: the big river has a hidden channel down its middle (drawn with the same picture as ordinary water),
 which ships follow. A road bridge across it becomes a drawbridge (rail bridges and power lines never open). The channel
@@ -90,8 +95,7 @@ applies, so the channel isn't shown.
 
 Message bar: messages stay until you press **Got it**; newer ones wait in a queue ("+2 more") instead of replacing the
 one you are reading, and disasters go to the front. After Got it, the same message can't come back for 3 minutes of
-play. The original "More ... zones needed" messages are skipped (or dropped from the queue) while the advisor says zones
-of that kind are still empty.
+play.
 
 Trips (as in 1989, `s_zone.c`): every occupied zone now and then sends a car along the roads, but only SHOPS need
 that trip to succeed in order to grow (EvalRes and EvalInd only penalise "no road at all"; DoCommercial grows only if

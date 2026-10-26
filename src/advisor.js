@@ -291,41 +291,9 @@ var advise = function(sim, newMonth) {
         P('Commerce this big needs an airport.', 'Un comercio de este tamaño necesita un aeropuerto.'),
         [P('It needs a large flat area, connected by road and power.', 'Necesita un área grande y plana, conectada por calle y con electricidad.')]);
 
-  // ---- Demand compared with empty zones (the same rule as the zoning-need bars) ----
+  // ---- Demand compared with empty zones ----
+  // POLICY LAB v23: shown only by the zoning-need bars in the lower left (no "Zone more" / "Don't zone" items here)
   var need = zoningNeed(z, v);
-  var keys = {res: '1', com: '2', ind: '3'};
-  ['res', 'com', 'ind'].forEach(function(t) {
-    var nd = need[t], zt = z[t];
-    if (nd.state === 'more' && zt.n > 0)   // (no zones at all yet: the "Zone residential / commercial" items above cover it)
-      add('more_' + t, 70, P('Zone more {0} land: demand is up and your {1} zones are full', 'Zonifica más terreno {0}: hay demanda y tus zonas {1} están llenas',
-                             typeName(t), typeName(t, true)),
-          zt.n ? P('The {0} bar in the lower left is above the line: the city wants more, and the zones you have are full or nearly full.',
-                   'La barra {0} abajo a la izquierda está por encima de la línea: la ciudad quiere más, y las zonas que tienes están llenas o casi.',
-                   typeName(t))
-               : P('The city wants {0} zones and has none yet.', 'La ciudad quiere zonas {0} y todavía no tiene ninguna.', typeName(t, true)),
-          [P('Zone new land next to a road, with power (key {0}).', 'Zonifica terreno nuevo junto a una calle, con electricidad (tecla {0}).', keys[t])], null, 'neutral');
-    else if (nd.state === 'empty') {
-      var blocked = [];
-      if (nd.emptyNoPower)
-        blocked.push(N(nd.emptyNoPower, '{0} has no power', '{0} have no power', '{0} no tiene electricidad', '{0} no tienen electricidad'));
-      if (nd.emptyNoRoad)
-        blocked.push(N(nd.emptyNoRoad, '{0} has no road touching it', '{0} have no road touching them', '{0} no tiene calle que la toque', '{0} no tienen calle que las toque'));
-      var why = blocked.length
-        ? P('Of the empty ones, {0}: they can\'t fill until that is fixed.', 'De las vacías, {0}: no pueden llenarse hasta que eso se arregle.', blocked.join(P(' and ', ' y ')))
-        : t === 'res' ? P('Few people want to move in right now. Common reasons: not enough jobs, high taxes, pollution or crime.',
-                          'Ahora poca gente quiere mudarse. Razones comunes: falta de empleo, impuestos altos, contaminación o delincuencia.')
-                      : P('Businesses grow with workers and customers: with few residents, there is little demand.',
-                          'Las empresas crecen con trabajadores y clientes: con pocos residentes, hay poca demanda.');
-      add('wait_' + t, 62, P('Don\'t zone more {0} for now: {1} {2} zones are still empty', 'No zonifiques más terreno {0} por ahora: {1} zonas {2} siguen vacías',
-                             typeName(t), fmt(zt.empty), typeName(t, true)),
-          why, [blocked.length ? P('Give the empty zones power and a road first.', 'Primero dale electricidad y calle a las zonas vacías.')
-                               : t === 'res' ? P('Add jobs (shops and factories) and keep homes away from pollution.',
-                                                 'Añade empleo (tiendas y fábricas) y mantén las viviendas lejos de la contaminación.')
-                                             : P('Build homes nearby: they bring workers and customers.', 'Construye viviendas cerca: traen trabajadores y clientes.'),
-                P('New zones cost money and upkeep, so fill the empty ones first.', 'Las zonas nuevas cuestan dinero, así que llena primero las vacías.')],
-          zt.emptyPos || z.emptyPos[t], 'neutral');
-    }
-  });
 
   // ---- Services ----
   if (live.totalPop > 60 && c.policeStationPop === 0)
@@ -431,7 +399,9 @@ var advise = function(sim, newMonth) {
   });
 
   items.sort(function(a, b2) { return b2.priority - a.priority; });
-  return {items: items, estimate: est, need: need};
+  // POLICY LAB v23: shops whose trips keep failing are outlined on the map all the time
+  return {items: items, estimate: est, need: need,
+          stuckShops: tripZones.filter(function(t) { return t.type === 'com'; }).map(function(t) { return {x: t.x, y: t.y}; })};
 };
 
 

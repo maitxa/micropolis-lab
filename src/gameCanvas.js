@@ -925,11 +925,22 @@ GameCanvas.prototype.setChannel = function(cells) {
   this._lastLayerKey = null;
 };
 
+// POLICY LAB v23: permanent red frames on shops that can't reach customers. list: [{x, y}] zone centres, or null.
+GameCanvas.prototype.setOutlines = function(list) {
+  var key = list && list.length ? list.map(function(z) { return z.x + ':' + z.y; }).join(',') : '';
+  if (key === this._outlinesKey)
+    return;
+  this._outlinesKey = key;
+  this._outlines = key ? list.map(function(z) { return {kind: 'stuck', x: z.x, y: z.y}; }) : null;
+  this._layerVersion = (this._layerVersion || 0) + 1;
+  this._lastLayerKey = null;
+};
+
 GameCanvas.prototype._paintLayer = function() {
   if (this._canvas.id !== GameCanvas.DEFAULT_ID)
     return;
   var svg = this._layerOverlay;
-  var allShapes = (this._channel || []).concat(this._layer || []);
+  var allShapes = (this._channel || []).concat(this._layer || [], this._outlines || []);
   if (!allShapes.length) {
     if (svg && svg.style.display !== 'none')
       svg.style.display = 'none';
@@ -964,7 +975,12 @@ GameCanvas.prototype._paintLayer = function() {
   var line = Math.max(2, Math.round(tw / 7));
   var parts = [];
   allShapes.forEach(function(s) {
-    if (s.kind === 'channel') {
+    if (s.kind === 'stuck') {
+      if (visible(s.x - 1, s.y - 1, 3))
+        parts.push('<rect x="' + ((s.x - 1 - ox) * tw + line / 2) + '" y="' + ((s.y - 1 - oy) * tw + line / 2) + '" width="' +
+                   (3 * tw - line) + '" height="' + (3 * tw - line) + '" rx="' + Math.round(tw / 5) + '" stroke-width="' +
+                   Math.round(line * 1.3) + '" class="lyStuck"/>');
+    } else if (s.kind === 'channel') {
       if (visible(s.x, s.y, 1))
         parts.push('<rect x="' + ((s.x - ox) * tw + line / 2) + '" y="' + ((s.y - oy) * tw + line / 2) + '" width="' + (tw - line) +
                    '" height="' + (tw - line) + '" stroke-width="' + Math.max(1.5, line / 1.5) + '" stroke-dasharray="' +
