@@ -281,8 +281,8 @@ var verdict = function(r) {
     var closest = r.dests[0].d;
     text = P('Places it needs ({0}) within reach: {1}. The closest is {2} road tiles away.',
              'Lugares que necesita ({0}) a su alcance: {1}. El más cercano está a {2} casillas de calle.',
-             what(r.type), fmt(n), closest);
-    if (closest > NEAR)
+             what(r.type), fmt(n), Math.round(closest));
+    if (closest > nearDist())
       text += ' ' + P('That is far: the car turns at random, so many trips will still fail. Closer is better.',
                       'Eso está lejos: el carro gira al azar, así que muchos viajes seguirán fallando. Más cerca es mejor.');
   }

@@ -77,6 +77,8 @@ PowerManager.prototype.doPowerScan = function(census) {
                  census.nuclearPowerPop * NUCLEAR_POWER_STRENGTH;
 
   var powerConsumption = 0; // Amount of power used.
+  // POLICY LAB v27: remembered for the Query tool (capacity and use, in powered tiles)
+  this.lastUse = {max: maxPower, used: 0};
 
   while (this._powerStack.length > 0) {
     var pos = this._powerStack.pop();
@@ -84,6 +86,7 @@ PowerManager.prototype.doPowerScan = function(census) {
     var conNum;
     do {
       powerConsumption++;
+      this.lastUse.used = powerConsumption;
       if (powerConsumption > maxPower) {
         this._emitEvent(NOT_ENOUGH_POWER);
         return;

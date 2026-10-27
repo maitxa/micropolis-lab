@@ -3080,3 +3080,17 @@ nav li {
 
 /* POLICY LAB v26: the button panel grows with its buttons (the Zoning need box is placed under it by the game) */
 #miscButtons { height: auto; }
+
+/* POLICY LAB v27: what affects this spot */
+#queryInfluence { font-family: var(--pl-ui); font-size: 13px; margin: 8px 10px; text-align: left; }
+#queryInfluence .infHead, #queryInfluence .infLines { margin: 4px 0 6px 0; padding-left: 18px; line-height: 1.4; }
+#queryInfluence .infHead li:first-child { font-weight: 700; }
+#queryInfluence .infSection { margin: 4px 0; border-top: 1px solid #e3e8e8; padding-top: 4px; }
+#queryInfluence summary { cursor: pointer; font-weight: 600; }
+#queryInfluence .infTable { width: 100%; border-collapse: collapse; margin: 3px 0; }
+#queryInfluence .infTable td { padding: 1px 4px; vertical-align: top; }
+#queryInfluence .infTable td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#queryInfluence .infGood { color: #1a6b33; }
+#queryInfluence .infBad { color: #b3261b; }
+#queryInfluence .infTotal td { border-top: 1.5px solid var(--pl-ink-soft, #4b5f61); font-weight: 700; }
+#queryInfluence .infNote { margin: 2px 0 4px 0; font-size: 12px; color: var(--pl-ink-soft, #4b5f61); }

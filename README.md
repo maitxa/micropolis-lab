@@ -205,6 +205,23 @@ saved before v25 keep the 1989 answers for those questions.
   "Copy report" copies it as text (`src/mistakes.js`).
 - The button panel grows with its buttons, and the Zoning need box is placed under it (unless you have moved it).
 
+### v27: the Query tool shows what affects a spot, and what a building does
+
+- **Homes, shops, factories (and any road or open land): "What affects this spot".** Headline: land value (0-250) and
+  class, the taxes the zone pays a year (its share of the city's yearly taxes: the game collects them for the whole city
+  at once, so the share is by people, and by land value when "expensive neighbourhoods pay more tax"), residents or
+  jobs, the pollution a factory puts out, and for homes the growth score (land value minus pollution). Then land value
+  piece by piece (distance from the centre, unspoiled land nearby, waterfront, shops within walking distance, a hospital,
+  minus pollution and very high crime), crime piece by piece (cheap land, crowding, police, social services, parks),
+  the pollution here and its sources within 6 tiles, and which services reach the spot (police, fire, hospital, a
+  working train depot, water treatment, parks). Worked out with the simulation's own formulas from the current maps
+  (`src/influence.js`).
+- **Police and fire stations, hospitals, big parks and parks, train depots, water plants, coal and nuclear plants:
+  "What this building does"**, with its reach drawn on the map (police and fire: where the effect is strong and where it
+  is still felt; the others: their fixed radius; coal plants: how far heavy pollution reaches), the numbers (crime points
+  removed, home zones covered, funding, capacity in use) and whether it is working (no power, no rail link).
+- Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
+
 ### Bug fix
 
 In upstream micropolisJS the crime calculation never ran (it read `mapWidth`/`mapHeight`, which `BlockMap` doesn't define), so

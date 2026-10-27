@@ -585,6 +585,10 @@ var fireAnalysis = function(blockMaps) {
 
 
 var BlockMapUtils = {
+  // POLICY LAB v27: for the Query tool's "What affects this spot"
+  getPollutionValue: getPollutionValue,
+  pollutionSourceOf: pollutionSourceOf,
+  getCityCentreDistance: getCityCentreDistance,
   crimeScan: crimeScan,
   fireAnalysis: fireAnalysis,
   neutraliseRateOfGrowthMap: neutraliseRateOfGrowthMap,

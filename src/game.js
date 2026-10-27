@@ -52,6 +52,7 @@ import { Status } from './status.js';
 import { NeedChart } from './needChart.js';
 import { CityStore } from './cityStore.js';
 import { CityPanels } from './cityPanels.js';
+import { Influence } from './influence.js';
 
 var disasterTimeout = 20 * 1000;
 
@@ -667,6 +668,7 @@ Game.prototype.runAdvisor = function(newMonth) {
   }
   this._advice = result.items;
   this._need = result.need;
+  this._estimate = result.estimate;
 
   // Yearly balance under Funds
   var bal = result.estimate.balance;
@@ -1192,11 +1194,30 @@ var openQueryWindow = makeWindowOpenHandler('query');
 Game.prototype.handleQueryRequest = function(where) {
   openQueryWindow.call(this);
   $('#queryConnections').hide();
+  $('#queryInfluence').hide().empty();
   if (!where)
     return;
   var map = this.simulation._map;
   var zone = Reach.zoneAt(map, where.x, where.y);
   var target, report;
+
+  // POLICY LAB v27: a service, park or power plant: what it does, and its reach drawn on the map
+  var bld = zone ? null : Influence.building(this, where.x, where.y);
+  if (bld) {
+    this.showInfluence(null, bld);
+    window.clearTimeout(this._hintDoneTimer);
+    this._hint = {index: 0, item: {id: 'influence', text: bld.title, targets: bld.shapes.length ? bld.shapes :
+                                   [{kind: 'tile', x: bld.x, y: bld.y, label: ''}]}};
+    this.renderHint(false);
+    return;
+  }
+  // POLICY LAB v27: what affects this spot (homes, shops, factories, roads and open land)
+  try {
+    this.showInfluence(Influence.spot(this, where.x, where.y, zone), null);
+  } catch (e) {
+    console.warn('Influence failed', e);
+  }
+
   if (zone) {
     report = Reach.zoneReport(map, zone, this.depotCovers(zone.x, zone.y));
     target = {kind: 'zone', x: zone.x, y: zone.y, type: zone.type, label: ''};
@@ -1204,6 +1225,9 @@ Game.prototype.handleQueryRequest = function(where) {
     report = Reach.roadReport(map, where.x, where.y);
     target = {kind: 'tile', x: where.x, y: where.y, road: true, label: ''};
   } else {
+    // open land: nothing to draw (and no leftover highlight from an earlier query)
+    if (this._hint && (this._hint.item.id === 'reach' || this._hint.item.id === 'influence'))
+      this.hideHint();
     return;
   }
   this.showConnections(report);
@@ -1215,6 +1239,58 @@ Game.prototype.handleQueryRequest = function(where) {
 Game.prototype.depotCovers = function(x, y) {
   var depots = this.simulation.blockMaps && this.simulation.blockMaps.depotMap;
   return !!depots && depots.worldGet(x, y) > 0;
+};
+
+// POLICY LAB v27: fill the "What affects this spot" / "What this building does" section of the Query window
+Game.prototype.showInfluence = function(spot, bld) {
+  var box = $('#queryInfluence').empty();
+  if (bld) {
+    box.append($('<div class="queryConnTitle"></div>').text(I18n.p('What this {0} does', 'Qué hace: {0}', bld.title.toLowerCase())));
+    var ul = $('<ul class="infLines"></ul>');
+    bld.lines.forEach(function(l) { ul.append($('<li></li>').text(l)); });
+    box.append(ul);
+    if (bld.shapes.length)
+      box.append($('<p class="infNote"></p>').text(I18n.p('Its reach is drawn on the map.', 'Su alcance está dibujado en el mapa.')));
+    box.show();
+    return;
+  }
+  if (!spot)
+    return;
+  box.append($('<div class="queryConnTitle"></div>').text(I18n.p('What affects this spot', 'Qué influye en este lugar')));
+  if (spot.headline.length) {
+    var h = $('<ul class="infHead"></ul>');
+    spot.headline.forEach(function(l) { h.append($('<li></li>').text(l)); });
+    box.append(h);
+  }
+  spot.sections.forEach(function(sec, i) {
+    var d = $('<details class="infSection"></details>').prop('open', i < 2);
+    d.append($('<summary></summary>').text(sec.title));
+    var t = $('<table class="infTable"></table>');
+    // land value: higher is better; crime and pollution: higher is worse
+    var goodHigh = !!sec.goodHigh;
+    sec.rows.forEach(function(r) {
+      var tr = $('<tr></tr>');
+      tr.append($('<td></td>').text(r.label));
+      var val = r.text !== undefined ? r.text : (r.raw ? MiscUtils.formatNumber(Math.round(r.value)) :
+                ((Math.round(r.value) > 0 ? '+' : Math.round(r.value) < 0 ? '\u2212' : '') + MiscUtils.formatNumber(Math.abs(Math.round(r.value)))));
+      var cls = '';
+      if (sec.list)
+        cls = r.good ? 'infGood' : 'infBad';
+      else if (r.value !== undefined && !r.raw && Math.round(r.value) !== 0)
+        cls = (r.value > 0) === goodHigh ? 'infGood' : 'infBad';
+      else if (r.raw)
+        cls = 'infBad';
+      tr.append($('<td class="num"></td>').addClass(cls).text(val));
+      t.append(tr);
+    });
+    if (sec.total !== null && sec.total !== undefined)
+      t.append($('<tr class="infTotal"></tr>').append($('<td></td>').text(I18n.p('= now', '= ahora')), $('<td class="num"></td>').text(MiscUtils.formatNumber(sec.total))));
+    d.append(t);
+    if (sec.note)
+      d.append($('<p class="infNote"></p>').text(sec.note));
+    box.append(d);
+  });
+  box.show();
 };
 
 // Fill the "Connections" section of the Query window
