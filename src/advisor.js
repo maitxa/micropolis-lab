@@ -320,12 +320,12 @@ var advise = function(sim, newMonth) {
         P('A depot only works with rail right next to it.', 'Una estación solo funciona con una vía justo al lado.'),
         [P('Run rail (key 5) up to the depot.', 'Lleva una vía férrea (tecla 5) hasta la estación.')]);
   if (c.depotUnlinked)
-    add('depotLink', 66, N(c.depotUnlinked, '{0} train depot isn\'t linked by rail to another depot', '{0} train depots aren\'t linked by rail to another depot',
-                           '{0} estación de tren no está unida por vía férrea a otra estación', '{0} estaciones de tren no están unidas por vía férrea a otra estación'),
-        P('A train needs somewhere to go: a depot only works when its rail line reaches at least one other depot.',
-          'Un tren necesita adónde ir: una estación solo funciona cuando su vía llega al menos a otra estación.'),
-        [P('Build a second depot (key T) in another neighbourhood and join the two with rail (key 5).',
-           'Construye una segunda estación (tecla T) en otro vecindario y une las dos con vía férrea (tecla 5).'),
+    add('depotLink', 66, N(c.depotUnlinked, '{0} train depot\'s line goes nowhere', '{0} train depots\' lines go nowhere',
+                           'La vía de {0} estación de tren no lleva a ninguna parte', 'Las vías de {0} estaciones de tren no llevan a ninguna parte'),
+        P('A train needs a route: a depot works when its rail line reaches another depot, or loops back so the train can turn around (a loop of at least 16 rail tiles).',
+          'Un tren necesita una ruta: una estación funciona cuando su vía llega a otra estación, o da la vuelta para que el tren pueda regresar (un circuito de al menos 16 casillas de vía).'),
+        [P('Run the rail round a loop and back (key 5), or build a second depot (key T) in another neighbourhood and join the two.',
+           'Haz que la vía dé la vuelta y regrese (tecla 5), o construye una segunda estación (tecla T) en otro vecindario y únelas.'),
          P('Keep the rail clear of roads, crossing them only at right angles.', 'Mantén la vía separada de las calles, cruzándolas solo en ángulo recto.')]);
   if (c.waterPlantUnpowered)
     add('water', 68, N(c.waterPlantUnpowered, '{0} water plant has no power', '{0} water plants have no power',
@@ -383,7 +383,7 @@ var advise = function(sim, newMonth) {
     needJobs: circleAround(z.res.list, 20, P('Zone shops and factories inside this circle', 'Zonifica tiendas y fábricas dentro de este círculo')),
     stadium: circleAround(z.res.list, 10, P('Build the stadium near here', 'Construye el estadio cerca de aquí')),
     depot: frames(c.depotUnconnectedList, P('Needs rail right next to it', 'Necesita una vía justo al lado')),
-    depotLink: frames(c.depotUnlinkedList, P('Not linked by rail to another depot', 'Sin vía hasta otra estación')),
+    depotLink: frames(c.depotUnlinkedList, P('Its line goes nowhere', 'Su vía no lleva a ninguna parte')),
     water: frames(c.waterPlantUnpoweredList, P('No power', 'Sin electricidad')),
     pollution: [{kind: 'circle', x: map.pollutionMaxX, y: map.pollutionMaxY, r: 8,
                  label: P('Most polluted area', 'Zona más contaminada')}]

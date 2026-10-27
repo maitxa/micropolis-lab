@@ -152,7 +152,7 @@ var ES = {
   'Road': 'Calle',
   'Rail (key 5)': 'Vía férrea (tecla 5)',
   'Rail': 'Vía férrea',
-  'Train depot: needs a rail line to another depot (key T)': 'Estación de tren: necesita una vía férrea hasta otra estación (tecla T)',
+  'Train depot: needs a rail line to another depot, or a loop back (key T)': 'Estación de tren: necesita una vía férrea hasta otra estación, o un circuito de vuelta (tecla T)',
   'Train depot': 'Estación de tren',
   'Power and water': 'Electricidad y agua',
   'Power line (key 6)': 'Cable eléctrico (tecla 6)',

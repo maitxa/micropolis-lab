@@ -201,9 +201,9 @@ var report = function(game) {
   if (c.depotUnconnected || c.depotUnlinked)
     add('depots', 60,
         P('{0} train depots do nothing', '{0} estaciones de tren no hacen nada', fmt((c.depotUnconnected || 0) + (c.depotUnlinked || 0))),
-        P('A depot only works with rail touching it that leads to another depot. You still pay its upkeep.',
-          'Una estación solo funciona con una vía que la toque y lleve a otra estación. Aun así pagas su mantenimiento.'),
-        P('Run rail from it to a second depot.', 'Lleva una vía desde ella hasta una segunda estación.'),
+        P('A depot only works with rail touching it that leads to another depot, or loops back so the train can turn around. You still pay its upkeep.',
+          'Una estación solo funciona con una vía que la toque y lleve a otra estación, o que dé la vuelta para que el tren pueda regresar. Aun así pagas su mantenimiento.'),
+        P('Run its rail round a loop of at least 16 tiles and back, or to a second depot.', 'Haz que su vía dé una vuelta de al menos 16 casillas y regrese, o llévala a una segunda estación.'),
         frames((c.depotUnconnectedList || []).concat(c.depotUnlinkedList || []), P('Not working', 'No funciona')));
 
   // ---- Drawbridges

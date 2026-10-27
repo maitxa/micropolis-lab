@@ -340,7 +340,7 @@ var building = function(game, x, y) {
     var working = bm.depotMap && bm.depotMap.worldGet(cx, cy) > 0;
     lines.push(P('Zones within 16 tiles can travel twice as far, and put half as much traffic on the roads: {0} home zones.',
                  'Las zonas a menos de 16 casillas pueden viajar el doble de lejos, y ponen la mitad de tráfico en las calles: {0} zonas residenciales.', homesWithin(map, cx, cy, 16)));
-    if (!working) lines.push(P('Not working: it needs rail touching it that leads to another depot.', 'No funciona: necesita una vía que la toque y lleve a otra estación.'));
+    if (!working) lines.push(P('Not working: it needs rail touching it that leads to another depot, or loops back (16+ rail tiles).', 'No funciona: necesita una vía que la toque y lleve a otra estación, o que dé la vuelta y regrese (16 casillas o más).'));
     circle(16, working ? P('Covered by the depot', 'Cubierto por la estación') : P('Would be covered', 'Quedaría cubierto'));
   } else if (found && v === TileValues.WATERPLANT) {
     title = P('Water treatment plant', 'Planta de tratamiento de aguas');

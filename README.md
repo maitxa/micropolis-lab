@@ -27,8 +27,9 @@ commercial and industrial zones, jobs per resident, neighbourhood averages, powe
 affecting the city (e.g. what is driving crime, where pollution comes from, what tax breaks cost).
 
 Two new buildings (drawn in the original style, in tile slots 956-973 that micropolisJS reserved but never used):
-**Train depot** ($1,000, key **T**): must touch a rail line that leads to at least one other depot (a train needs
-somewhere to go, so a single depot does nothing); zones within 16 tiles (a true circle, measured in 2×2 blocks) can
+**Train depot** ($1,000, key **T**): must touch a rail line that goes somewhere: to another depot, or (since v28)
+round a loop and back, so the train can turn around (a circuit of at least 16 rail tiles, back to the depot or a turning
+loop further along the line); a depot with a stub of track does nothing; zones within 16 tiles (a true circle, measured in 2×2 blocks) can
 commute twice as far and put half as much traffic on the roads. The water plant, hospital and shop coverage also use
 2×2 blocks now, instead of the coarse 8×8 blocks of the first versions. **Water treatment plant** ($2,000, key **U**): needs power; treats the sewage of
 zones within ~24 tiles. A new world-model question, "Does untreated sewage pollute rivers?", makes untreated zones send

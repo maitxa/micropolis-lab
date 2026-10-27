@@ -5,7 +5,7 @@
  *
  * Two new buildings:
  *
- *  TRAIN DEPOT (3x3). Works if rail touches it and that rail leads to at least one other depot (a train needs somewhere
+ *  TRAIN DEPOT (3x3). Works if rail touches it and that rail leads to another depot, or loops back (v28) (a train needs somewhere
  *  to go). Zones within 16 tiles can commute by train: their trips
  *  may travel twice as far (60 tiles instead of 30), and half as much of their traffic ends up on the roads.
  *
@@ -63,15 +63,35 @@ var isDepotTile = function(v) {
   return v >= TileValues.DEPOTBASE && v <= TileValues.DEPOTBASE + 8;
 };
 
-// Is this depot linked by rail to at least one other depot? (A train line needs two stations.) Follows the rail from
-// the tiles touching the depot, up to a long distance.
+// Does this depot's rail line go somewhere? (A train needs a route.) Yes if, following the rail from the tiles touching
+// the depot, it reaches another depot, or (POLICY LAB v28) it loops back so the train can turn around and return: a
+// circuit of at least MIN_LOOP rail tiles, either back to the depot itself or a turning loop further along the line.
 var MAX_LINE = 600;
-var linkedToAnotherDepot = function(map, x, y, starts) {
-  var seen = {}, queue = starts.slice();
-  starts.forEach(function(s) { seen[s[0] + ',' + s[1]] = true; });
+var MIN_LOOP = 16;
+var lineGoesSomewhere = function(map, x, y, starts) {
+  // a search tree over the rail tiles; the depot itself is the root ('D')
+  var parent = {}, depth = {}, queue = [];
+  starts.forEach(function(s) {
+    var k = s[0] + ',' + s[1];
+    if (parent[k] === undefined) {
+      parent[k] = 'D';
+      depth[k] = 1;
+      queue.push([s[0], s[1]]);
+    }
+  });
+  depth.D = 0;
+  // the length of the circuit closed by joining tiles a and b (through their nearest common ancestor)
+  var loopLength = function(a, b) {
+    var seenA = {}, n = a;
+    while (n !== undefined) { seenA[n] = true; n = parent[n]; }
+    n = b;
+    while (n !== undefined && !seenA[n]) n = parent[n];
+    var common = n === undefined ? 'D' : n;
+    return depth[a] + depth[b] - 2 * depth[common] + 1;
+  };
   var dirs = [[0, -1], [1, 0], [0, 1], [-1, 0]];
   for (var q = 0; q < queue.length && q < MAX_LINE; q++) {
-    var cx = queue[q][0], cy = queue[q][1];
+    var cx = queue[q][0], cy = queue[q][1], ck = cx + ',' + cy;
     for (var k = 0; k < 4; k++) {
       var nx = cx + dirs[k][0], ny = cy + dirs[k][1];
       if (!map.testBounds(nx, ny))
@@ -80,10 +100,16 @@ var linkedToAnotherDepot = function(map, x, y, starts) {
       // another depot's building (not this one's own 3x3)
       if (isDepotTile(v) && (Math.abs(nx - x) > 1 || Math.abs(ny - y) > 1))
         return true;
+      if (!isRail(v))
+        continue;
       var key = nx + ',' + ny;
-      if (!seen[key] && isRail(v)) {
-        seen[key] = true;
+      if (parent[key] === undefined) {
+        parent[key] = ck;
+        depth[key] = depth[ck] + 1;
         queue.push([nx, ny]);
+      } else if (parent[ck] !== key && parent[key] !== ck && loopLength(ck, key) >= MIN_LOOP) {
+        // a second way to reach a tile already on the tree: the track closes a circuit
+        return true;
       }
     }
   }
@@ -92,7 +118,7 @@ var linkedToAnotherDepot = function(map, x, y, starts) {
 
 
 // Called by the map scanner when it finds the centre tile of a train depot. It works (its zones commute by train) if
-// rail touches it and that rail leads to at least one other depot.
+// rail touches it and that rail leads to another depot or loops back.
 var depotFound = function(map, x, y, simData) {
   simData.census.depotPop += 1;
 
@@ -113,8 +139,8 @@ var depotFound = function(map, x, y, simData) {
     return;
   }
 
-  // ...and that line must lead to another depot: a train needs somewhere to go
-  if (!linkedToAnotherDepot(map, x, y, starts)) {
+  // ...and that line must go somewhere: to another depot, or round a loop and back (a train needs a route)
+  if (!lineGoesSomewhere(map, x, y, starts)) {
     simData.census.depotUnlinked = (simData.census.depotUnlinked || 0) + 1;
     (simData.census.depotUnlinkedList = simData.census.depotUnlinkedList || []).push({x: x, y: y});
     return;
