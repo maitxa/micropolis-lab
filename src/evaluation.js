@@ -67,7 +67,7 @@ Evaluation.prototype.evalInit = function() {
 };
 
 
-var saveProps = ['cityClass', 'cityScore'];
+var saveProps = ['cityClass', 'cityScore', 'scoreBreakdown'];
 
 Evaluation.prototype.save = function(saveData) {
   for (var i = 0, l = saveProps.length; i < l; i++)
@@ -237,46 +237,75 @@ Evaluation.prototype.getScore = function(simData) {
   var cityScoreLast = this.cityScore;
   var score = 0;
 
-  for (var i = 0; i < NUMPROBLEMS; i++)
+  // POLICY LAB: record each step, so the Evaluation window can show how the score was worked out
+  var steps = [];
+  var step = function(key, before, after, info) {
+    if (after !== before)
+      steps.push({key: key, change: after - before, info: info});
+  };
+  var problems = [];
+  for (var i = 0; i < NUMPROBLEMS; i++) {
     score += problemData[i];
+    problems.push(Math.round(problemData[i]));
+  }
 
   score = Math.floor(score / 3);
   score = (250 - Math.min(score, 250)) * 4;
+  var base = score;
+  var before;
 
   // Penalise the player by 15% if demand for any type of zone is capped due
   // to lack of suitable buildings
   var demandPenalty = 0.85;
 
+  before = score;
   if (valves.resCap)
     score = Math.round(score * demandPenalty);
+  step('capRes', before, score);
 
+  before = score;
   if (valves.comCap)
     score = Math.round(score * demandPenalty);
+  step('capCom', before, score);
 
+  before = score;
   if (valves.indCap)
     score = Math.round(score * demandPenalty);
+  step('capInd', before, score);
 
   // Penalize if roads/rail underfunded
+  before = score;
   if (budget.roadEffect < budget.MAX_ROAD_EFFECT)
     score -= budget.MAX_ROAD_EFFECT - budget.roadEffect;
+  step('roads', before, score);
 
   // Penalize player by up to 10% for underfunded police and fire services
+  before = score;
   if (budget.policeEffect < budget.MAX_POLICE_STATION_EFFECT)
     score = Math.round(score * (0.9 + (budget.policeEffect / (10 * budget.MAX_POLICE_STATION_EFFECT))));
+  step('police', before, score);
 
+  before = score;
   if (budget.fireEffect < budget.MAX_FIRE_STATION_EFFECT)
     score = Math.round(score * (0.9 + (budget.fireEffect / (10 * budget.MAX_FIRE_STATION_EFFECT))));
+  step('fire', before, score);
 
   // Penalise the player by 15% if demand for any type of zone has collapsed due
   // to overprovision
+  before = score;
   if (valves.resValve < -1000)
     score = Math.round(score * 0.85);
+  step('collapseRes', before, score);
 
+  before = score;
   if (valves.comValve < -1000)
     score = Math.round(score * 0.85);
+  step('collapseCom', before, score);
 
+  before = score;
   if (valves.indValve < -1000)
     score = Math.round(score * 0.85);
+  step('collapseInd', before, score);
 
   var scale = 1.0;
   if (this.cityPop === 0 || this.cityPopDelta === 0 || this.cityPopDelta === this.cityPop) {
@@ -287,25 +316,41 @@ Evaluation.prototype.getScore = function(simData) {
     // If the city is growing, scale score by percentage growth in population
     scale = (this.cityPopDelta / this.cityPop) + 1.0;
   } else if (this.cityPopDelta < 0) {
-    // If the city is shrinking, scale down by up to 5% based on level of outward migration
-    scale = 0.95 + Math.floor(this.cityPopDelta / (this.cityPop - this.cityPopDelta));
+    // If the city is shrinking, scale down: 5%, plus the share of the population that left
+    // POLICY LAB BUG FIX: micropolisJS had Math.floor() around the fraction, which the 1989 C code (s_eval.c) doesn't.
+    // Any shrinkage at all then gave -1, a scale of -0.05, and a score of 0 for the year (halving the displayed score).
+    scale = 0.95 + this.cityPopDelta / (this.cityPop - this.cityPopDelta);
   }
 
+  before = score;
   score = Math.round(score * scale);
+  step(scale >= 1 ? 'growth' : 'shrink', before, score, Math.round((scale - 1) * 1000) / 10);
 
   // Penalize player for having fires and a burdensome tax rate
-  score = score - getFireSeverity(census) - budget.cityTax;
+  before = score;
+  score = score - getFireSeverity(census);
+  step('fires', before, score);
+  before = score;
+  score = score - budget.cityTax;
+  step('tax', before, score, budget.cityTax);
 
   // Penalize player based on ratio of unpowered zones to total zones
+  before = score;
   scale = census.unpoweredZoneCount + census.poweredZoneCount;
   if (scale > 0)
     score = Math.round(score * (census.poweredZoneCount / scale));
+  step('unpowered', before, score, census.unpoweredZoneCount);
 
   // Force in to range 0-1000. New score is average of last score and new computed value
+  before = score;
   score = MiscUtils.clamp(score, 0, 1000);
+  step('limits', before, score);
   this.cityScore = Math.round((this.cityScore + score) / 2);
 
   this.cityScoreDelta = this.cityScore - cityScoreLast;
+  // POLICY LAB: the breakdown (problems in the order of Evaluation.CRIME ... FIRE)
+  this.scoreBreakdown = {problems: problems, base: base, steps: steps, thisYear: score, lastYear: cityScoreLast,
+                         final: this.cityScore};
 
   if (this.cityScoreDelta !== 0)
     this._emitEvent(SCORE_UPDATED, this.cityScore);

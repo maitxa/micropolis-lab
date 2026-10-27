@@ -141,6 +141,12 @@ var cityData = function(sim) {
            '</td><td class="dataNote">' + better(goodHigh) + '</td></tr>';
   };
   html += q(P('Land value', 'Valor del suelo'), live.landValueAverage, Text.L('landValueStrings'), '#8e6c3a', true);
+  // POLICY LAB v25: the land value the city taxes, when each neighbourhood pays on its own value
+  if (Policy.taxByValue && live.taxLandValue !== undefined)
+    html += '<tr><td>' + P('Taxed land value', 'Valor del suelo gravado') + '</td><td>' + bar(live.taxLandValue / 2.5, '#8e6c3a') +
+            '</td><td>' + fmt(live.taxLandValue) + ' / 250</td><td class="dataNote">' +
+            P('weighted by where people live and work (city-wide average: {0})', 'ponderado según dónde vive y trabaja la gente (promedio de la ciudad: {0})',
+              fmt(live.landValueAverage)) + '</td></tr>';
   html += q(P('Crime', 'Delincuencia'), live.crimeAverage, Text.L('crimeStrings'), '#c0392b', false);
   html += q(P('Pollution', 'Contaminación'), live.pollutionAverage, Text.L('pollutionStrings'), '#7f8c8d', false);
   var traffic = live.trafficAverage || 0;
@@ -197,7 +203,7 @@ var cityData = function(sim) {
 
 // Plain-language description of the world model, listing only what differs from the 1989 original
 var worldModelSummary = function() {
-  var d = Policy.DEFAULTS, out = [];
+  var d = Policy.ORIGINAL, out = [];
   var words = {0: P('not at all', 'nada'), 0.5: P('weakly', 'poco'), 1: P('strongly', 'mucho')};
   if (Policy.povertyCrime !== d.povertyCrime)
     out.push(P('poverty drives crime {0}', 'la pobreza genera delincuencia: {0}', words[Policy.povertyCrime]));
@@ -224,6 +230,14 @@ var worldModelSummary = function() {
     out.push(P('residents value shops within walking distance', 'los residentes valoran tener tiendas a poca distancia a pie'));
   if (Policy.healthAffects !== d.healthAffects)
     out.push(P('access to a hospital affects where people live', 'el acceso a un hospital influye en dónde vive la gente'));
+  if (Policy.parksCrime !== d.parksCrime)
+    out.push(P('parks reduce crime nearby', 'los parques reducen la delincuencia cercana'));
+  if (Policy.waterfront !== d.waterfront)
+    out.push(P('people pay more to live near water', 'la gente paga más por vivir cerca del agua'));
+  if (Policy.taxByValue !== d.taxByValue)
+    out.push(P('each neighbourhood pays tax on its own land value', 'cada barrio paga impuestos según el valor de su propio suelo'));
+  if (Policy.commute !== d.commute)
+    out.push(P('people travel up to {0} road tiles (the original: 30)', 'la gente viaja hasta {0} casillas de calle (el original: 30)', Policy.commute));
   return out;
 };
 
@@ -262,6 +276,7 @@ var policyReport = function(sim) {
     if (Policy.densityCrime) parts.push(P('crowding adds {0}', 'el hacinamiento suma {0}', fmt(p.density)));
     parts.push(P('police remove {0}', 'la policía resta {0}', fmt(p.police)));
     if (Policy.socialCrime) parts.push(P('social services remove {0}', 'los servicios sociales restan {0}', fmt(p.social)));
+    if (Policy.parksCrime) parts.push(P('parks remove {0}', 'los parques restan {0}', fmt(p.parks || 0)));
     crimeText += esc(parts.join(', ')) + ' ' + P('points.', 'puntos.');
     if (live.crimeAverage < 64) {
       crimeText += ' ' + P('Crime is not a problem yet.', 'La delincuencia todavía no es un problema.');
@@ -280,6 +295,8 @@ var policyReport = function(sim) {
                       'reducir el hacinamiento (la ley de densidad de vivienda puede limitarlo)'));
       if (Policy.socialCrime > 0)
         levers.push(P('fund social services', 'financiar los servicios sociales'));
+      if (Policy.parksCrime)
+        levers.push(P('build big parks (key G) in the worst neighbourhoods', 'construir parques grandes (tecla G) en los peores barrios'));
       crimeText += ' ' + P('What would help most: {0}.', 'Lo que más ayudaría: {0}.', esc(levers.join('; ')));
     }
     add(P('Crime', 'Delincuencia'), crimeText);

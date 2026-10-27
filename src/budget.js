@@ -309,11 +309,19 @@ Budget.prototype.updateFundEffects = function() {
 };
 
 
+// POLICY LAB v25: the land value the city taxes. 1989: the average over all built-up land. With "Do expensive
+// neighbourhoods pay more tax?": each zone's own land value, weighted by its people (amenities.js).
+var taxedLandValue = function(census) {
+  if (Policy.taxByValue && census.taxLandValue !== undefined)
+    return census.taxLandValue;
+  return census.landValueAverage;
+};
+
 // POLICY LAB: estimate a full year's money at the current rates, without changing anything: taxes the city would
 // collect, minus the running costs it would pay at the current funding percentages (same formulas as collectTax).
 // Used for the "a year" balance under Funds and by the city advisor.
 Budget.prototype.estimateYear = function(gameLevel, census) {
-  var taxes = Math.floor(Math.floor(census.totalPop * census.landValueAverage / 120) * this.cityTax * FLevels[gameLevel]);
+  var taxes = Math.floor(Math.floor(census.totalPop * taxedLandValue(census) / 120) * this.cityTax * FLevels[gameLevel]);
   taxes = Math.floor(taxes * Policy.taxShare());
   var road = Math.floor((census.roadTotal * Policy.transportCosts().roadMaintenance +
                          census.railTotal * Policy.transportCosts().railMaintenance) * RLevels[gameLevel]);
@@ -350,7 +358,7 @@ Budget.prototype.collectTax = function(gameLevel, census) {
   var railCost = census.railTotal * Policy.transportCosts().railMaintenance;
   this.roadMaintenanceBudget = Math.floor((roadCost + railCost) * RLevels[gameLevel]);
 
-  this.taxFund = Math.floor(Math.floor(census.totalPop * census.landValueAverage / 120) * this.cityTax * FLevels[gameLevel]);
+  this.taxFund = Math.floor(Math.floor(census.totalPop * taxedLandValue(census) / 120) * this.cityTax * FLevels[gameLevel]);
   // POLICY LAB: business incentives (tax breaks) reduce the share of taxes the city collects (original: all of it)
   var fullTaxFund = this.taxFund;
   this.taxFund = Math.floor(this.taxFund * Policy.taxShare());

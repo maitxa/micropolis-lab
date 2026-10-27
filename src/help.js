@@ -146,7 +146,7 @@ add(Messages.REACHED_METROPOLIS, 'Your population passed 100,000.', milestone);
 add(Messages.REACHED_MEGALOPOLIS, 'Your population passed 500,000.', milestone);
 add(Messages.WELCOME,
     'Start with a power plant, a few Residential, Commercial and Industrial zones, roads along their edges and power lines.',
-    ['Watch the R/C/I bars (bottom left): they show what the city wants next.',
+    ['Watch the Zoning need bars (bottom left): above the line, zone more of that kind; below it, don\'t.',
      'Keyboard: number keys pick tools, Shift+click draws straight lines, Ctrl+Z (Cmd+Z) undoes. Press ? for the list.']);
 
 
@@ -257,7 +257,7 @@ addES(Messages.HELICOPTER_CRASHED,
       ['Retira los restos y reconstruye.']);
 addES(Messages.WELCOME,
       'Empieza con una planta eléctrica, algunas zonas residenciales, comerciales e industriales, calles en sus bordes y cables eléctricos.',
-      ['Mira las barras R/C/I (abajo a la izquierda): muestran lo que la ciudad quiere a continuación.', 'Teclado: los números eligen herramientas, Shift+clic traza líneas rectas, Ctrl+Z (Cmd+Z) deshace. Pulsa ? para ver la lista.']);
+      ['Mira las barras de Necesidad de zonas (abajo a la izquierda): arriba de la línea, zonifica más de ese tipo; abajo, no.', 'Teclado: los números eligen herramientas, Shift+clic traza líneas rectas, Ctrl+Z (Cmd+Z) deshace. Pulsa ? para ver la lista.']);
 var milestoneES = ['¡Bien hecho! Las ciudades más grandes traen nuevas demandas (estadio, puerto, aeropuerto) y problemas más grandes.',
                     'Revisa la ventana de Evaluación para ver lo que más preocupa a los residentes.'];
 addES(Messages.REACHED_TOWN, 'Tu población superó los 2,000 habitantes.', milestoneES);

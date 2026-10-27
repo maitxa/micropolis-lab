@@ -400,7 +400,30 @@ var ES = {
   'CITY': 'CIUDAD',
   'CAPITAL': 'CAPITAL',
   'METROPOLIS': 'METRÓPOLIS',
-  'MEGALOPOLIS': 'MEGALÓPOLIS'
+  'MEGALOPOLIS': 'MEGALÓPOLIS',
+  // POLICY LAB v25
+  'Scoreboard': 'Tabla de puntuaciones',
+  'City status': 'Estado de la ciudad',
+  'Do parks reduce crime?': '¿Los parques reducen la delincuencia?',
+  'Do people pay more to live near water?': '¿La gente paga más por vivir cerca del agua?',
+  'Do expensive neighbourhoods pay more tax?': '¿Los barrios caros pagan más impuestos?',
+  'No: the city-wide average': 'No: el promedio de la ciudad',
+  'No: the city-wide average (original)': 'No: el promedio de la ciudad (original)',
+  'Yes: each pays on its own land value': 'Sí: cada uno paga según el valor de su propio suelo',
+  'How far will people travel on a trip?': '¿Hasta dónde viaja la gente en un trayecto?',
+  '30 road tiles': '30 casillas de calle',
+  '30 road tiles (original)': '30 casillas de calle (original)',
+  '60 road tiles': '60 casillas de calle',
+  '90 road tiles': '90 casillas de calle',
+  'Reset to the original 1989 rules': 'Volver a las reglas originales de 1989',
+  'Policy Lab defaults': 'Valores de Policy Lab',
+  'Go back in time': 'Volver atrás en el tiempo',
+  'Go back to an earlier year of this city': 'Volver a un año anterior de esta ciudad',
+  'Big park': 'Parque grande',
+  'Big park: cleans the air and (in the default world model) lowers crime within 8 tiles (key G)': 'Parque grande: limpia el aire y (en el modelo del mundo predeterminado) reduce la delincuencia a menos de 8 casillas (tecla G)',
+  'How your score was worked out': 'Cómo se calculó tu puntuación',
+  'Save this city as:': 'Guardar esta ciudad como:',
+  'Saving again under the same name replaces that save. Saved in this browser; use Load game on the start screen to open it, or to export it to a file.': 'Guardar otra vez con el mismo nombre reemplaza esa partida. Se guarda en este navegador; usa Cargar partida en la pantalla de inicio para abrirla o exportarla a un archivo.'
 };
 
 

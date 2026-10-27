@@ -105,6 +105,10 @@ var Simulation = EventEmitter(function (gameMap, gameLevel, speed, savedGame) {
     // Scores the volume of traffic in this cluster, range 0-240
     trafficDensityMap: new BlockMap(this._map.width, this._map.height, 2),
 
+    // POLICY LAB v25: within reach of clean water (1), and of parks (1 = a small park, 2 = a big park); see amenities.js
+    waterfrontMap: new BlockMap(this._map.width, this._map.height, 2),
+    parkEffectMap: new BlockMap(this._map.width, this._map.height, 2),
+
     // Temporary maps
     tempMap1: new BlockMap(this._map.width, this._map.height, 2),
     tempMap2: new BlockMap(this._map.width, this._map.height, 2),

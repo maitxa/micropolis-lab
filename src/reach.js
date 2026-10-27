@@ -3,7 +3,7 @@
  * This code is released under the GNU GPL v3, with some additional terms, like the rest of micropolisJS.
  * Modified version: NOT the original micropolisJS / Micropolis.
  *
- * "Reach" of a zone: which roads its trip car can get to within the 30-tile limit, which destinations it could find
+ * "Reach" of a zone: which roads its trip car can get to within the trip limit (30 road tiles in 1989; see Policy.commute), which destinations it could find
  * there, and which dead ends could stop it. This is the BEST case: the game's car turns at random at every junction
  * and gives up at a dead end (as in 1989), so a destination that is far away or behind many junctions will still be
  * missed some of the time.
@@ -20,8 +20,9 @@ import * as TileValues from './tileValues.ts';
 var P = I18n.p;
 var fmt = MiscUtils.formatNumber;
 
-var MAX_DISTANCE = 30;
-var NEAR = 15;
+// POLICY LAB v25: how far a trip can go is a world-model setting (30 in 1989); "near" is half of it
+var maxDist = function() { return Policy.commute || 30; };
+var nearDist = function() { return Math.round(maxDist() / 2); };
 
 var perimX = [-1, 0, 1, 2, 2, 2, 1, 0, -1, -2, -2, -2];
 var perimY = [-2, -2, -2, -1, 0, 1, 2, 2, 2, 1, 0, -1];
@@ -153,7 +154,8 @@ var countLinks = function(map, x, y) {
 };
 
 var compute = function(map, zx, zy, type, longReach) {
-  var max = longReach ? MAX_DISTANCE * 2 : MAX_DISTANCE;
+  var max = longReach ? maxDist() * 2 : maxDist();
+  var NEAR = nearDist();
   var starts = [];
   for (var i = 0; i < 12; i++) {
     var sx = zx + perimX[i], sy = zy + perimY[i];
@@ -324,6 +326,7 @@ var zoneReport = function(map, zone, longReach) {
   lines.push(powered ? {mark: 'ok', text: P('Has power', 'Tiene electricidad')}
                      : {mark: 'no', text: P('No power', 'Sin electricidad')});
   var closest = r.dests.length ? r.dests[0].d : null;
+  var NEAR = nearDist();
   // As in 1989, only SHOPS need their trips to succeed in order to grow. For homes and factories a failed trip changes
   // nothing for growth (it only means fewer cars on the road), so their reach is shown as information.
   var tripsMatter = zone.type === 'com';
@@ -365,7 +368,8 @@ var zoneReport = function(map, zone, longReach) {
 
 // A road or rail tile: where does it lead?
 var roadReport = function(map, x, y) {
-  var found = spread(map, [[x, y]], MAX_DISTANCE);
+  var MAX = maxDist(), NEAR = nearDist();
+  var found = spread(map, [[x, y]], MAX);
   var zones = {}, near = [], far = [], dead = [], bridges = [], dests = [];
   var counts = {res: 0, com: 0, ind: 0, empty: 0};
   found.tiles.forEach(function(pos) {
@@ -394,7 +398,7 @@ var roadReport = function(map, x, y) {
       }
     }
   });
-  var r = {type: null, hasRoad: true, max: MAX_DISTANCE, near: near, far: far, dead: dead, dests: dests, bridges: bridges};
+  var r = {type: null, hasRoad: true, max: MAX, near: near, far: far, dead: dead, dests: dests, bridges: bridges};
 
   var lines = [];
   var here = TileUtils.normalizeRoad(map.getTileValue(x, y));
@@ -405,20 +409,20 @@ var roadReport = function(map, x, y) {
     lines.push({mark: 'warn', text: nextToOpenBridge(map, x, y)
                   ? P('The drawbridge here is open: the road is cut until it closes.', 'El puente levadizo aquí está abierto: la calle está cortada hasta que se cierre.')
                   : P('This tile is a dead end: a car that gets here gives up.', 'Esta casilla es una calle sin salida: el carro que llega aquí se rinde.')});
-  lines.push({mark: 'info', text: P('Within 30 road tiles: homes {0}, shops {1}, factories {2}{3}.',
-                                    'A menos de 30 casillas de calle: viviendas {0}, tiendas {1}, fábricas {2}{3}.',
+  lines.push({mark: 'info', text: P('Within {4} road tiles: homes {0}, shops {1}, factories {2}{3}.',
+                                    'A menos de {4} casillas de calle: viviendas {0}, tiendas {1}, fábricas {2}{3}.',
                                     fmt(counts.res), fmt(counts.com), fmt(counts.ind),
-                                    counts.empty ? P(' (empty zones: {0})', ' (zonas vacías: {0})', fmt(counts.empty)) : '')});
+                                    counts.empty ? P(' (empty zones: {0})', ' (zonas vacías: {0})', fmt(counts.empty)) : '', MAX)});
   bridgeLines(r, lines);
   var jobs = counts.com + counts.ind;
   var verdict;
   if (counts.res && jobs)
     verdict = {mark: 'ok', text: P('Links homes and jobs.', 'Une viviendas y empleos.')};
   else if (counts.res)
-    verdict = {mark: 'no', text: P('Only homes reachable: no shops or factories within 30 road tiles.', 'Solo hay viviendas a su alcance: no hay tiendas ni fábricas a menos de 30 casillas.')};
+    verdict = {mark: 'no', text: P('Only homes reachable: no shops or factories within {0} road tiles.', 'Solo hay viviendas a su alcance: no hay tiendas ni fábricas a menos de {0} casillas.', MAX)};
   else if (jobs)
-    verdict = {mark: 'no', text: P('No homes reachable: the shops and factories here have no workers within 30 road tiles.',
-                                   'No hay viviendas a su alcance: las tiendas y fábricas de aquí no tienen trabajadores a menos de 30 casillas.')};
+    verdict = {mark: 'no', text: P('No homes reachable: the shops and factories here have no workers within {0} road tiles.',
+                                   'No hay viviendas a su alcance: las tiendas y fábricas de aquí no tienen trabajadores a menos de {0} casillas.', MAX)};
   else
     verdict = {mark: 'no', text: P('Not connected to any built zone.', 'No está conectada a ninguna zona construida.')};
   // a hint that the rail/road tile itself is what we started from
@@ -427,6 +431,8 @@ var roadReport = function(map, x, y) {
 
 
 var Reach = {
+  maxDist: maxDist,
+  nearDist: nearDist,
   channelTiles: channelTiles,
   zoneAt: zoneAt,
   zoneReport: zoneReport,

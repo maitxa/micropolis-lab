@@ -11,6 +11,7 @@
  *
  */
 
+import { ANIMBIT, BULLBIT, BURNBIT } from './tileFlags.ts';
 import { BuildingTool } from './buildingTool.js';
 import { BulldozerTool } from './bulldozerTool.js';
 import { EventEmitter } from './eventEmitter.js';
@@ -46,7 +47,24 @@ function GameTools(map) {
     depot: new BuildingTool(1000, TileValues.DEPOT, map, 3, false),
     water: new BuildingTool(2000, TileValues.WATERPLANT, map, 3, false),
     hospital: new BuildingTool(3000, TileValues.HOSPITAL, map, 3, false),
+    // POLICY LAB v25: a big park (3x3 trees and lawns with a fountain in the middle)
+    bigpark: new BuildingTool(150, TileValues.FOUNTAIN, map, 3, false),
   });
+
+  // POLICY LAB v25: the big park is built from the ordinary park tiles, not from a building's tile set
+  tools.bigpark.getCost = Policy.bigParkCost;
+  tools.bigpark.checkBorder = function() {};
+  tools.bigpark.putBuilding = function(leftX, topY) {
+    var lawns = [TileValues.WOODS2, TileValues.WOODS3, TileValues.WOODS4, TileValues.WOODS5];
+    for (var dy = 0; dy < 3; dy++) {
+      for (var dx = 0; dx < 3; dx++) {
+        if (dx === 1 && dy === 1)
+          this._worldEffects.setTile(leftX + 1, topY + 1, TileValues.FOUNTAIN, ANIMBIT | BURNBIT | BULLBIT);
+        else
+          this._worldEffects.setTile(leftX + dx, topY + dy, lawns[(dx + 2 * dy) % 4], BURNBIT | BULLBIT);
+      }
+    }
+  };
 
   // POLICY LAB: business incentives change the price of commercial and industrial zones
   tools.commercial.getCost = Policy.businessZoneCost;

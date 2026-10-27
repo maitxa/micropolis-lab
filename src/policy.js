@@ -24,7 +24,8 @@ var DEFAULTS = {
   policeStrength: 1,
   // Maximum crime points removed by fully funded social services in the poorest areas.
   // 0 = social services do nothing (original game has none), 30 = somewhat, 60 = strongly.
-  socialCrime: 0,
+  // POLICY LAB v25: "somewhat" is now the default (the original is 0, see ORIGINAL below)
+  socialCrime: 30,
   // How strongly taxes above/below the default 7% slow/speed growth. 1 = original, 0.5 = weakly, 0 = not at all.
   taxGrowth: 1,
   // Whether environmental regulation changes industrial growth. 1 = yes, 0 = no.
@@ -39,6 +40,16 @@ var DEFAULTS = {
   growthModel: 'industry',
   // Whether access to a hospital affects where people want to live. 0 = no (original), 1 = yes.
   healthAffects: 0,
+  // POLICY LAB v25 (new questions; their defaults differ from the 1989 original, see ORIGINAL below)
+  // Whether parks reduce crime nearby (big parks strongly, small parks a little). 0 = no (original), 1 = yes.
+  parksCrime: 1,
+  // Whether people pay more to live near clean water (land value bonus within 3 tiles). 0 = no (original), 1 = yes.
+  waterfront: 1,
+  // Whether each neighbourhood pays tax on its own land value (expensive, crowded areas pay more) instead of the
+  // city-wide average land value. 0 = no (original), 1 = yes.
+  taxByValue: 1,
+  // How far (in road tiles) people will travel on a trip; a linked train depot doubles it. 30 = original.
+  commute: 90,
 
   // ---- Laws ----
   nuclearAllowed: true,
@@ -93,6 +104,10 @@ var PARK_COST = {standard: 10, subsidized: 5, free: 0};
 var GREEN_BELT_INNER = 28;
 var GREEN_BELT_OUTER = 34;
 
+// POLICY LAB v25: the 1989 rules. The defaults above now differ from it in a few world-model questions, so "Reset to the
+// original rules" and older saved cities (which don't record these questions) use these values.
+var ORIGINAL = Object.assign({}, DEFAULTS, {socialCrime: 0, parksCrime: 0, waterfront: 0, taxByValue: 0, commute: 30});
+
 var Policy = Object.assign({}, DEFAULTS);
 Policy.GREEN_BELT_INNER = GREEN_BELT_INNER;
 Policy.GREEN_BELT_OUTER = GREEN_BELT_OUTER;
@@ -100,6 +115,10 @@ Policy.GREEN_BELT_OUTER = GREEN_BELT_OUTER;
 Policy.greenBeltCentre = {x: 60, y: 50};
 // Hospitals the player built (so the simulation never removes them), as "x,y" keys
 Policy.builtHospitals = {};
+// POLICY LAB v25: big parks the player built (their fountain in the middle), as "x,y" keys
+Policy.bigParks = {};
+// POLICY LAB v25: an identifier for the city (saved cities, the scoreboard and rewind snapshots belong to it)
+Policy.cityId = null;
 // Which preset the city's laws started from (for the report)
 Policy.presetName = 'Original 1989 rules';
 // The city's history for the charts under Funds: monthly funds, population and tax rate, and each year's surplus or
@@ -107,6 +126,7 @@ Policy.presetName = 'Original 1989 rules';
 Policy.history = {months: [], years: []};
 
 Policy.DEFAULTS = DEFAULTS;
+Policy.ORIGINAL = ORIGINAL;
 
 Policy.set = function(values) {
   Object.keys(DEFAULTS).forEach(function(key) {
@@ -122,17 +142,22 @@ Policy.save = function(saveData) {
   Object.keys(DEFAULTS).forEach(function(key) { copy[key] = Policy[key]; });
   copy.greenBeltCentre = Policy.greenBeltCentre;
   copy.builtHospitals = Policy.builtHospitals;
+  copy.bigParks = Policy.bigParks;
+  copy.cityId = Policy.cityId;
   copy.presetName = Policy.presetName;
   copy.history = Policy.history;
   saveData.policyLab = copy;
 };
 
 Policy.load = function(saveData) {
-  // Games saved before the Policy Lab existed simply get the original rules
-  Policy.set(saveData.policyLab);
+  // Games saved before the Policy Lab existed simply get the original rules; questions added later than the save was
+  // made also get the original answer (so an old city keeps playing by the rules it was started with)
+  Policy.set(Object.assign({}, ORIGINAL, saveData.policyLab || {}));
   var extra = saveData.policyLab || {};
   Policy.greenBeltCentre = extra.greenBeltCentre || {x: 60, y: 50};
   Policy.builtHospitals = extra.builtHospitals || {};
+  Policy.bigParks = extra.bigParks || {};
+  Policy.cityId = extra.cityId || null;
   Policy.presetName = extra.presetName || 'Original 1989 rules';
   Policy.history = extra.history && extra.history.months ? extra.history : {months: [], years: []};
 };
@@ -182,6 +207,11 @@ Policy.taxShare = function() {
 
 Policy.businessGrowthNudge = function() {
   return (INCENTIVES[Policy.incentives] || INCENTIVES.none).growth * Policy.incentiveGrowth;
+};
+
+// POLICY LAB v25: a big park (3x3, with a fountain) costs $150 at the standard price; the park subsidy law applies too
+Policy.bigParkCost = function() {
+  return Math.round(150 * PARK_COST[Policy.parks] / PARK_COST.standard);
 };
 
 Policy.parkCost = function() {

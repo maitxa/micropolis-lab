@@ -56,6 +56,7 @@
               <button id="splashLoad" class="width140 block loadSave splashButton" disabled>Load game</button>
               <button id="splashPlay" class="width140 block margin10 splashButton">Play this map</button>
               <button id="splashGenerate" class="width140 block margin10 splashButton">Generate another</button>
+              <button id="splashScoreboard" class="width140 block margin10 splashButton">Scoreboard</button>
             </div>
           </div>
         </div>
@@ -91,7 +92,7 @@
                 <label class="policyRow"><span>How effective are police?</span>
                   <select id="pl_policeStrength"><option value="0.5">Weak</option><option value="1" selected>Normal (original)</option><option value="1.5">Strong</option></select></label>
                 <label class="policyRow"><span>Do social services reduce crime?</span>
-                  <select id="pl_socialCrime"><option value="0" selected>No (original)</option><option value="30">Somewhat</option><option value="60">Strongly</option></select></label>
+                  <select id="pl_socialCrime"><option value="0">No (original)</option><option value="30" selected>Somewhat</option><option value="60">Strongly</option></select></label>
                 <label class="policyRow"><span>Do high taxes slow growth?</span>
                   <select id="pl_taxGrowth"><option value="1" selected>Strongly (original)</option><option value="0.5">Weakly</option><option value="0">Not at all</option></select></label>
                 <label class="policyRow"><span>Does regulation slow industry?</span>
@@ -104,6 +105,14 @@
                   <select id="pl_healthAffects"><option value="0" selected>No (original)</option><option value="1">Yes</option></select></label>
                 <label class="policyRow"><span>Does untreated sewage pollute rivers?</span>
                   <select id="pl_sewagePollution"><option value="0" selected>No (original)</option><option value="1">Yes</option></select></label>
+                <label class="policyRow"><span>Do parks reduce crime?</span>
+                  <select id="pl_parksCrime"><option value="0">No (original)</option><option value="1" selected>Yes</option></select></label>
+                <label class="policyRow"><span>Do people pay more to live near water?</span>
+                  <select id="pl_waterfront"><option value="0">No (original)</option><option value="1" selected>Yes</option></select></label>
+                <label class="policyRow"><span>Do expensive neighbourhoods pay more tax?</span>
+                  <select id="pl_taxByValue"><option value="0">No: the city-wide average (original)</option><option value="1" selected>Yes: each pays on its own land value</option></select></label>
+                <label class="policyRow"><span>How far will people travel on a trip?</span>
+                  <select id="pl_commute"><option value="30">30 road tiles (original)</option><option value="60">60 road tiles</option><option value="90" selected>90 road tiles</option></select></label>
                 <label class="policyRow"><span>Do business incentives attract business?</span>
                   <select id="pl_incentiveGrowth"><option value="1" selected>Yes</option><option value="0">No</option></select></label>
               </fieldset>
@@ -141,7 +150,8 @@
                 <label class="policyRow"><span>Starting social services funding</span>
                   <select id="pl_socialStart"><option value="0" selected>0% (original)</option><option value="25">25%</option><option value="50">50%</option><option value="100">100%</option></select></label>
               </fieldset>
-              <button type="button" id="pl_reset" class="miscButton">Reset to original rules</button>
+              <button type="button" id="pl_reset" class="miscButton">Reset to the original 1989 rules</button>
+              <button type="button" id="pl_defaults" class="miscButton">Policy Lab defaults</button>
             </div>
             <div id="playSubmitDiv">
               <input id="playit" type="submit" value="Play!">
@@ -187,6 +197,9 @@
             </div>
             <div>
               <button id="saveRequest" class="miscButton loadSave" disabled>Save</button>
+            </div>
+            <div>
+              <button id="rewindRequest" class="miscButton" title="Go back to an earlier year of this city">Go back in time</button>
             </div>
             <div>
               <button id="settingsRequest" class="miscButton">Settings</button>
@@ -283,6 +296,7 @@
                 <button id="fireButton" data-size="3" data-tool="fire" data-colour="red" class="toolButton unselected" title="Fire (key 9)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14 C5.2 14 3.6 12.2 3.6 9.8 C3.6 7.3 6 5.8 6.4 3 C8 4.8 9 5.5 9.4 7.4 C10.1 6.6 10.5 6 10.8 5.2 C12 7 12.4 8.2 12.4 9.8 C12.4 12.2 10.8 14 8 14 Z"/></svg><span class="label" data-es="Bomberos">Fire</span><span class="price">$500</span></button>
                 <button id="hospitalButton" data-size="3" data-tool="hospital" data-colour="white" class="toolButton unselected" title="Hospital: needs power; serves homes nearby (key M)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M8 5 V11 M5 8 H11"/></svg><span class="label">Hospital</span><span class="price">$3,000</span></button>
                 <button id="parkButton" data-size="1" data-tool="park" data-colour="darkgreen" class="toolButton unselected" title="Park (key 7)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6.5" r="4"/><path d="M8 10.5 V14.5"/></svg><span class="label">Park</span><span class="price">$10</span></button>
+                <button id="bigParkButton" data-size="3" data-tool="bigpark" data-colour="darkgreen" class="toolButton unselected" title="Big park: cleans the air and (in the default world model) lowers crime within 8 tiles (key G)"><svg class="toolIcon" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5.5" r="2.8"/><path d="M5 8.3 V11"/><circle cx="11" cy="5.5" r="2.8"/><path d="M11 8.3 V11"/><path d="M2 13.5 H14"/></svg><span class="label">Big park</span><span class="price">$150</span></button>
               </div>
             </div>
             <div class="toolGroup toolGroup-landmarks" role="group" aria-label="Landmarks">
@@ -346,7 +360,7 @@
             <tr><td><b>5</b> Rail</td><td><b>0</b> Query (inspect a tile)</td></tr>
             <tr><td><b>B</b> Bulldozer</td><td><b>?</b> or <b>H</b> this help</td></tr>
             <tr><td><b>T</b> Train depot</td><td><b>U</b> Water treatment plant</td></tr>
-            <tr><td><b>M</b> Hospital</td><td></td></tr>
+            <tr><td><b>M</b> Hospital</td><td><b>G</b> Big park</td></tr>
             <tr><td><b>I</b> City data</td><td><b>+</b> / <b>&minus;</b> Zoom in / out</td></tr>
           </table>
           <p><b>Straight lines:</b> with Road, Rail or Wire, click where the line starts, then hold <b>Shift</b> and click
@@ -470,6 +484,12 @@
               <dt class="evalItem statisticsItem">Annual change:</dt><dd class=" elided statisticsRight evalItem evalRight" id="evalScoreDelta"></dd>
 	    </dl>
 	  </section>
+          <!-- POLICY LAB v25: how the score was worked out -->
+          <section id="scoreHow">
+            <h2 class="alignCenter">How your score was worked out</h2>
+            <div id="scoreHowContent"></div>
+            <p class="alignCenter"><button type="button" id="scoreboardFromEval" class="miscButton scoreboardButton">Scoreboard</button></p>
+          </section>
           <!-- POLICY LAB -->
           <section id="policyReport">
             <h2 class="alignCenter">Your policies at work</h2>
@@ -615,9 +635,13 @@
           Save
         </header>
         <div id="saveContainer" class="alignCenter padding10 open">
-          Game Saved!
           <form id="saveForm" class="alignCenter margin10">
-            <input type="submit" id="saveOK" class="dialogOK" value="OK">
+            <label for="saveName" class="saveNameLabel">Save this city as:</label>
+            <input type="text" id="saveName" class="notranslate" maxlength="60" autocomplete="off">
+            <p class="saveHint">Saving again under the same name replaces that save. Saved in this browser; use Load game on the start screen to open it, or to export it to a file.</p>
+            <p id="saveStatus" aria-live="polite"></p>
+            <button type="button" id="saveDo" class="dialogOK">Save</button>
+            <input type="submit" id="saveOK" class="dialogOK" value="Close">
           </form>
         </div>
       </div>

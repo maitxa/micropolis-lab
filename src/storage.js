@@ -61,7 +61,24 @@ var transitionOldSave = function(savedGame) {
 };
 
 
+// POLICY LAB v25: a saved game as text, and back (saved cities and rewind snapshots are kept as text in IndexedDB)
+var serialize = function(gameData) {
+  gameData.version = this.CURRENT_VERSION;
+  return JSON.stringify(gameData);
+};
+
+var parse = function(text) {
+  var savedGame = JSON.parse(text);
+  if (savedGame.version !== this.CURRENT_VERSION)
+    this.transitionOldSave(savedGame);
+  savedGame.isSavedGame = true;
+  return savedGame;
+};
+
+
 var Storage = {
+  serialize: serialize,
+  parse: parse,
   getSavedGame: getSavedGame,
   saveGame: saveGame,
   transitionOldSave: transitionOldSave

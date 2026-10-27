@@ -23,6 +23,8 @@ function Census() {
 
   // Set externally
   this.landValueAverage = 0;
+  // POLICY LAB v25: the land value the city taxes (see amenities.js)
+  this.taxLandValue = undefined;
   this.pollutionAverage = 0;
   this.crimeAverage = 0;
   this.totalPop = 0;
@@ -120,7 +122,7 @@ Census.prototype.clearCensus = function() {
 };
 
 
-var saveProps = ['resPop', 'comPop', 'indPop', 'crimeRamp', 'pollutionRamp', 'landValueAverage', 'pollutionAverage',
+var saveProps = ['resPop', 'comPop', 'indPop', 'crimeRamp', 'pollutionRamp', 'landValueAverage', 'taxLandValue', 'pollutionAverage',
              'crimeAverage', 'totalPop', 'resHist10', 'resHist120', 'comHist10', 'comHist120', 'indHist10',
              'indHist120', 'crimeHist10', 'crimeHist120', 'moneyHist10', 'moneyHist120', 'pollutionHist10',
              'pollutionHist120'];

@@ -155,7 +155,38 @@ letters.
 
 The Budget window has new **Social services** and **Social housing** lines. Its effect on crime depends on the chosen world model.
 
-With every setting at its "(original)" default, the simulation rules match the original game.
+With every setting at its "(original)" value ("Reset to the original 1989 rules" on the setup screen), the simulation
+rules match the original game. Since v25 the **defaults** differ from 1989 in five world-model answers (below); cities
+saved before v25 keep the 1989 answers for those questions.
+
+### v25: score, saved cities, scoreboard, going back in time, new defaults
+
+- **How the score is worked out** (Evaluation window): the starting figure (1,000 minus the residents' seven problems:
+  crime, pollution, housing costs, taxes, traffic, unemployment, fires), each penalty or bonus this year (missing
+  stadium/airport/seaport -15%, collapsed demand -15%, underfunded services, population growth or decline, fires, the
+  tax rate, zones without power), and the averaging with last year's score. The score is roughly the share of voters who
+  approve of the mayor (500 = half, 700+ good, 800+ excellent).
+- **Bug fix (score):** micropolisJS put `Math.floor` around the population-decline factor, which the 1989 C code
+  (`s_eval.c`) doesn't have: any shrinkage at all made that year's figure 0 and halved the score. Fixed.
+- **Saved cities:** save under a name (saving again under the same name replaces it); "Load game" on the start screen
+  lists every saved city (name, year, population, score, date) with Load, Export (a `.json` file) and Delete, and
+  imports a city file. Cities are kept in this browser's built-in database (IndexedDB), not the original single 5 MB
+  save slot, which is copied into the list once (`src/cityStore.js`, `src/cityPanels.js`).
+- **Scoreboard** (start screen, and in the Evaluation window): one row per city that has people, with its best score,
+  current score, year, population and the rules it is played with; cities with the same rules are marked, since only
+  those are fair to compare. Your games in this browser only.
+- **Go back in time:** a copy of the city is kept every 10 game years (the last 20, so up to 200 years back). The
+  "Go back in time" button lists them; the city as it is now is saved first, so you can return to it.
+- **New world-model questions and defaults:** social services reduce crime ("somewhat", if funded); **parks reduce
+  crime** (big parks by 40 points within 8 tiles, small park tiles by 15 right around them); **people pay more to live
+  near water** (+40 land value within 3 tiles of clean water; water polluted by sewage doesn't count); **expensive
+  neighbourhoods pay more tax** (the taxed land value is each zone's own, weighted by the people who live or work there,
+  instead of the average over all built-up land; City data shows both); **people travel up to 90 road tiles** on a
+  trip instead of 30 (180 with a linked train depot), so homes, shops and industry can be far apart. Each has its 1989
+  answer on the setup screen (`src/amenities.js`).
+- **Big park** (key **G**, $150, half price or free under the park laws): 3x3 lawns and trees with a fountain; it
+  cleans the air within 8 tiles (pollution x0.6) and, in the default world model, lowers crime there.
+- The To do card no longer shows on the start screen (a style was overriding "hidden until the game starts").
 
 ### Bug fix
 

@@ -88,7 +88,7 @@ var workers = function(sim) {
         continue;
       // where are the nearest built homes along the roads? (same search as the reach view, looking for homes)
       var r = Reach.compute(map, x, y, 'ind', !!depots && depots.worldGet(x, y) > 0);
-      var tone = !r.dests.length ? 'bad' : r.dests[0].d <= 15 ? 'good' : 'warn';
+      var tone = !r.dests.length ? 'bad' : r.dests[0].d <= Reach.nearDist() ? 'good' : 'warn';
       counts[tone]++;
       shapes.push({kind: 'zone', x: x, y: y, tone: tone, label: ''});
     }
@@ -96,9 +96,9 @@ var workers = function(sim) {
   return {
     shapes: shapes,
     legend: [
-      {swatch: 'good', text: P('Homes within 15 road tiles: {0}', 'Viviendas a menos de 15 casillas: {0}', fmt(counts.good))},
-      {swatch: 'warn', text: P('Homes 15 to 30 road tiles away: {0}', 'Viviendas a 15-30 casillas: {0}', fmt(counts.warn))},
-      {swatch: 'bad', text: P('No homes within 30 road tiles: {0}', 'Ninguna vivienda a menos de 30 casillas: {0}', fmt(counts.bad))}
+      {swatch: 'good', text: P('Homes within {1} road tiles: {0}', 'Viviendas a menos de {1} casillas: {0}', fmt(counts.good), Reach.nearDist())},
+      {swatch: 'warn', text: P('Homes {1} to {2} road tiles away: {0}', 'Viviendas a {1}-{2} casillas: {0}', fmt(counts.warn), Reach.nearDist(), Reach.maxDist())},
+      {swatch: 'bad', text: P('No homes within {1} road tiles: {0}', 'Ninguna vivienda a menos de {1} casillas: {0}', fmt(counts.bad), Reach.maxDist())}
     ],
     note: P('Shops and factories, by how far their workers live. Long commutes mean more traffic; only shops need their trips to succeed to grow.',
             'Tiendas y fábricas, según lo lejos que viven sus trabajadores. Los trayectos largos generan más tráfico; solo las tiendas necesitan que sus viajes tengan éxito para crecer.')

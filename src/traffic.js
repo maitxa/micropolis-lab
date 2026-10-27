@@ -108,7 +108,8 @@ Traffic.prototype.findPerimeterRoad = function(pos) {
 };
 
 
-var MAX_TRAFFIC_DISTANCE = 30;
+// POLICY LAB v25: how far a trip may go is a world-model setting (Policy.commute; 30 in 1989)
+var maxTrafficDistance = function() { return Policy.commute || 30; };
 
 Traffic.prototype.tryDrive = function(startPos, destFn) {
   var dirLast;
@@ -118,7 +119,7 @@ Traffic.prototype.tryDrive = function(startPos, destFn) {
   var drivePos = new Position(startPos.x, startPos.y);
 
   /* Maximum distance to try */
-  var maxDistance = this._byTrain ? MAX_TRAFFIC_DISTANCE * 2 : MAX_TRAFFIC_DISTANCE;
+  var maxDistance = this._byTrain ? maxTrafficDistance() * 2 : maxTrafficDistance();
   for (var dist = 0; dist < maxDistance; dist++) {
     var  dir = this.tryGo(drivePos, dirLast);
     if (dir) {

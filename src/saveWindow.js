@@ -37,9 +37,31 @@ SaveWindow.prototype.close = function() {
 };
 
 
-SaveWindow.prototype.open = function() {
+// POLICY LAB v25: save under a name. onSave(name) returns a Promise that resolves with a status text.
+SaveWindow.prototype.open = function(defaultName, onSave) {
   this._toggleDisplay();
-  $(saveOKID).focus();
+  $('#saveName').val(defaultName || '');
+  $('#saveStatus').text('');
+  $('#saveDo').prop('disabled', false).off('click').on('click', function(e) {
+    e.preventDefault();
+    var name = $.trim($('#saveName').val()) || defaultName;
+    $('#saveDo').prop('disabled', true);
+    onSave(name).then(function(text) {
+      $('#saveStatus').removeClass('err').text(text);
+      $('#saveDo').prop('disabled', false);
+      $(saveOKID).focus();
+    }, function(text) {
+      $('#saveStatus').addClass('err').text(text);
+      $('#saveDo').prop('disabled', false);
+    });
+  });
+  $('#saveName').off('keydown.save').on('keydown.save', function(e) {
+    if (e.keyCode === 13) {
+      e.preventDefault();
+      $('#saveDo').click();
+    }
+  });
+  $('#saveName').focus().select();
 };
 
 

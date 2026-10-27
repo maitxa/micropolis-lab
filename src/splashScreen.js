@@ -22,6 +22,8 @@ import { Presets } from './presets.js';
 import { Simulation } from './simulation.js';
 import { SplashCanvas } from './splashCanvas.js';
 import { Storage } from './storage.js';
+import { CityStore } from './cityStore.js';
+import { CityPanels } from './cityPanels.js';
 
 /*
  *
@@ -62,10 +64,29 @@ function SplashScreen(tileSet, snowTileSet, spriteSheet) {
   $('#splashGenerate').click(regenerateMap.bind(this));
   $('#splashPlay').click(acquireNameAndDifficulty.bind(this));
   $('#splashLoad').click(handleLoad.bind(this));
+  // POLICY LAB v25: the scoreboard
+  $('#splashScoreboard').click(function(e) { e.preventDefault(); CityPanels.openScoreboard(null, null); });
 
   // Conditionally enable load/save buttons
-  $('#saveRequest').prop('disabled', !Storage.canStore);
-  $('#splashLoad').prop('disabled', !(Storage.canStore && Storage.getSavedGame() !== null));
+  // POLICY LAB v25: cities are saved in the browser's database (cityStore.js); the old single save slot is copied there
+  // once, and "Load game" lists every saved city
+  $('#saveRequest').prop('disabled', false);
+  $('#splashLoad').prop('disabled', true);
+  var self = this;
+  CityStore.available().then(function(ok) {
+    if (!ok) {
+      $('#saveRequest').prop('disabled', true);
+      return;
+    }
+    migrateOldSave().then(function() { return CityStore.listCities(); }).then(function(list) {
+      $('#splashLoad').prop('disabled', list.length === 0);
+    });
+    // A city chosen in Saved cities or Go back in time: open it straight away
+    CityStore.takeResume().then(function(rec) {
+      if (rec && rec.data)
+        launchSaved.call(self, Storage.parse(rec.data));
+    });
+  });
 
   // Paint the minimap
   this.splashCanvas = new SplashCanvas('splashContainer', tileSet);
@@ -86,15 +107,43 @@ var regenerateMap = function(e) {
 };
 
 
-// Fetches game data from the storage manager, and launches the game. We won't return from here
+// POLICY LAB v25: copy the original single save slot (localStorage) into the saved cities, once
+var migrateOldSave = function() {
+  var flag = 'policyLabMigratedSave';
+  var old = null;
+  try {
+    if (window.localStorage.getItem(flag))
+      return Promise.resolve();
+    old = window.localStorage.getItem(Storage.KEY);
+  } catch (e) {
+    return Promise.resolve();
+  }
+  if (!old)
+    return Promise.resolve();
+  var game;
+  try {
+    game = Storage.parse(old);
+  } catch (e) {
+    return Promise.resolve();
+  }
+  var cityId = (game.policyLab && game.policyLab.cityId) || CityStore.newId();
+  var year = Math.floor((game._cityTime || 0) / 48) + 1900;
+  return CityStore.saveCity({cityId: cityId, name: (game.name || 'City') + ' (saved before v25)', cityName: game.name,
+                             year: year, score: game.cityScore}, old).then(function() {
+    try { window.localStorage.setItem(flag, '1'); } catch (e) {}
+  }, function() {});
+};
+
+
+// POLICY LAB v25: "Load game" now opens the list of saved cities; choosing one reloads the page and opens it
 var handleLoad = function(e) {
   e.preventDefault();
+  CityPanels.openSavedCities();
+};
 
-  var savedGame = Storage.getSavedGame();
 
-  if (savedGame === null)
-    return;
-
+// Launches a saved game. We won't return from here
+var launchSaved = function(savedGame) {
   // Remove installed event listeners
   $('#splashLoad').off('click');
   $('#splashGenerate').off('click');
@@ -130,6 +179,7 @@ var acquireNameAndDifficulty = function(e) {
 
   // POLICY LAB: "Reset to original rules" button, and presets
   $('#pl_reset').click(resetPolicyForm);
+  $('#pl_defaults').click({rules: Policy.DEFAULTS}, resetPolicyForm);
   $('#pl_preset').on('change', applyPreset);
   Presets.fields.forEach(function(f) {
     $('#pl_' + f).on('change', markCustom);
@@ -168,6 +218,8 @@ var play = function(e) {
   // The green belt is centred on the middle of the map, where the city starts
   Policy.greenBeltCentre = {x: Math.floor(this.map.width / 2), y: Math.floor(this.map.height / 2)};
   Policy.builtHospitals = {};
+  Policy.bigParks = {};
+  Policy.cityId = CityStore.newId();
   Policy.history = {months: [], years: []};
 
   // Launch a new game
@@ -184,7 +236,7 @@ var play = function(e) {
 // POLICY LAB: helpers for the setup screen
 var numberFields = ['povertyCrime', 'densityCrime', 'policeStrength', 'socialCrime', 'taxGrowth',
                     'regulationGrowth', 'incentiveGrowth', 'sewagePollution', 'walkability', 'densityCap', 'electionCycle',
-                    'pedestrian', 'greenBelt', 'healthAffects'];
+                    'pedestrian', 'greenBelt', 'healthAffects', 'parksCrime', 'waterfront', 'taxByValue', 'commute'];
 var textFields = ['regulation', 'transport', 'incentives', 'parks', 'zoning', 'growthModel', 'bridges'];
 
 var readPolicyForm = function() {
@@ -312,12 +364,15 @@ var currentPresetLabel = function() {
 var resetPolicyForm = function(e) {
   if (e)
     e.preventDefault();
+  // POLICY LAB v25: "Reset to the original rules" means the 1989 rules (the defaults now differ in a few questions);
+  // the "Policy Lab defaults" button passes the defaults instead
+  var rules = (e && e.data && e.data.rules) || Policy.ORIGINAL;
   numberFields.forEach(function(key) {
-    $('#pl_' + key).val(String(Policy.DEFAULTS[key]));
+    $('#pl_' + key).val(String(rules[key]));
   });
   $('#pl_nuclearAllowed').val('true');
   textFields.forEach(function(key) {
-    $('#pl_' + key).val(Policy.DEFAULTS[key]);
+    $('#pl_' + key).val(rules[key]);
   });
   $('#pl_socialStart').val('0');
   $('#pl_housingStart').val('0');

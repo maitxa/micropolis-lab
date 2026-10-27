@@ -2829,3 +2829,235 @@ nav li {
 #advisor.collapsed #outlineKey {
   display: none !important;
 }
+
+/* POLICY LAB v25: how the score was worked out */
+#scoreHow { font-family: var(--pl-ui); font-size: 13px; }
+#scoreHow .scoreIntro, #scoreHow .scoreNote { margin: 4px 0; line-height: 1.35; }
+#scoreHow .scoreNote { color: var(--pl-ink-soft); font-size: 12px; }
+#scoreHow .scoreTable { width: 100%; border-collapse: collapse; margin: 4px 0; }
+#scoreHow .scoreTable td { padding: 2px 4px; border-bottom: 1px solid #e3e8e8; vertical-align: top; }
+#scoreHow .scoreTable td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#scoreHow .scoreTable tr.sh td { color: var(--pl-ink-soft); border-bottom: none; }
+#scoreHow .scoreTable tr.base td, #scoreHow .scoreTable tr.sum td { font-weight: 600; }
+#scoreHow .scoreTable tr.sum td { border-top: 1.5px solid var(--pl-ink-soft); }
+
+/* POLICY LAB v25: saved cities, scoreboard, go back in time */
+#plOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 60px 16px 16px 16px;
+  background: rgba(20, 30, 32, 0.45);
+  overflow-y: auto;
+}
+
+#plOverlay .plPanel {
+  width: min(760px, 100%);
+  background: var(--pl-paper, #fff);
+  color: var(--pl-ink, #1d2a2b);
+  border: 1px solid var(--pl-line, #c9d3d3);
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  font-family: var(--pl-ui);
+  font-size: 14px;
+}
+
+#plOverlay .plPanelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--pl-line, #c9d3d3);
+}
+
+#plOverlay h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+#plOverlay .plPanelBody {
+  padding: 12px 16px 16px 16px;
+  overflow-x: auto;
+}
+
+#plOverlay button {
+  width: auto;
+  height: auto;
+  padding: 4px 10px;
+  border: 1px solid var(--pl-line, #c9d3d3);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--pl-ink, #1d2a2b);
+  font-family: var(--pl-ui);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+#plOverlay button.plPrimary {
+  background: var(--pl-utilities, #1677a8);
+  border-color: var(--pl-utilities, #1677a8);
+  color: #fff;
+  font-weight: 600;
+}
+
+#plOverlay button.plDanger.confirm {
+  background: #c62d22;
+  border-color: #c62d22;
+  color: #fff;
+}
+
+#plOverlay button:focus-visible {
+  outline: 2px solid var(--pl-utilities, #1677a8);
+  outline-offset: 2px;
+}
+
+#plOverlay .plNote {
+  margin: 0 0 10px 0;
+  color: var(--pl-ink-soft, #4b5f61);
+  line-height: 1.4;
+}
+
+#plOverlay .plTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+#plOverlay .plTable th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pl-ink-soft, #4b5f61);
+  border-bottom: 1.5px solid var(--pl-line, #c9d3d3);
+  padding: 4px 6px;
+}
+
+#plOverlay .plTable td {
+  padding: 6px;
+  border-bottom: 1px solid #e3e8e8;
+  vertical-align: middle;
+}
+
+#plOverlay .plTable td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#plOverlay .plTable tr.current td {
+  background: #eef6fb;
+}
+
+#plOverlay .plActions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+#plOverlay .plActions button {
+  margin-left: 4px;
+}
+
+#plOverlay .plTag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  background: #dfeef7;
+  color: #10506f;
+}
+
+#plOverlay .plTag.same {
+  background: #e2f3e5;
+  color: #1a5229;
+}
+
+#plOverlay .plSub {
+  color: var(--pl-ink-soft, #4b5f61);
+  font-size: 12px;
+}
+
+#plOverlay .plRules {
+  font-size: 12px;
+  color: var(--pl-ink-soft, #4b5f61);
+}
+
+#plOverlay .plImport {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+#plOverlay .plImportMsg {
+  color: #c62d22;
+  font-size: 13px;
+}
+
+#plOverlay .plRewindList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#plOverlay .plRewindList li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #e3e8e8;
+}
+
+#plOverlay .plYear {
+  font-weight: 700;
+  font-size: 16px;
+  min-width: 3.5em;
+  font-variant-numeric: tabular-nums;
+}
+
+#plOverlay .plRewindList .plSub {
+  flex: 1;
+}
+
+/* Save window: a name */
+#saveForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--pl-ui);
+}
+
+#saveForm #saveName {
+  width: 260px;
+  font-size: 15px;
+  padding: 4px 6px;
+}
+
+#saveForm .saveHint {
+  max-width: 320px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--pl-ink-soft, #4b5f61);
+}
+
+#saveForm #saveStatus {
+  margin: 0;
+  min-height: 1.2em;
+  font-weight: 600;
+  color: #1a5229;
+}
+
+#saveForm #saveStatus.err {
+  color: #c62d22;
+}
+
+/* POLICY LAB v25: the To do card stays hidden until the game starts (its display:flex used to override this) */
+#advisor.initialHidden { display: none; }
+
+/* POLICY LAB v25: colours for the new buttons, in the style of the others */
+#rewindRequest { background-color: #8e6c3a; color: #fff; }
+#splashScoreboard, #scoreboardFromEval { background-color: #b07a1c; color: #fff; border-color: #b07a1c; }
+#scoreboardFromEval { width: 140px; }

@@ -50,6 +50,8 @@ import { Layers } from './layers.js';
 import { HistoryCharts } from './historyCharts.js';
 import { Status } from './status.js';
 import { NeedChart } from './needChart.js';
+import { CityStore } from './cityStore.js';
+import { CityPanels } from './cityPanels.js';
 
 var disasterTimeout = 20 * 1000;
 
@@ -76,6 +78,9 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
 
   if (savedGame)
     this.load(savedGame);
+  // POLICY LAB v25: every city has an identifier (saved cities, scoreboard, rewind); older saves get one now
+  if (!Policy.cityId)
+    Policy.cityId = CityStore.newId();
 
   // POLICY LAB v22: the original R/C/I demand bars are replaced by the zoning-need bars (src/needChart.js),
   // drawn by the advisor once a game month
@@ -297,6 +302,21 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   this.simulation.addEventListener(Messages.DATE_UPDATED, (function(date) {
     this.recordHistory(date);
     this.runAdvisor(true);
+    // POLICY LAB v25: once a year, the scoreboard; every 10 years, a copy of the city to go back to
+    if (date.month === 0)
+      this.yearly(date.year);
+  }).bind(this));
+
+  // POLICY LAB v25: go back in time, and the scoreboard from the Evaluation window
+  $('#rewindRequest').on('click', (function(e) {
+    e.preventDefault();
+    this.openPanel(function(done) { CityPanels.openRewind(this, done); });
+  }).bind(this));
+  $('#scoreboardFromEval').on('click', (function(e) {
+    e.preventDefault();
+    if (this._openWindow === 'evalWindow')
+      this.evalWindow.close();
+    this.openPanel(function(done) { CityPanels.openScoreboard(Policy.cityId, this.rulesKey(), done); });
   }).bind(this));
 
   // Map layers (one at a time; click again to turn off)
@@ -373,12 +393,87 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
 }
 
 
-Game.prototype.save = function() {
+// POLICY LAB v25: the game as data (it used to be written straight into the browser's single save slot)
+Game.prototype.saveData = function() {
   var saveData = {name: this.name, everClicked: this.everClicked};
   BaseTool.save(saveData);
   this.simulation.save(saveData);
+  return saveData;
+};
 
-  Storage.saveGame(saveData);
+Game.prototype.save = function() {
+  Storage.saveGame(this.saveData());
+};
+
+// POLICY LAB v25: saved cities, scoreboard and rewind -------------------------------------------------------------
+Game.prototype.cityId = function() {
+  return Policy.cityId;
+};
+
+Game.prototype.currentYear = function() {
+  return this.simulation.getDate().year;
+};
+
+Game.prototype.cityInfo = function() {
+  var ev = this.simulation.evaluation;
+  // population as the game counts it, from the census (the evaluation's own figure is only refreshed once a year)
+  var c = this.simulation.lastCensus || this.simulation._census.snapshot();
+  var pop = (c.resPop + (c.comPop + c.indPop) * 8) * 20;
+  return {cityId: Policy.cityId, cityName: this.name, year: this.currentYear(), pop: pop, score: ev.cityScore};
+};
+
+// Save the city under a name (in this browser's database). Resolves with a sentence for the player.
+Game.prototype.saveCurrent = function(name) {
+  var info = Object.assign(this.cityInfo(), {name: name});
+  var data = Storage.serialize(this.saveData());
+  return CityStore.saveCity(info, data).then(function() {
+    return I18n.p('Saved as "{0}" ({1}).', 'Guardada como "{0}" ({1}).', name, info.year);
+  }, function() {
+    return Promise.reject(I18n.p('Could not save: this browser isn\'t letting the game store data (for example in a private window).',
+                                 'No se pudo guardar: este navegador no deja que el juego guarde datos (por ejemplo, en una ventana privada).'));
+  });
+};
+
+// The rules the city is played with, for the scoreboard
+var WORLD_KEYS = ['povertyCrime', 'densityCrime', 'policeStrength', 'socialCrime', 'taxGrowth', 'regulationGrowth',
+                  'incentiveGrowth', 'sewagePollution', 'walkability', 'growthModel', 'healthAffects', 'parksCrime',
+                  'waterfront', 'taxByValue', 'commute'];
+
+Game.prototype.rulesKey = function() {
+  return JSON.stringify(Object.keys(Policy.DEFAULTS).map(function(k) { return Policy[k]; })) + '|' + this.simulation._gameLevel;
+};
+
+Game.prototype.rulesSummary = function() {
+  var same = function(ref) { return WORLD_KEYS.every(function(k) { return Policy[k] === ref[k]; }); };
+  return {preset: Policy.presetName, world: same(Policy.ORIGINAL) ? 'original' : same(Policy.DEFAULTS) ? 'defaults' : 'custom',
+          level: Text.gameLevel['' + this.simulation._gameLevel]};
+};
+
+Game.prototype.yearly = function(year) {
+  var info = this.cityInfo();
+  // a city joins the scoreboard once someone lives there (not every map that was only tried out)
+  if (info.pop > 0)
+    CityStore.updateScore(Object.assign({}, info, {rules: this.rulesSummary(), rulesKey: this.rulesKey()})).catch(function() {});
+  if (year % CityStore.SNAPSHOT_YEARS === 0 && info.pop > 0)
+    CityStore.saveSnapshot(info, Storage.serialize(this.saveData())).catch(function() {});
+};
+
+// Open one of the Policy Lab windows (cityPanels.js); the game pauses while it is open
+Game.prototype.openPanel = function(opener) {
+  if (this.dialogOpen)
+    return;
+  var self = this, closed = false;
+  this.dialogOpen = true;
+  this._openWindow = 'plPanelWindow';
+  var done = function() {
+    if (closed)
+      return;
+    closed = true;
+    self.dialogOpen = false;
+    self._openWindow = null;
+  };
+  this.plPanelWindow = {close: function() { $('#plOverlay .plPanelClose').click(); done(); }};
+  opener.call(this, done);
 };
 
 
@@ -542,6 +637,7 @@ Game.prototype.applyPolicyToInterface = function() {
   $('#commercialButton .price').text(MiscUtils.formatMoney(Policy.businessZoneCost()));
   $('#industrialButton .price').text(MiscUtils.formatMoney(Policy.businessZoneCost()));
   $('#parkButton .price').text(MiscUtils.formatMoney(Policy.parkCost()));
+  $('#bigParkButton .price').text(MiscUtils.formatMoney(Policy.bigParkCost()));
 };
 
 
@@ -844,7 +940,7 @@ Game.prototype.renderHint = function(centre) {
     this.gameCanvas.centreOn(spot.x, spot.y);
   // A reach view is worded when drawn, so it follows language changes
   if (h.item.id === 'reach') {
-    h.item.text = spot.road ? I18n.t('Where this road leads (30 tiles)') : I18n.t('How far this {0}\'s trips can go', Reach.noun(spot.type));
+    h.item.text = spot.road ? I18n.p('Where this road leads ({0} tiles)', 'Adónde lleva esta calle ({0} casillas)', Reach.maxDist()) : I18n.t('How far this {0}\'s trips can go', Reach.noun(spot.type));
     spot.label = spot.road ? I18n.t('You are here') : I18n.t('Trips start here');
   }
   // Everything about it is shown in the To do card (the card opens if it was folded)
@@ -1155,6 +1251,9 @@ Game.prototype.applyToolAt = function(tileX, tileY) {
   // POLICY LAB: remember hospitals the player built, so the simulation never removes them
   if (built && this.inputStatus.toolName === 'hospital')
     Policy.builtHospitals[tileX + ',' + tileY] = true;
+  // POLICY LAB v25: remember big parks (their fountain is in the middle), for their effect on air and crime
+  if (built && this.inputStatus.toolName === 'bigpark')
+    Policy.bigParks[tileX + ',' + tileY] = true;
 
   if (built && tool.lastUndo && this.inputStatus.toolName !== 'query') {
     this.recordUndo(tool.lastUndo, this.inputStatus.strokeId);
@@ -1335,10 +1434,9 @@ Game.prototype.toggleKeysHelp = function() {
 
 
 Game.prototype.handleSave = function() {
-  this.save();
   this.dialogOpen = true;
   this._openWindow = 'saveWindow';
-  this.saveWindow.open();
+  this.saveWindow.open(this.name, this.saveCurrent.bind(this));
 };
 
 

@@ -149,7 +149,7 @@ var advise = function(sim, newMonth) {
 
   // ---- Money ----
   var est = b.estimateYear(sim._gameLevel, {
-    totalPop: live.totalPop || 0, landValueAverage: live.landValueAverage || 0, roadTotal: c.roadTotal,
+    totalPop: live.totalPop || 0, landValueAverage: live.landValueAverage || 0, taxLandValue: live.taxLandValue, roadTotal: c.roadTotal,
     railTotal: c.railTotal, policeStationPop: c.policeStationPop, fireStationPop: c.fireStationPop,
     depotPop: c.depotPop || 0, waterPlantPop: c.waterPlantPop || 0, builtHospitalPop: c.builtHospitalPop || 0});
   var moneyWhy = P('In a year the city collects about {0} in taxes and spends about {1} on upkeep (roads and rail {2}, police {3}, fire {4}, other {5}).',
@@ -260,14 +260,14 @@ var advise = function(sim, newMonth) {
   var worst = ['res', 'com', 'ind'].sort(function(a, b2) { return fails[b2] - fails[a]; })[0];
   var railNote = tripZones.some(function(t) { return t.rail; });
   if (fails[worst] > 0) {
-    var tripText = P('Some shops keep failing to reach a home, shop or factory within 30 tiles of road',
-                     'Algunas tiendas no logran llegar a una vivienda, tienda o fábrica a menos de 30 casillas de calle');
-    var tripWhy = P('Every so often each occupied shop sends a car along the roads. It turns at random at each junction, never turns back, and gives up at a dead end or after 30 tiles. If it passes no home, shop or factory, the trip fails, and a shop whose trip fails cannot grow (as in 1989; homes and factories only need a road and power). Only shops that failed in at least 2 of the last 3 months are listed.',
-                    'Cada cierto tiempo, cada tienda ocupada envía un carro por las calles. Gira al azar en cada cruce, nunca da la vuelta y se rinde en una calle sin salida o después de 30 casillas. Si no pasa junto a ninguna vivienda, tienda o fábrica, el viaje falla, y una tienda cuyo viaje falla no puede crecer (como en 1989; las viviendas y fábricas solo necesitan calle y electricidad). Solo se listan las tiendas que fallaron en al menos 2 de los últimos 3 meses.');
+    var tripText = P('Some shops keep failing to reach a home, shop or factory within {0} tiles of road',
+                     'Algunas tiendas no logran llegar a una vivienda, tienda o fábrica a menos de {0} casillas de calle', Reach.maxDist());
+    var tripWhy = P('Every so often each occupied shop sends a car along the roads. It turns at random at each junction, never turns back, and gives up at a dead end or after {0} tiles. If it passes no home, shop or factory, the trip fails, and a shop whose trip fails cannot grow (as in 1989; homes and factories only need a road and power). Only shops that failed in at least 2 of the last 3 months are listed.',
+                    'Cada cierto tiempo, cada tienda ocupada envía un carro por las calles. Gira al azar en cada cruce, nunca da la vuelta y se rinde en una calle sin salida o después de {0} casillas. Si no pasa junto a ninguna vivienda, tienda o fábrica, el viaje falla, y una tienda cuyo viaje falla no puede crecer (como en 1989; las viviendas y fábricas solo necesitan calle y electricidad). Solo se listan las tiendas que fallaron en al menos 2 de los últimos 3 meses.', Reach.maxDist());
     var tripFixes = [P('Click "Show me on the map": the shaded roads show how far the car can get, green frames show places it can reach, and orange marks show dead ends.',
                        'Haz clic en "Muéstrame en el mapa": las calles sombreadas muestran hasta dónde llega el carro, los marcos verdes los lugares a los que puede llegar y las marcas naranjas las calles sin salida.'),
-                     P('Put what the zone needs closer (within about 15 road tiles), along the same roads.',
-                       'Pon lo que la zona necesita más cerca (a unas 15 casillas de calle), junto a las mismas calles.'),
+                     P('Put what the zone needs closer (within about {0} road tiles), along the same roads.',
+                       'Pon lo que la zona necesita más cerca (a unas {0} casillas de calle), junto a las mismas calles.', Reach.nearDist()),
                      P('Remove dead ends or connect them, so the car can keep going.', 'Quita las calles sin salida o conéctalas, para que el carro pueda seguir.')];
     if (railNote)
       tripFixes.push(P('Rail runs right beside the road here: every tile becomes a junction where the car can wander off onto the rail, away from shops. Keep rail and road apart, crossing only at right angles.',
@@ -374,9 +374,9 @@ var advise = function(sim, newMonth) {
           ind: P('Factories here keep failing (rail beside the road)', 'Estas fábricas siguen fallando (vía junto a la calle)')
         }[q.type];
       return {
-        res: P('Homes here need a shop or factory within 30 road tiles', 'Estas viviendas necesitan una tienda o fábrica a menos de 30 casillas de calle'),
-        com: P('Shops here need a home, shop or factory within 30 road tiles', 'Estas tiendas necesitan una vivienda, tienda o fábrica a menos de 30 casillas de calle'),
-        ind: P('Factories need homes (workers) within 30 road tiles', 'Las fábricas necesitan viviendas (trabajadores) a menos de 30 casillas de calle')
+        res: P('Homes here need a shop or factory within {0} road tiles', 'Estas viviendas necesitan una tienda o fábrica a menos de {0} casillas de calle', Reach.maxDist()),
+        com: P('Shops here need a home, shop or factory within {0} road tiles', 'Estas tiendas necesitan una vivienda, tienda o fábrica a menos de {0} casillas de calle', Reach.maxDist()),
+        ind: P('Factories need homes (workers) within {0} road tiles', 'Las fábricas necesitan viviendas (trabajadores) a menos de {0} casillas de calle', Reach.maxDist())
       }[q.type];
     }),
     needHomes: circleAround(z.com.list.concat(z.ind.list), 20, P('Zone homes inside this circle', 'Zonifica viviendas dentro de este círculo')),

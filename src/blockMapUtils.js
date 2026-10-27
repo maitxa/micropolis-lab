@@ -11,6 +11,7 @@
  *
  */
 
+import { Amenities } from './amenities.js';
 import { BlockMap } from './blockMap.ts';
 import { Commercial } from './commercial.js';
 import { Industrial } from './industrial.js';
@@ -218,6 +219,10 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
   var pollutionDensityMap = blockMaps.pollutionDensityMap;
   var crimeRateMap = blockMaps.crimeRateMap;
 
+  // POLICY LAB v25: waterfront and park coverage (see amenities.js)
+  if (blockMaps.waterfrontMap)
+    Amenities.scan(map, blockMaps);
+
   var x, y, width, height;
 
   var totalLandValue = 0;
@@ -294,6 +299,10 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
         if (Policy.walkability && blockMaps.shopMap.worldGet(worldX, worldY) > 0)
           landValue += 20;
 
+        // POLICY LAB v25: clean water nearby raises land value, if the world model says people pay more for it
+        if (Policy.waterfront && blockMaps.waterfrontMap && blockMaps.waterfrontMap.get(x, y) > 0)
+          landValue += Amenities.WATERFRONT_BONUS;
+
         // POLICY LAB: being near a hospital raises land value, if the world model says healthcare access matters
         if (Policy.healthAffects && blockMaps.healthMap.worldGet(worldX, worldY) > 0)
           landValue += 15;
@@ -314,6 +323,9 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
     census.landValueAverage = Math.floor(totalLandValue / developedTileCount);
   else
     census.landValueAverage = 0;
+
+  // POLICY LAB v25: the land value the city taxes (amenities.js): each zone's own, weighted by its people
+  census.taxLandValue = Amenities.taxLandValue(map, blockMaps, census.landValueAverage);
     
   // Smooth the pollution map twice
   smoothMap(tempMap1, tempMap2, SMOOTH_ALL_THEN_CLAMP);
@@ -329,6 +341,9 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
     for (y = 0, height = map.height; y < height; y += pollutionDensityMap.blockSize)  {
       // Copy the values into pollutionDensityMap
       var pollution = tempMap1.worldGet(x, y);
+      // POLICY LAB v25: big parks clean the air around them
+      if (blockMaps.parkEffectMap && blockMaps.parkEffectMap.worldGet(x, y) === 2)
+        pollution = Math.floor(pollution * Amenities.BIG_PARK_AIR);
       pollutionDensityMap.worldSet(x, y, pollution);
 
       if (pollution !== 0) {
@@ -379,7 +394,7 @@ var crimeScan = function(census, blockMaps, budget) {
 
   var totalCrime = 0;
   var crimeZoneCount = 0;
-  var partTotals = {poverty: 0, density: 0, police: 0, social: 0};
+  var partTotals = {poverty: 0, density: 0, police: 0, social: 0, parks: 0};
 
   // Scan the map, looking for developed land, as it can attract crime.
   // POLICY LAB BUG FIX: the original micropolisJS used crimeRateMap.mapWidth / mapHeight here, which don't exist
@@ -421,6 +436,15 @@ var crimeScan = function(census, blockMaps, budget) {
           socialPart = Policy.socialCrime * socialFunding * 2 * (250 - landValue) / 250;
         value -= socialPart;
 
+        // POLICY LAB v25 (new factor): parks reduce crime nearby, if the world model says so (big parks more)
+        var parkPart = 0;
+        if (Policy.parksCrime && blockMaps.parkEffectMap) {
+          var park = blockMaps.parkEffectMap.worldGet(x, y);
+          parkPart = park === 2 ? Amenities.BIG_PARK_CRIME : park === 1 ? Amenities.SMALL_PARK_CRIME : 0;
+        }
+        value -= parkPart;
+        partTotals.parks += parkPart;
+
         // POLICY LAB: keep running totals of each factor, for the Evaluation report
         partTotals.poverty += povertyPart;
         partTotals.density += densityPart;
@@ -441,7 +465,7 @@ var crimeScan = function(census, blockMaps, budget) {
   }
 
   // POLICY LAB: average contribution of each factor per neighbourhood (before the 0-250 limits are applied)
-  census.crimeParts = {poverty: 0, density: 0, police: 0, social: 0};
+  census.crimeParts = {poverty: 0, density: 0, police: 0, social: 0, parks: 0};
   if (crimeZoneCount > 0) {
     Object.keys(partTotals).forEach(function(k) {
       census.crimeParts[k] = Math.round(partTotals[k] / crimeZoneCount);
