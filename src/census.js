@@ -64,7 +64,7 @@ var rotate120Arrays = function() {
 
 // POLICY LAB: a copy of the counts from the last complete map scan (the live counts are reset at the start of each
 // scan, so reading them mid-scan would give half-counted numbers)
-var snapshotProps = ['poweredZoneCount', 'unpoweredZoneCount', 'firePop', 'roadTotal', 'railTotal', 'resPop', 'comPop',
+var snapshotProps = ['poweredZoneCount', 'unpoweredZoneCount', 'firePop', 'roadTotal', 'highwayTotal', 'railTotal', 'resPop', 'comPop',
                      'indPop', 'resZonePop', 'comZonePop', 'indZonePop', 'hospitalPop', 'churchPop', 'policeStationPop',
                      'fireStationPop', 'stadiumPop', 'coalPowerPop', 'nuclearPowerPop', 'seaportPop', 'airportPop',
                      'depotPop', 'depotUnconnected', 'waterPlantPop', 'waterPlantUnpowered', 'mixedZones',
@@ -85,6 +85,7 @@ Census.prototype.clearCensus = function() {
   this.unpoweredZoneCount = 0;
   this.firePop = 0;
   this.roadTotal = 0;
+  this.highwayTotal = 0;
   this.railTotal = 0;
   this.resPop = 0;
   this.comPop = 0;

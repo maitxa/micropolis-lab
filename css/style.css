@@ -3061,3 +3061,22 @@ nav li {
 #rewindRequest { background-color: #8e6c3a; color: #fff; }
 #splashScoreboard, #scoreboardFromEval { background-color: #b07a1c; color: #fff; border-color: #b07a1c; }
 #scoreboardFromEval { width: 140px; }
+
+/* POLICY LAB v26: highways */
+#highwayOverlay path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+#highwayOverlay .hwyEdge { stroke: rgba(90, 50, 0, 0.55); }
+#highwayOverlay .hwyBand { stroke: rgba(255, 166, 0, 0.62); }
+
+/* POLICY LAB v26: what went wrong */
+#mistakesRequest { background-color: #7a3b6b; color: #fff; }
+#plOverlay .plReportActions { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+#plOverlay .plCopied { font-size: 13px; color: var(--pl-ink-soft, #4b5f61); }
+#plOverlay .plCopyArea { width: 100%; height: 160px; font-family: var(--pl-ui); font-size: 12px; margin-bottom: 8px; }
+#plOverlay .plFindings { margin: 0; padding-left: 22px; }
+#plOverlay .plFindings li { margin-bottom: 12px; }
+#plOverlay .plFindings p { margin: 3px 0; line-height: 1.4; }
+#plOverlay .plFindTitle { font-weight: 700; font-size: 15px; }
+#plOverlay .plGood { margin-top: 10px; color: #1a5229; }
+
+/* POLICY LAB v26: the button panel grows with its buttons (the Zoning need box is placed under it by the game) */
+#miscButtons { height: auto; }

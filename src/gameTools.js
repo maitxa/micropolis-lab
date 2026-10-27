@@ -22,6 +22,7 @@ import { RailTool } from './railTool.js';
 import { RoadTool } from './roadTool.js';
 import { QueryTool } from './queryTool.js';
 import * as TileValues from "./tileValues.ts";
+import { TileUtils } from './tileUtils.js';
 import { WireTool } from './wireTool.js';
 import { Policy } from './policy.js';
 
@@ -50,6 +51,29 @@ function GameTools(map) {
     // POLICY LAB v25: a big park (3x3 trees and lawns with a fountain in the middle)
     bigpark: new BuildingTool(150, TileValues.FOUNTAIN, map, 3, false),
   });
+
+  // POLICY LAB v26: highways. Built like roads (bridges included), or dragged over an existing road to upgrade it; the
+  // tiles become highway once the player has paid (see Game.applyToolAt), so undo can take the mark away again.
+  var highway = tools.highway = new RoadTool(map);
+  highway.pendingHighways = [];
+  highway.doTool = function(x, y) {
+    var k = x + ',' + y;
+    var v = this._worldEffects.getTileValue(x, y);
+    if (TileUtils.isDriveable(v) && !TileUtils.isRail(v)) {
+      // already a road: upgrade it (or nothing to do if it is a highway already)
+      if (!Policy.isHighway(x, y)) {
+        this.addCost(Policy.highwayExtra());
+        this.pendingHighways.push(k);
+      }
+      this.result = this.TOOLRESULT_OK;
+      return;
+    }
+    this.result = this.layRoad(x, y);
+    if (this.result === this.TOOLRESULT_OK) {
+      this.addCost(Policy.highwayExtra());
+      this.pendingHighways.push(k);
+    }
+  };
 
   // POLICY LAB v25: the big park is built from the ordinary park tiles, not from a building's tile set
   tools.bigpark.getCost = Policy.bigParkCost;

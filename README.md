@@ -188,6 +188,23 @@ saved before v25 keep the 1989 answers for those questions.
   cleans the air within 8 tiles (pollution x0.6) and, in the default world model, lowers crime there.
 - The To do card no longer shows on the start screen (a style was overriding "hidden until the game starts").
 
+### v26: highways and "What went wrong?"
+
+- **Highways** (key **E**, $40 a tile: a road plus three times the road price; drag over an existing road to upgrade it
+  for $30 a tile). A highway is an ordinary road tile that the city also lists as highway (saved with the city): on it a
+  trip uses up only a third of a tile of its distance (so 90 road tiles become 270 on highway), each car adds half the
+  congestion, upkeep is that of three road tiles, and its bridges never open, even over the shipping channel. Zones can
+  use a highway as their road. Drawn as an amber band over the road. Undo and the bulldozer take the highway off the
+  list again; a highway road that burns or floods is dropped from it. The reach view and the Query tool count highway
+  tiles at a third (`gameTools.js`, `traffic.js`, `reach.js`, `road.js`).
+- **What went wrong?** (button under the funds): a report of the planning mistakes in the city as it is now and in its
+  money history, worst first: homes in heavy pollution or right next to industry, high crime with no police, too many
+  empty zones of one kind, zones without power, shops that can't reach customers, dead ends, growth capped by a missing
+  stadium/airport/seaport, jammed roads, depots that do nothing, drawbridges, deficit years, long stretches of high
+  taxes, underfunded roads. Each says why it matters in this game's rules and what to do, with "Show on the map";
+  "Copy report" copies it as text (`src/mistakes.js`).
+- The button panel grows with its buttons, and the Zoning need box is placed under it (unless you have moved it).
+
 ### Bug fix
 
 In upstream micropolisJS the crime calculation never ran (it read `mapWidth`/`mapHeight`, which `BlockMap` doesn't define), so

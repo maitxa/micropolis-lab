@@ -59,7 +59,17 @@ var bigParkCentres = function(map) {
   return out;
 };
 
+// POLICY LAB v26: forget highway tiles whose road is gone (burnt, flooded, crumbled)
+var tidyHighways = function(map) {
+  Object.keys(Policy.highways || {}).forEach(function(k) {
+    var p = k.split(',').map(Number);
+    if (!map.testBounds(p[0], p[1]) || !TileUtils.isDriveable(map.getTileValue(p[0], p[1])))
+      Policy.setHighway(p[0], p[1], false);
+  });
+};
+
 var scan = function(map, blockMaps) {
+  tidyHighways(map);
   var water = blockMaps.waterfrontMap, parks = blockMaps.parkEffectMap;
   water.clear();
   parks.clear();

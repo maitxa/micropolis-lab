@@ -312,6 +312,17 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     e.preventDefault();
     this.openPanel(function(done) { CityPanels.openRewind(this, done); });
   }).bind(this));
+  // POLICY LAB v26: what went wrong
+  $('#mistakesRequest').on('click', (function(e) {
+    e.preventDefault();
+    var game = this;
+    this.openPanel(function(done) {
+      CityPanels.openMistakes(game, done, function(f) {
+        done();
+        game.showHint({id: 'mistake_' + f.id, text: f.title, targets: f.targets});
+      });
+    });
+  }).bind(this));
   $('#scoreboardFromEval').on('click', (function(e) {
     e.preventDefault();
     if (this._openWindow === 'evalWindow')
@@ -638,6 +649,7 @@ Game.prototype.applyPolicyToInterface = function() {
   $('#industrialButton .price').text(MiscUtils.formatMoney(Policy.businessZoneCost()));
   $('#parkButton .price').text(MiscUtils.formatMoney(Policy.parkCost()));
   $('#bigParkButton .price').text(MiscUtils.formatMoney(Policy.bigParkCost()));
+  $('#highwayButton .price').text(MiscUtils.formatMoney(Policy.transportCosts().road + Policy.highwayExtra()));
 };
 
 
@@ -654,6 +666,7 @@ Game.prototype.runAdvisor = function(newMonth) {
     return;
   }
   this._advice = result.items;
+  this._need = result.need;
 
   // Yearly balance under Funds
   var bal = result.estimate.balance;
@@ -991,7 +1004,17 @@ Game.prototype.refreshHint = function(items) {
 
 
 // POLICY LAB: put the "To do" card just under the tool panel, and keep it clear of the zoom buttons
+// POLICY LAB v26: the Zoning need box sits just under the button panel (which grew), unless the player moved it
+Game.prototype.layoutLeft = function() {
+  var misc = $('#miscButtons');
+  if (!misc.length || !misc.is(':visible') || Panels.isPlaced('RCIContainer'))
+    return;
+  var scale = parseFloat(misc.attr('data-scale')) || 1;
+  $('#RCIContainer').css({top: (misc.position().top + misc.outerHeight() * scale + 12) + 'px'});
+};
+
 Game.prototype.layoutAdvisor = function() {
+  this.layoutLeft();
   var controls = $('#controls');
   if (!controls.length || !controls.is(':visible'))
     return;
@@ -1254,6 +1277,22 @@ Game.prototype.applyToolAt = function(tileX, tileY) {
   // POLICY LAB v25: remember big parks (their fountain is in the middle), for their effect on air and crime
   if (built && this.inputStatus.toolName === 'bigpark')
     Policy.bigParks[tileX + ',' + tileY] = true;
+  // POLICY LAB v26: highway tiles become highway once paid for; bulldozing a highway tile removes it from the list.
+  // Either is remembered with the undo entry.
+  if (tool.pendingHighways) {
+    if (built) {
+      tool.pendingHighways.forEach(function(k) { var p = k.split(','); Policy.setHighway(+p[0], +p[1], true); });
+      if (tool.lastUndo)
+        tool.lastUndo.highwaysAdded = tool.pendingHighways.slice();
+    }
+    tool.pendingHighways = [];
+  }
+  if (built && this.inputStatus.toolName === 'bulldozer' && tool.lastUndo) {
+    var gone = tool.lastUndo.tiles.filter(function(t) { return Policy.isHighway(t.x, t.y); }).map(function(t) { return t.x + ',' + t.y; });
+    gone.forEach(function(k) { var p = k.split(','); Policy.setHighway(+p[0], +p[1], false); });
+    if (gone.length)
+      tool.lastUndo.highwaysRemoved = gone;
+  }
 
   if (built && tool.lastUndo && this.inputStatus.toolName !== 'query') {
     this.recordUndo(tool.lastUndo, this.inputStatus.strokeId);
@@ -1313,7 +1352,14 @@ Game.prototype.updateChannel = function(toolChanged) {
     this._toolWarnUntil = 0;
     if (road && this._channelShown)
       this.roadToolHint();
+    else if (this.inputStatus.currentTool && this.inputStatus.toolName === 'highway')
+      this.highwayToolHint();
   }
+};
+
+Game.prototype.highwayToolHint = function() {
+  $('#toolOutput').addClass('toolHint').text(I18n.p('Highway: drag over a road to upgrade it, or build new. Trips go 3x as far on it; its bridges never open.',
+                                                    'Autopista: arrastra sobre una calle para mejorarla, o construye una nueva. Los viajes llegan 3 veces más lejos; sus puentes nunca se abren.'));
 };
 
 Game.prototype.roadToolHint = function() {
@@ -1373,8 +1419,11 @@ Game.prototype.recordUndo = function(change, strokeId) {
         top.tiles.push(t);
     });
     top.cost += change.cost;
+    top.highwaysAdded = (top.highwaysAdded || []).concat(change.highwaysAdded || []);
+    top.highwaysRemoved = (top.highwaysRemoved || []).concat(change.highwaysRemoved || []);
   } else {
-    this._undoStack.push({strokeId: strokeId, tiles: change.tiles.slice(), cost: change.cost});
+    this._undoStack.push({strokeId: strokeId, tiles: change.tiles.slice(), cost: change.cost,
+                          highwaysAdded: (change.highwaysAdded || []).slice(), highwaysRemoved: (change.highwaysRemoved || []).slice()});
     if (this._undoStack.length > MAX_UNDO)
       this._undoStack.shift();
   }
@@ -1421,6 +1470,9 @@ Game.prototype.handleUndo = function() {
     var t = entry.tiles[i];
     map.setTile(t.x, t.y, t.oldValue, t.oldFlags);
   }
+  // POLICY LAB v26: highways built (or bulldozed) by this action
+  (entry.highwaysAdded || []).forEach(function(k) { var p = k.split(','); Policy.setHighway(+p[0], +p[1], false); });
+  (entry.highwaysRemoved || []).forEach(function(k) { var p = k.split(','); Policy.setHighway(+p[0], +p[1], true); });
 
   this.simulation.budget.spend(-entry.cost);
   $('#toolOutput').text(entry.cost > 0 ? I18n.t('Undone: {0} refunded', MiscUtils.formatMoney(entry.cost)) : I18n.t('Undone'));
@@ -1669,6 +1721,8 @@ var commonAnimate = function() {
   else if (this._channelShown && toolKey.indexOf('road|') === 0 && this._toolOutputEl &&
            this._toolOutputEl.textContent === 'Tools')
     this.roadToolHint();   // the road tool was picked again (which resets the text)
+  else if (toolKey.indexOf('highway|') === 0 && this._toolOutputEl && this._toolOutputEl.textContent === 'Tools')
+    this.highwayToolHint();
   this._toolOutputEl = this._toolOutputEl || document.getElementById('toolOutput');
 
   var sprites = this.calculateSpritesForPaint(this.gameCanvas);

@@ -11,6 +11,7 @@ import $ from "jquery";
 import { CityStore } from './cityStore.js';
 import { I18n } from './i18n.js';
 import { MiscUtils } from './miscUtils.js';
+import { Mistakes } from './mistakes.js';
 
 var P = I18n.p;
 var fmt = MiscUtils.formatNumber;
@@ -229,7 +230,60 @@ var openRewind = function(game, onClose) {
 };
 
 
+// ---- What went wrong (during a game). onShow(finding) highlights a finding's spots on the map.
+var openMistakes = function(game, onClose, onShow) {
+  var o = overlay(P('What went wrong', 'Qué salió mal'), onClose);
+  var body = o.body;
+  var r;
+  try {
+    r = Mistakes.report(game);
+  } catch (e) {
+    body.append($('<p></p>').text(P('The report could not be made right now.', 'No se pudo hacer el informe ahora.')));
+    return;
+  }
+  var text = Mistakes.asText(r);
+  var head = $('<div class="plReportHead"></div>');
+  head.append($('<p class="plNote"></p>').text(P('{0} in {1}, score {2}. The planning mistakes in the city as it is now (and in its money history), the worst first, each checked against this game\'s rules.',
+                                                 '{0} en {1}, puntuación {2}. Los errores de planificación de la ciudad tal como está ahora (y en su historial de dinero), los peores primero, cada uno comprobado con las reglas de este juego.',
+                                                 r.city, r.year, r.score)));
+  var copy = $('<button type="button" class="plPrimary"></button>').text(P('Copy report', 'Copiar informe'));
+  var copied = $('<span class="plCopied" aria-live="polite"></span>');
+  var area = $('<textarea class="plCopyArea" readonly></textarea>').val(text).hide();
+  copy.on('click', function() {
+    var fallback = function() {
+      area.show().trigger('focus').trigger('select');
+      copied.text(P('Press Ctrl+C (Cmd+C on a Mac) to copy.', 'Pulsa Ctrl+C (Cmd+C en Mac) para copiar.'));
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(text).then(function() { copied.text(P('Copied.', 'Copiado.')); }, fallback);
+    else
+      fallback();
+  });
+  head.append($('<div class="plReportActions"></div>').append(copy, copied));
+  body.append(head, area);
+  if (!r.findings.length)
+    body.append($('<p></p>').text(P('No planning mistakes found right now.', 'Ahora mismo no se encontraron errores de planificación.')));
+  var ol = $('<ol class="plFindings"></ol>');
+  r.findings.forEach(function(f) {
+    var li = $('<li></li>');
+    li.append($('<div class="plFindTitle"></div>').text(f.title));
+    li.append($('<p></p>').append($('<b></b>').text(P('Why: ', 'Por qué: ')), document.createTextNode(f.why)));
+    li.append($('<p></p>').append($('<b></b>').text(P('What to do: ', 'Qué hacer: ')), document.createTextNode(f.fix)));
+    if (f.targets.length && onShow) {
+      var show = $('<button type="button"></button>').text(P('Show on the map', 'Mostrar en el mapa'));
+      show.on('click', function() { o.close(); onShow(f); });
+      li.append(show);
+    }
+    ol.append(li);
+  });
+  body.append(ol);
+  if (r.good.length)
+    body.append($('<p class="plGood"></p>').append($('<b></b>').text(P('Going well: ', 'Va bien: ')), document.createTextNode(r.good.join(' '))));
+};
+
+
 var CityPanels = {
+  openMistakes: openMistakes,
   openSavedCities: openSavedCities,
   openScoreboard: openScoreboard,
   openRewind: openRewind

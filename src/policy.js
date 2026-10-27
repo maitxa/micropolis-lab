@@ -117,6 +117,11 @@ Policy.greenBeltCentre = {x: 60, y: 50};
 Policy.builtHospitals = {};
 // POLICY LAB v25: big parks the player built (their fountain in the middle), as "x,y" keys
 Policy.bigParks = {};
+// POLICY LAB v26: highway tiles, as "x,y" keys. A highway is an ordinary road tile on the map that is also listed here:
+// trips go three times as far on it, it builds up half the congestion, costs 3x road upkeep, and its bridges never open.
+Policy.highways = {};
+// changes whenever the list changes (so the map redraws the highways)
+Policy.highwaysVersion = 0;
 // POLICY LAB v25: an identifier for the city (saved cities, the scoreboard and rewind snapshots belong to it)
 Policy.cityId = null;
 // Which preset the city's laws started from (for the report)
@@ -143,6 +148,7 @@ Policy.save = function(saveData) {
   copy.greenBeltCentre = Policy.greenBeltCentre;
   copy.builtHospitals = Policy.builtHospitals;
   copy.bigParks = Policy.bigParks;
+  copy.highways = Policy.highways;
   copy.cityId = Policy.cityId;
   copy.presetName = Policy.presetName;
   copy.history = Policy.history;
@@ -157,6 +163,8 @@ Policy.load = function(saveData) {
   Policy.greenBeltCentre = extra.greenBeltCentre || {x: 60, y: 50};
   Policy.builtHospitals = extra.builtHospitals || {};
   Policy.bigParks = extra.bigParks || {};
+  Policy.highways = extra.highways || {};
+  Policy.highwaysVersion++;
   Policy.cityId = extra.cityId || null;
   Policy.presetName = extra.presetName || 'Original 1989 rules';
   Policy.history = extra.history && extra.history.months ? extra.history : {months: [], years: []};
@@ -212,6 +220,25 @@ Policy.businessGrowthNudge = function() {
 // POLICY LAB v25: a big park (3x3, with a fountain) costs $150 at the standard price; the park subsidy law applies too
 Policy.bigParkCost = function() {
   return Math.round(150 * PARK_COST[Policy.parks] / PARK_COST.standard);
+};
+
+// POLICY LAB v26: highways
+Policy.isHighway = function(x, y) {
+  return Policy.highways[x + ',' + y] === true;
+};
+
+// What a highway costs on top of a road, per tile ($30 under the balanced transport law: $40 a tile in all)
+Policy.highwayExtra = function() {
+  return 3 * Policy.transportCosts().road;
+};
+
+Policy.setHighway = function(x, y, on) {
+  var k = x + ',' + y;
+  if (on)
+    Policy.highways[k] = true;
+  else
+    delete Policy.highways[k];
+  Policy.highwaysVersion++;
 };
 
 Policy.parkCost = function() {

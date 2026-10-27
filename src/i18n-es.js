@@ -423,6 +423,10 @@ var ES = {
   'Big park: cleans the air and (in the default world model) lowers crime within 8 tiles (key G)': 'Parque grande: limpia el aire y (en el modelo del mundo predeterminado) reduce la delincuencia a menos de 8 casillas (tecla G)',
   'How your score was worked out': 'Cómo se calculó tu puntuación',
   'Save this city as:': 'Guardar esta ciudad como:',
+  'What went wrong?': '¿Qué salió mal?',
+  'A report of the planning mistakes in this city, and why they matter': 'Un informe de los errores de planificación de esta ciudad, y por qué importan',
+  'Highway': 'Autopista',
+  'Highway: trips go three times as far on it, half the congestion, its bridges never open; 3x road upkeep. Drag over a road to upgrade it (key E)': 'Autopista: los viajes llegan tres veces más lejos, la mitad de congestión, sus puentes nunca se abren; 3 veces el mantenimiento de una calle. Arrastra sobre una calle para mejorarla (tecla E)',
   'Saving again under the same name replaces that save. Saved in this browser; use Load game on the start screen to open it, or to export it to a file.': 'Guardar otra vez con el mismo nombre reemplaza esa partida. Se guarda en este navegador; usa Cargar partida en la pantalla de inicio para abrirla o exportarla a un archivo.'
 };
 

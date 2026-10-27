@@ -77,7 +77,7 @@ var isRaisedBridge = function(v) {
 
 // A closed road bridge over the shipping channel, which can open (the same test the game uses, in road.js)
 var isDrawbridge = function(map, x, y) {
-  if (Policy.bridges === 'fixed')
+  if (Policy.bridges === 'fixed' || Policy.isHighway(x, y))
     return false;
   var v = TileUtils.normalizeRoad(map.getTileValue(x, y));
   if (v === TileValues.HBRIDGE)
@@ -121,28 +121,47 @@ var drivable = function(map, x, y) {
 var key = function(x, y) { return x + ',' + y; };
 
 // Breadth-first search along drivable tiles from the given start tiles, up to max tiles
+// Shortest distances along the roads from the start tiles, up to max. POLICY LAB v26: a highway tile counts a third of
+// a tile, so distances are worked out in thirds (road 3, highway 1) and reported in tiles.
 var spread = function(map, starts, max) {
-  var dist = {};
-  var queue = [];
+  var cost = {}, done = {}, buckets = [], order = [];
+  var maxT = max * 3;
   starts.forEach(function(s) {
-    if (dist[key(s[0], s[1])] === undefined) {
-      dist[key(s[0], s[1])] = 1;
-      queue.push([s[0], s[1]]);
+    var k0 = key(s[0], s[1]);
+    if (cost[k0] === undefined) {
+      cost[k0] = 3;
+      (buckets[3] = buckets[3] || []).push([s[0], s[1]]);
     }
   });
-  for (var q = 0; q < queue.length; q++) {
-    var cx = queue[q][0], cy = queue[q][1], d = dist[key(cx, cy)];
-    if (d >= max)
+  for (var b = 0; b < buckets.length; b++) {
+    var list = buckets[b];
+    if (!list)
       continue;
-    for (var k = 0; k < 4; k++) {
-      var nx = cx + DIRS[k][0], ny = cy + DIRS[k][1];
-      if (dist[key(nx, ny)] === undefined && drivable(map, nx, ny)) {
-        dist[key(nx, ny)] = d + 1;
-        queue.push([nx, ny]);
+    for (var i = 0; i < list.length; i++) {
+      var cx = list[i][0], cy = list[i][1], ck = key(cx, cy);
+      if (done[ck] || cost[ck] !== b)
+        continue;
+      done[ck] = true;
+      order.push([cx, cy]);
+      if (b >= maxT)
+        continue;
+      for (var k = 0; k < 4; k++) {
+        var nx = cx + DIRS[k][0], ny = cy + DIRS[k][1], nk = key(nx, ny);
+        if (done[nk] || !drivable(map, nx, ny))
+          continue;
+        var nc = b + (Policy.isHighway(nx, ny) ? 1 : 3);
+        if (nc > maxT)
+          continue;
+        if (cost[nk] === undefined || nc < cost[nk]) {
+          cost[nk] = nc;
+          (buckets[nc] = buckets[nc] || []).push([nx, ny]);
+        }
       }
     }
   }
-  return {dist: dist, tiles: queue};
+  var dist = {};
+  order.forEach(function(p) { var k2 = key(p[0], p[1]); dist[k2] = Math.round(cost[k2] / 3 * 10) / 10; });
+  return {dist: dist, tiles: order};
 };
 
 var countLinks = function(map, x, y) {
@@ -334,7 +353,7 @@ var zoneReport = function(map, zone, longReach) {
     if (r.dests.length)
       lines.push({mark: !tripsMatter ? 'info' : (closest > NEAR ? 'warn' : 'ok'),
                   text: P('Can reach {0} ({1}); closest {2} road tiles away', 'Llega a {0} ({1}); el más cercano a {2} casillas de calle',
-                          what(r.type), fmt(r.dests.length), closest)});
+                          what(r.type), fmt(r.dests.length), Math.round(closest))});
     else
       lines.push({mark: tripsMatter ? 'no' : 'info', text: P('No {0} within {1} road tiles', 'No hay {0} a menos de {1} casillas de calle', what(r.type), r.max)});
     if (!tripsMatter)
@@ -402,6 +421,10 @@ var roadReport = function(map, x, y) {
 
   var lines = [];
   var here = TileUtils.normalizeRoad(map.getTileValue(x, y));
+  // POLICY LAB v26
+  if (Policy.isHighway(x, y))
+    lines.push({mark: 'info', text: P('This is a highway: trips go three times as far on it, it builds up half the congestion, and its bridges never open.',
+                                      'Esta es una autopista: los viajes llegan tres veces más lejos por ella, se congestiona la mitad y sus puentes nunca se abren.')});
   if (isDrawbridge(map, x, y))
     lines.push({mark: 'warn', text: P('This is a drawbridge: it opens for ships (and sometimes at random), cutting the road.',
                                       'Este es un puente levadizo: se abre para los barcos (y a veces al azar) y corta la calle.')});

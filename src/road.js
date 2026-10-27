@@ -70,8 +70,9 @@ var closeHorizontal = [
 
 
 var doBridge = function(map, x, y, currentTile, simData) {
-  // POLICY LAB: under the "fixed bridges" law, bridges never open; one that is open (e.g. in an old saved game) closes
-  if (Policy.bridges === 'fixed') {
+  // POLICY LAB: under the "fixed bridges" law, bridges never open; one that is open (e.g. in an old saved game) closes.
+  // POLICY LAB v26: highway bridges never open either.
+  if (Policy.bridges === 'fixed' || Policy.isHighway(x, y)) {
     if (currentTile === TileValues.BRWV) {
       closeBridge(map, x, y, verticalDeltaX, verticalDeltaY, openVertical, closeVertical);
       return true;
@@ -128,6 +129,11 @@ var densityTable = [TileValues.ROADBASE, TileValues.LTRFBASE, TileValues.HTRFBAS
 
 var roadFound = function(map, x, y, simData) {
   simData.census.roadTotal += 1;
+  // POLICY LAB v26: a highway tile costs as much upkeep as three road tiles
+  if (Policy.isHighway(x, y)) {
+    simData.census.roadTotal += 2;
+    simData.census.highwayTotal = (simData.census.highwayTotal || 0) + 1;
+  }
 
   var currentTile = map.getTile(x, y);
   var tileValue = currentTile.getValue();

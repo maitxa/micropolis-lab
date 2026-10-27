@@ -96,7 +96,8 @@ var toolKeys = {
   84: 'depotButton',      // T (train depot)
   85: 'waterButton',      // U (water treatment plant)
   77: 'hospitalButton',   // M (medical)
-  71: 'bigParkButton'     // G (green): big park
+  71: 'bigParkButton',    // G (green): big park
+  69: 'highwayButton'     // E (expressway)
 };
 // Numeric keypad
 for (var k = 0; k <= 9; k++)

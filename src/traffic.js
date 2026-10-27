@@ -70,7 +70,11 @@ Traffic.prototype.addToTrafficDensityMap = function(blockMaps) {
     if (tileValue >= ROADBASE && tileValue < POWERBASE) {
       // Update traffic density.
       var traffic = trafficDensityMap.worldGet(pos.x, pos.y);
-      traffic += this._byTrain ? 25 : 50;
+      // POLICY LAB v26: highways carry traffic more efficiently: half the congestion
+      var add = this._byTrain ? 25 : 50;
+      if (Policy.isHighway(pos.x, pos.y))
+        add = Math.round(add / 2);
+      traffic += add;
       traffic = Math.min(traffic, 240);
       trafficDensityMap.worldSet(pos.x, pos.y, traffic);
 
@@ -120,6 +124,9 @@ Traffic.prototype.tryDrive = function(startPos, destFn) {
 
   /* Maximum distance to try */
   var maxDistance = this._byTrain ? maxTrafficDistance() * 2 : maxTrafficDistance();
+  // POLICY LAB v26: a highway tile only uses up a third of a tile of the trip's distance. `steps` keeps the original
+  // every-other-tile pattern for remembering where the car has been.
+  var steps = 0;
   for (var dist = 0; dist < maxDistance; dist++) {
     var  dir = this.tryGo(drivePos, dirLast);
     if (dir) {
@@ -132,8 +139,11 @@ Traffic.prototype.tryDrive = function(startPos, destFn) {
           TileUtils.isRoad(this._map.getTileValue(drivePos.x, drivePos.y)))
         return false;
       dirLast = dir.oppositeDirection();
+      if (Policy.isHighway(drivePos.x, drivePos.y))
+        dist -= 2 / 3;
+      steps++;
 
-      if (dist & 1)
+      if (steps & 1)
         this._stack.push(new Position(drivePos.x, drivePos.y));
 
       if (this.driveDone(drivePos, destFn))

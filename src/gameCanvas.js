@@ -665,6 +665,8 @@ GameCanvas.prototype.paint = function(mouse, sprites, isPaused) {
 
   // POLICY LAB: outlines of the car-free downtown and the green belt
   this._paintPolicyOverlay();
+  // POLICY LAB v26: highways
+  this._paintHighways();
   // POLICY LAB: map layers (pollution, dead ends, workers nearby), then highlights for the advisor's hints on top
   this._paintLayer();
   this._paintHighlights();
@@ -923,6 +925,54 @@ GameCanvas.prototype.setChannel = function(cells) {
   this._channel = shapes;
   this._layerVersion = (this._layerVersion || 0) + 1;
   this._lastLayerKey = null;
+};
+
+// POLICY LAB v26: highways, drawn as an amber band along the road (the road tiles underneath are ordinary roads)
+GameCanvas.prototype._paintHighways = function() {
+  if (this._canvas.id !== GameCanvas.DEFAULT_ID)
+    return;
+  var keys = Object.keys(Policy.highways || {});
+  var svg = this._highwayOverlay;
+  if (!keys.length) {
+    if (svg && svg.style.display !== 'none')
+      svg.style.display = 'none';
+    return;
+  }
+  if (!svg) {
+    svg = this._highwayOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('id', 'highwayOverlay');
+    svg.style.position = 'absolute';
+    svg.style.pointerEvents = 'none';
+    this._canvas.parentNode.insertBefore(svg, this._canvas.nextSibling);
+  }
+  var tw = this._tileSet.tileWidth;
+  var key = [this._originX, this._originY, tw, this.canvasWidth, this.canvasHeight, Policy.highwaysVersion].join(',');
+  if (key === this._lastHighwayKey)
+    return;
+  this._lastHighwayKey = key;
+  svg.style.display = '';
+  svg.style.left = this._canvas.offsetLeft + 'px';
+  svg.style.top = this._canvas.offsetTop + 'px';
+  svg.setAttribute('width', this.canvasWidth / this._dpr);
+  svg.setAttribute('height', this.canvasHeight / this._dpr);
+  svg.setAttribute('viewBox', '0 0 ' + this.canvasWidth + ' ' + this.canvasHeight);
+  var ox = this._originX, oy = this._originY;
+  var viewW = this._totalTilesInViewX + 2, viewH = this._totalTilesInViewY + 2;
+  var d = [];
+  keys.forEach(function(k) {
+    var p = k.split(','), x = +p[0], y = +p[1];
+    if (x < ox - 1 || y < oy - 1 || x > ox + viewW || y > oy + viewH)
+      return;
+    var cx = (x - ox) * tw + tw / 2, cy = (y - oy) * tw + tw / 2;
+    d.push('M' + cx + ' ' + cy + 'h0');
+    if (Policy.isHighway(x + 1, y))
+      d.push('M' + cx + ' ' + cy + 'h' + tw);
+    if (Policy.isHighway(x, y + 1))
+      d.push('M' + cx + ' ' + cy + 'v' + tw);
+  });
+  var path = d.join('');
+  svg.innerHTML = '<path d="' + path + '" class="hwyEdge" stroke-width="' + (tw * 0.62) + '"/>' +
+                  '<path d="' + path + '" class="hwyBand" stroke-width="' + (tw * 0.42) + '"/>';
 };
 
 // POLICY LAB v23: permanent red frames on shops that can't reach customers. list: [{x, y}] zone centres, or null.
