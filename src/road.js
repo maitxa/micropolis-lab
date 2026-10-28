@@ -182,10 +182,11 @@ var roadFound = function(map, x, y, simData) {
     density = 2;
   }
 
-  // Force currentDensity in range 0-3 (trafficDensityMap values are capped at 240)
-  var currentDensity = simData.blockMaps.trafficDensityMap.worldGet(x, y) >> 6;
-  if (currentDensity > 1)
-    currentDensity -= 1;
+  // Force currentDensity in range 0-2 (trafficDensityMap values are capped at 240)
+  // POLICY LAB v29: more lenient than 1989: a road shows (and counts as) heavy traffic from 224, not 192
+  // (the original's 192-223 band is light traffic here). Heavy traffic pollutes more and costs double upkeep.
+  var td = simData.blockMaps.trafficDensityMap.worldGet(x, y);
+  var currentDensity = td >= Road.HEAVY_FROM ? 2 : td >= 64 ? 1 : 0;
 
   if (currentDensity === density)
     return;
@@ -201,6 +202,7 @@ var roadFound = function(map, x, y, simData) {
 
 
 var Road = {
+  HEAVY_FROM: 224,
   registerHandlers: function(mapScanner, repairManager) {
     mapScanner.addAction(TileUtils.isRoad, roadFound);
   }

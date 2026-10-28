@@ -231,6 +231,17 @@ saved before v25 keep the 1989 answers for those questions.
   removed, home zones covered, funding, capacity in use) and whether it is working (no power, no rail link).
 - Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
 
+### v29.3: gentler traffic, and road that leads nowhere
+
+- A road counts (and is drawn) as **heavy traffic** only from a traffic density of 224, not 192 as in 1989. Heavy
+  traffic pollutes more and costs double upkeep. In a test city this cut jammed roads from about a third to about a
+  tenth. The Traffic bubble turns orange at 15% jammed roads and red at 30% (was 5% and 15%); the report lists traffic
+  from 25%.
+- "What I did wrong" no longer lists every dead end. A dead end beside zones is fine. It now lists **road that leads to
+  no zone** (stretches of dead-end road no building touches) and warns when a city has far more road than zones
+  (more than 8 road tiles per zone, with over 80 road tiles).
+- Trips can still go 90 road tiles. Tests of 30, 45, 60 and 90 were too noisy to show a clear gain from shortening them.
+
 ### v29.2: opening tips, report download, and a fix to "empty" homes
 
 - A home zone with a few small houses on it was counted as empty (it still has the empty-zone marker in the middle).

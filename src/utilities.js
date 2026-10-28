@@ -10,7 +10,7 @@
  *  may travel twice as far (60 tiles instead of 30), and half as much of their traffic ends up on the roads.
  *
  *  WATER TREATMENT PLANT (3x3). Needs power. Treats the sewage of every zone within about 24 tiles.
- *  If the world model says sewage pollutes rivers, zones that are NOT served send their sewage to the nearest water,
+ *  Zones that are NOT served send their sewage to the nearest water,
  *  which becomes polluted (lowering land value along the banks and spoiling the "nice view" bonus for nearby homes).
  *  Simplification: the map has no direction of flow, so sewage goes to the nearest water and spreads from there.
  */

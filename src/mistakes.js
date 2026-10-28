@@ -82,7 +82,7 @@ var frames = function(list, label) {
 // The report. game is the running Game (for the advisor's findings and the city's name); returns
 // {city, year, findings: [{id, weight, title, why, fix, targets}], good: [...]}
 var report = function(game) {
-  var sim = game.simulation;
+  var sim = game.simulation, map = sim._map;
   var s = survey(sim);
   var c = sim.lastCensus || sim._census.snapshot();
   var b = sim.budget, v = sim._valves;
@@ -173,14 +173,50 @@ var report = function(game) {
           'Conecta sus calles con el resto de la ciudad, quita las calles sin salida, o usa una autopista (los viajes llegan tres veces más lejos).'),
         frames(stuck, P('Can\'t reach customers', 'No llega a sus clientes')));
 
-  // ---- Dead ends
-  if (s.deadEnds.length >= 3)
-    add('deadEnds', 20 + s.deadEnds.length,
-        P('{0} dead-end roads', '{0} calles sin salida', fmt(s.deadEnds.length)),
-        P('A car that drives into a dead end gives up its trip (1989 rule), and you pay upkeep for road that leads nowhere.',
-          'Un carro que entra en una calle sin salida abandona su viaje (regla de 1989), y pagas mantenimiento por calles que no llevan a ninguna parte.'),
-        P('Join the ends up into loops, or bulldoze the stubs.', 'Une los extremos formando circuitos, o demuele los tramos sueltos.'),
-        s.deadEnds.slice(0, MAX_SPOTS).map(function(q) { return {kind: 'dead', x: q.x, y: q.y, label: ''}; }));
+  // ---- Road that serves nothing (v29: replaces "N dead-end roads"). A dead end beside zones is fine: those zones
+  // need that road, and in this game only shops need their car trips to succeed (they get their own finding above).
+  // What wastes money is a stub: a dead-end stretch of road that no building touches, and a city with far more road
+  // than zones.
+  var touchesBuilding = function(x, y) {
+    for (var k = 0; k < 4; k++) {
+      var nx = x + [1, -1, 0, 0][k], ny = y + [0, 0, 1, -1][k];
+      if (map.testBounds(nx, ny) && map.getTileValue(nx, ny) >= TileValues.RESBASE)
+        return true;
+    }
+    return false;
+  };
+  var stubTiles = [], seen = {};
+  s.deadEnds.forEach(function(d) {
+    var path = [], x = d.x, y = d.y, px = -1, py = -1, ok = true;
+    for (var steps = 0; steps < 200; steps++) {
+      var key = x + ',' + y;
+      if (seen[key] || touchesBuilding(x, y)) { ok = !touchesBuilding(x, y) && ok; break; }
+      if (Reach.countLinks(map, x, y) >= 3) break;   // a junction: the stub ends here
+      path.push({x: x, y: y});
+      var next = null;
+      for (var k = 0; k < 4; k++) {
+        var nx = x + [1, -1, 0, 0][k], ny = y + [0, 0, 1, -1][k];
+        if ((nx !== px || ny !== py) && Reach.isDrivable(map, nx, ny)) { next = [nx, ny]; break; }
+      }
+      if (!next) break;
+      px = x; py = y; x = next[0]; y = next[1];
+    }
+    path.forEach(function(q) { seen[q.x + ',' + q.y] = true; stubTiles.push(q); });
+  });
+  var zones = s.homes.length + s.shops.length + s.factories.length;
+  var roadsAll = Status.measure(sim).roads;
+  var perTile = roadsAll ? (sim.budget.roadMaintenanceBudget || 0) / roadsAll : 0;
+  var tooMuch = roadsAll > 80 && roadsAll > 8 * Math.max(1, zones);
+  if (stubTiles.length >= 6 || tooMuch)
+    add('roadWaste', 25 + Math.min(40, stubTiles.length) + (tooMuch ? 20 : 0),
+        tooMuch ? P('Too much road: {0} road tiles for {1} zones', 'Demasiadas calles: {0} casillas de calle para {1} zonas', fmt(roadsAll), fmt(zones))
+                : P('{0} road tiles lead to no zone', '{0} casillas de calle no llevan a ninguna zona', fmt(stubTiles.length)),
+        P('Every road tile costs upkeep every year (about {0} for the {1} that lead to no zone). A compact city needs about 3-4 road tiles per zone. Dead ends beside zones are fine: those zones need the road.',
+          'Cada casilla de calle cuesta mantenimiento todos los años (unos {0} por las {1} que no llevan a ninguna zona). Una ciudad compacta necesita unas 3-4 casillas de calle por zona. Las calles sin salida junto a zonas están bien: esas zonas necesitan la calle.',
+          MiscUtils.formatMoney(Math.round(perTile * stubTiles.length)), fmt(stubTiles.length)),
+        P('Bulldoze the marked stretches, or zone along them so they earn their upkeep. Build new road only when you zone next to it.',
+          'Demuele los tramos marcados, o zonifica a lo largo de ellos para que paguen su mantenimiento. Construye calles nuevas solo cuando vayas a zonificar a su lado.'),
+        stubTiles.slice(0, MAX_SPOTS).map(function(q) { return {kind: 'dead', x: q.x, y: q.y, label: ''}; }));
 
   // ---- Growth stopped by a missing landmark
   [['resCap', 'stadium', P('a stadium', 'un estadio'), P('residential', 'residencial')],
@@ -196,7 +232,7 @@ var report = function(game) {
 
   // ---- Traffic
   var m = Status.measure(sim);
-  if (m.roads && m.heavy >= 0.15)
+  if (m.roads && m.heavy >= 0.25)   // v29: more lenient (was 15%)
     add('traffic', 50 + Math.round(m.heavy * 100),
         P('{0} of the roads are jammed', '{0} de las calles están congestionadas', Math.round(m.heavy * 100) + '%'),
         P('Congested roads pollute and lower land value around them.', 'Las calles congestionadas contaminan y bajan el valor del suelo a su alrededor.'),

@@ -161,14 +161,15 @@ var compute = function(sim, history) {
                   P('Average where people live: {0} out of 100', 'Promedio donde vive la gente: {0} de 100', score100(m.crimeAvg)),
                   P('Police stations: {0}', 'Estaciones de policía: {0}', fmt(m.policeStations)),
                   trendLine('crime', m.crimeHigh, before, true)],
-          why: P('In this game crime is a score for each neighbourhood, not a count of crimes. It rises on cheap land and in crowded areas and falls near funded police (how much depends on the world model you chose).',
-                 'En este juego la delincuencia es una puntuación de cada barrio, no un conteo de delitos. Sube en suelo barato y en zonas abarrotadas y baja cerca de policía con fondos (cuánto depende del modelo del mundo que elegiste).'),
+          why: P('In this game crime is a score for each neighbourhood, not a count of crimes. It rises on cheap land and in crowded areas and falls near funded police, parks and funded social services.',
+                 'En este juego la delincuencia es una puntuación de cada barrio, no un conteo de delitos. Sube en suelo barato y en zonas abarrotadas y baja cerca de policía con fondos, de los parques y de los servicios sociales con fondos.'),
           fixes: crimeFixes, layer: 'crime'});
   }
 
   // ---- Traffic
-  var trafficUrgent = m.trafficAverage > 60 || m.heavy >= 0.15;   // 60: the original game's "Traffic jams" alert
-  push({id: 'traffic', name: P('Traffic', 'Tráfico'), level: m.roads ? level(trafficUrgent, m.heavy >= 0.05) : 'good',
+  // v29: more lenient: urgent when 30% of road tiles are jammed (was 15%, or the original's average traffic over 60), watch from 15%
+  var trafficUrgent = m.heavy >= 0.30;
+  push({id: 'traffic', name: P('Traffic', 'Tráfico'), level: m.roads ? level(trafficUrgent, m.heavy >= 0.15) : 'good',
         value: m.roads ? pct(m.heavy) : '',
         summary: m.roads ? P('{0} of road tiles have heavy traffic', '{0} de las casillas de calle tienen tráfico intenso', pct(m.heavy))
                          : P('No roads yet.', 'Todavía no hay calles.'),

@@ -136,7 +136,7 @@ Valves.prototype.setValves = function(gameLevel, census, budget) {
   indRatio = (indRatio - 1) * taxTableScale + taxEffect;
 
   // POLICY LAB: environmental regulation can speed up (no regulation) or slow down (strict) industrial growth,
-  // if the world model says regulation matters. Standard regulation = original game = no change.
+  // Standard regulation = original game = no change.
   indRatio += Policy.industrialGrowthNudge();
 
   // POLICY LAB: business incentives can speed up commercial and industrial growth, if the world model says so.

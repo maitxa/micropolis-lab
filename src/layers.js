@@ -73,7 +73,7 @@ var deadEnds = function(sim) {
       ? [{swatch: 'channel', text: P('Shipping channel (dashed water): a road bridge across it is a drawbridge; rail bridges never open',
                                      'Canal de navegación (agua con guiones): un puente de calle que lo cruce es levadizo; los puentes de tren nunca se abren')}]
       : []),
-    note: P('A car that drives into a dead end gives up its trip.', 'Un carro que entra en una calle sin salida abandona su viaje.')
+    note: P('A car that drives into a dead end gives up its trip. Only shops need their trips to succeed, so a dead end beside homes or factories is fine; a dead end no zone touches only costs upkeep.', 'Un carro que entra en una calle sin salida abandona su viaje. Solo las tiendas necesitan que sus viajes tengan éxito, así que una calle sin salida junto a viviendas o fábricas está bien; una que no toca ninguna zona solo cuesta mantenimiento.')
   };
 };
 
