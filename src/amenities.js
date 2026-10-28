@@ -5,11 +5,10 @@
  *
  * Things near a neighbourhood that change its land value, pollution or crime (v25), and the land value the city
  * taxes:
- *  - waterfrontMap: 1 where clean water is within WATERFRONT tiles (world model: "Do people pay more to live near
- *    water?"). Water polluted by sewage doesn't count.
+ *  - waterfrontMap: 1 where clean water is within WATERFRONT tiles. Water polluted by sewage doesn't count.
  *  - parkEffectMap: 2 within BIG_PARK_RADIUS tiles of a big park (a 3x3 park with a fountain, see gameTools.js),
- *    1 within SMALL_PARK_RADIUS tiles of an ordinary park tile. Big parks clean the air (always) and, like small
- *    parks, reduce crime if the world model says parks do ("Do parks reduce crime?").
+ *    1 within SMALL_PARK_RADIUS tiles of an ordinary park tile. Big parks clean the air and, like small
+ *    parks, reduce crime.
  *  - taxLandValue: the land value the city taxes. In 1989 it is the average over all built-up land, so a crowded,
  *    expensive neighbourhood counts no more than an empty lot of the same size. With "Do expensive neighbourhoods pay
  *    more tax?" it is the average of each zone's own land value, weighted by how many people live or work there.

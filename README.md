@@ -231,6 +231,14 @@ saved before v25 keep the 1989 answers for those questions.
   removed, home zones covered, funding, capacity in use) and whether it is working (no power, no rail link).
 - Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
 
+### v29.2: opening tips, report download, and a fix to "empty" homes
+
+- A home zone with a few small houses on it was counted as empty (it still has the empty-zone marker in the middle).
+  The Zoning need bars, "What I did wrong" and the "Where to zone" checks now count it as filling up, not empty.
+- In a new city the To do card starts with opening tips for the chosen policies (power plant, 4-6 homes, 1-2 shops,
+  2-3 factories, built compact), taken from the Policy Lab Opening Guide.
+- "What I did wrong and what to do" has a **Download report** button (a .txt file, e.g. to hand in).
+
 ### Bug fix
 
 v29: the 10-year and 120-year history counts read an undeclared `budget` (in the browser, the Budget window's page

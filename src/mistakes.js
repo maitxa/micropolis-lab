@@ -11,6 +11,7 @@
  * Only READS the simulation.
  */
 
+import { Advisor } from './advisor.js';
 import { I18n } from './i18n.js';
 import { MiscUtils } from './miscUtils.js';
 import { Policy } from './policy.js';
@@ -57,7 +58,7 @@ var survey = function(sim) {
                  TileUtils.isIndustrial(v) ? 'ind' : null;
       if (!type)
         continue;
-      var z = {x: x, y: y, type: type, empty: v === EMPTY[type], pollution: bm.pollutionDensityMap.worldGet(x, y),
+      var z = {x: x, y: y, type: type, empty: Advisor.isEmptyZone(map, x, y, v, type), pollution: bm.pollutionDensityMap.worldGet(x, y),
                crime: bm.crimeRateMap.worldGet(x, y), police: bm.policeStationEffectMap.worldGet(x, y)};
       (type === 'res' ? out.homes : type === 'com' ? out.shops : out.factories).push(z);
       if (!tile.isPowered())

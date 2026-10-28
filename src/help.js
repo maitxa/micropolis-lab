@@ -84,13 +84,13 @@ add(Messages.HIGH_POLLUTION,
     'Pollution comes from industry, coal power plants, heavy traffic, fires and radiation. It lowers land value and drives residents away.',
     ['Keep industry and coal plants away from homes; leave trees or parks in between.',
      'Reduce traffic: more rail, better road layouts, homes closer to jobs.',
-     'Policy Lab: strict environmental rules halve industrial pollution (at a cost to industrial growth, if the world model says so).',
+     'Policy Lab: strict environmental rules halve industrial pollution (at a cost to industrial growth).',
      'Replace coal with nuclear power, if your laws allow it.']);
 add(Messages.HIGH_CRIME,
-    'Crime in this game rises on cheap land and in crowded areas, and falls near funded police stations (and, if the world model says so, with social services).',
+    'Crime in this game rises on cheap land and in crowded areas, and falls near funded police stations, parks and funded social services.',
     ['Build police stations in the worst areas and fund them fully.',
      'Raise land value: parks, trees and water nearby, less pollution.',
-     'Policy Lab: fund Social services in the Budget window, if your world model says they work.']);
+     'Policy Lab: fund Social services in the Budget window; they help most in the poorest areas.']);
 add(Messages.HEAVY_TRAFFIC,
     'Some roads are carrying a lot of traffic. Heavy traffic pollutes nearby land.',
     ['Add parallel roads or rail lines to spread the traffic.',
@@ -100,7 +100,7 @@ add(Messages.TRAFFIC_JAMS,
     ['Build rail between residential and job areas.',
      'Avoid funnelling the whole city through one road.']);
 add(Messages.TAX_TOO_HIGH,
-    'Taxes above 12% upset residents, and (in the original world model) higher taxes slow every kind of growth.',
+    'Taxes above 12% upset residents, and higher taxes slow every kind of growth.',
     ['Lower the tax rate in the Budget window.',
      'Cut costs instead: fewer roads to maintain, services sized to need.']);
 add(Messages.NO_MONEY,
@@ -206,10 +206,10 @@ addES(Messages.NEED_AIRPORT,
       ['Construye un aeropuerto (necesita un área grande y plana) conectado por calle y con electricidad.']);
 addES(Messages.HIGH_POLLUTION,
       'La contaminación viene de la industria, las plantas de carbón, el tráfico intenso, los incendios y la radiación. Baja el valor del suelo y aleja a los residentes.',
-      ['Mantén la industria y las plantas de carbón lejos de las viviendas; deja árboles o parques entre medio.', 'Reduce el tráfico: más vías férreas, mejores trazados de calles, viviendas más cerca del empleo.', 'Laboratorio de Políticas: las normas ambientales estrictas reducen a la mitad la contaminación industrial (a costa del crecimiento industrial, si así lo dice el modelo del mundo).', 'Cambia el carbón por energía nuclear, si tus leyes lo permiten.']);
+      ['Mantén la industria y las plantas de carbón lejos de las viviendas; deja árboles o parques entre medio.', 'Reduce el tráfico: más vías férreas, mejores trazados de calles, viviendas más cerca del empleo.', 'Laboratorio de Políticas: las normas ambientales estrictas reducen a la mitad la contaminación industrial (a costa del crecimiento industrial).', 'Cambia el carbón por energía nuclear, si tus leyes lo permiten.']);
 addES(Messages.HIGH_CRIME,
-      'En este juego, la delincuencia sube en el suelo barato y en las zonas abarrotadas, y baja cerca de estaciones de policía con fondos (y, si así lo dice el modelo del mundo, con servicios sociales).',
-      ['Construye estaciones de policía en las peores zonas y financia el 100%.', 'Sube el valor del suelo: parques, árboles y agua cerca, menos contaminación.', 'Laboratorio de Políticas: financia los servicios sociales en la ventana de Presupuesto, si tu modelo del mundo dice que funcionan.']);
+      'En este juego, la delincuencia sube en el suelo barato y en las zonas abarrotadas, y baja cerca de estaciones de policía con fondos, de los parques y de los servicios sociales con fondos.',
+      ['Construye estaciones de policía en las peores zonas y financia el 100%.', 'Sube el valor del suelo: parques, árboles y agua cerca, menos contaminación.', 'Laboratorio de Políticas: financia los servicios sociales en la ventana de Presupuesto; ayudan sobre todo en las zonas más pobres.']);
 addES(Messages.HEAVY_TRAFFIC,
       'Algunas calles llevan mucho tráfico. El tráfico intenso contamina el terreno cercano.',
       ['Añade calles paralelas o vías férreas para repartir el tráfico.', 'Pon viviendas, tiendas y empleos más cerca unos de otros para que los viajes sean más cortos.']);
@@ -217,7 +217,7 @@ addES(Messages.TRAFFIC_JAMS,
       'Muchas calles están congestionadas. La contaminación del tráfico baja el valor del suelo a su alrededor.',
       ['Construye vías férreas entre las zonas residenciales y las de empleo.', 'Evita que toda la ciudad tenga que pasar por una sola calle.']);
 addES(Messages.TAX_TOO_HIGH,
-      'Los impuestos por encima del 12% molestan a los residentes y (en el modelo del mundo original) los impuestos más altos frenan todo tipo de crecimiento.',
+      'Los impuestos por encima del 12% molestan a los residentes, y los impuestos más altos frenan todo tipo de crecimiento.',
       ['Baja la tasa de impuestos en la ventana de Presupuesto.', 'Recorta gastos en su lugar: menos calles que mantener, servicios a la medida de lo que se necesita.']);
 addES(Messages.NO_MONEY,
       'Tu ciudad gastó todo su dinero.',

@@ -263,7 +263,17 @@ var openMistakes = function(game, onClose, onShow) {
     else
       fallback();
   });
-  head.append($('<div class="plReportActions"></div>').append(copy, copied));
+  // v29: save the report as a text file (to hand in)
+  var save = $('<button type="button"></button>').text(P('Download report', 'Descargar informe'));
+  save.on('click', function() {
+    var safe = (String(r.city || 'city') + '-' + r.year).replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'city';
+    CityStore.downloadText(safe + '-report.txt', text).then(function(res) {
+      copied.text(res && res.status === 'cancelled' ? '' : P('Saved.', 'Guardado.'));
+    }, function() {
+      copied.text(P('Could not save the file here: use Copy report instead.', 'No se pudo guardar el archivo aquí: usa Copiar informe.'));
+    });
+  });
+  head.append($('<div class="plReportActions"></div>').append(copy, save, copied));
   body.append(head, area);
   if (!r.findings.length)
     body.append($('<p></p>').text(P('No planning mistakes found right now.', 'Ahora mismo no se encontraron errores de planificación.')));

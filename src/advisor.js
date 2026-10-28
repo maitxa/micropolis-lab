@@ -37,6 +37,21 @@ var hasRoad = function(map, x, y) {
 
 var EMPTY = {res: TileValues.FREEZ, com: TileValues.COMCLR, ind: TileValues.INDCLR};
 
+// v29: is this zone empty? A home zone whose centre is still the empty marker may already have single houses around
+// it (homes start as up to 8 houses before they become apartments), so look at the tiles around the centre too.
+var isEmptyZone = function(map, x, y, v, type) {
+  if (v !== EMPTY[type])
+    return false;
+  if (type !== 'res')
+    return true;
+  for (var dx = -1; dx <= 1; dx++)
+    for (var dy = -1; dy <= 1; dy++)
+      if (map.testBounds(x + dx, y + dy) && map.getTileValue(x + dx, y + dy) >= TileValues.LHTHR &&
+          map.getTileValue(x + dx, y + dy) <= TileValues.HHTHR)
+        return false;
+  return true;
+};
+
 // Look at every residential, commercial and industrial zone on the map
 var scanZones = function(map) {
   var kind = function() { return {n: 0, empty: 0, emptyNoPower: 0, emptyNoRoad: 0, list: [], emptyList: []}; };
@@ -56,7 +71,7 @@ var scanZones = function(map) {
       out[type].n += 1;
       out[type].list.push({x: x, y: y});
       var road = hasRoad(map, x, y);
-      if (v === EMPTY[type]) {
+      if (isEmptyZone(map, x, y, v, type)) {
         out[type].empty += 1;
         if (!tile.isPowered()) out[type].emptyNoPower += 1;
         if (!road) out[type].emptyNoRoad += 1;
@@ -138,6 +153,29 @@ var zoningNeed = function(z, v, bm) {
     out[t] = r;
   });
   return out;
+};
+
+
+// v29: the first-year tips depend on the city's policies (see the opening guide)
+var startTips = function() {
+  var tips = [];
+  if (!Policy.nuclearAllowed)
+    tips.push(P('Nuclear power is banned: start with a coal plant beside the factories, away from where homes will go.',
+                'La energía nuclear está prohibida: empieza con una planta de carbón junto a las fábricas, lejos de donde irán las viviendas.'));
+  else
+    tips.push(P('A coal plant is cheaper to start; make a later plant nuclear to cut pollution.',
+                'Una planta de carbón es más barata para empezar; haz nuclear una planta posterior para reducir la contaminación.'));
+  if (Policy.incentives === 'strong')
+    tips.push(P('Shop and factory zones are free under your incentives: spend the money on roads and power.',
+                'Con tus incentivos las zonas comerciales e industriales son gratis: gasta el dinero en calles y electricidad.'));
+  var road = Policy.transportCosts().road;
+  if (road > 10)
+    tips.push(P('Roads cost {0} a tile here: keep streets short and the city compact; rail is cheap.', 'Aquí las calles cuestan {0} la casilla: calles cortas y ciudad compacta; el tren es barato.', MiscUtils.formatMoney(road)));
+  else if (road < 10)
+    tips.push(P('Roads are cheap here ({0} a tile), rail is expensive.', 'Aquí las calles son baratas ({0} la casilla) y el tren es caro.', MiscUtils.formatMoney(road)));
+  tips.push(P('Then: add 2 zones of a kind when its Zoning need bar is above the line and no more than 2 are filling. Build a police station among the homes when the Crime bubble turns orange.',
+              'Después: añade 2 zonas de un tipo cuando su barra de Necesidad de zonas esté arriba de la línea y no más de 2 se estén llenando. Construye una estación de policía entre las viviendas cuando la burbuja de Delincuencia se ponga naranja.'));
+  return tips;
 };
 
 
@@ -345,18 +383,19 @@ var advise = function(sim, newMonth) {
   if (live.sewageToRiverZones > 0)
     add('sewage', 48, N(live.sewageToRiverZones, '{0} zone sends raw sewage into the water', '{0} zones send raw sewage into the water',
                         '{0} zona echa aguas residuales sin tratar al agua', '{0} zonas echan aguas residuales sin tratar al agua'),
-        P('In your world model untreated sewage pollutes rivers and their banks.', 'En tu modelo del mundo las aguas residuales sin tratar contaminan los ríos y sus orillas.'),
+        P('Untreated sewage pollutes rivers and their banks.', 'Las aguas residuales sin tratar contaminan los ríos y sus orillas.'),
         [P('Build a water treatment plant (key U) within about 24 tiles, with power.', 'Construye una planta de tratamiento (tecla U) a unas 24 casillas, con electricidad.')]);
 
+  // v29: the opening tips come first in a city with no zones yet, whatever else is listed
+  if (zoneCount === 0)
+    add('start', 99, P('Opening: a power plant, 4-6 homes, 1-2 shops and 2-3 factories', 'Apertura: una planta eléctrica, 4-6 viviendas, 1-2 tiendas y 2-3 fábricas'),
+          P('Build compact: short side streets 7 tiles apart, with a row of zones on each side, rows of no more than about 9 zones. Factories and the plant at one end, one empty street-block, then shops, then homes. (Opening guide: the Policy Lab booklet.)',
+            'Construye compacto: calles laterales cortas a 7 casillas una de otra, con una fila de zonas a cada lado, filas de no más de unas 9 zonas. Las fábricas y la planta en un extremo, una manzana vacía, luego tiendas y luego viviendas. (Guía de apertura: el folleto del Laboratorio de Políticas.)'),
+          startTips(), null, 'neutral');
   if (items.length === 0) {
-    if (zoneCount === 0)
-      add('start', 10, P('Start with a power plant, a few zones of each kind and roads', 'Empieza con una planta eléctrica, algunas zonas de cada tipo y calles'),
-          P('Zones need power and a road touching one side to grow.', 'Las zonas necesitan electricidad y una calle que toque uno de sus lados para crecer.'),
-          [P('Keep homes, shops and factories within about 20 tiles of each other.', 'Mantén viviendas, tiendas y fábricas a unas 20 casillas unas de otras.')], null, 'neutral');
-    else
-      add('ok', 0, P('Nothing urgent: let the city grow', 'Nada urgente: deja que la ciudad crezca'),
-          P('Zones are powered and connected. Watch the R/C/I bars to see what the city wants next.',
-            'Las zonas tienen electricidad y están conectadas. Mira las barras R/C/I para ver qué quiere la ciudad.'),
+    add('ok', 0, P('Nothing urgent: let the city grow', 'Nada urgente: deja que la ciudad crezca'),
+          P('Zones are powered and connected. Watch the Zoning need bars to see what the city wants next.',
+            'Las zonas tienen electricidad y están conectadas. Mira las barras de Necesidad de zonas para ver qué quiere la ciudad.'),
           [], null, 'good');
   }
 
@@ -417,6 +456,7 @@ var advise = function(sim, newMonth) {
 
 var Advisor = {
   advise: advise,
+  isEmptyZone: isEmptyZone,
   zoningNeed: zoningNeed
 };
 

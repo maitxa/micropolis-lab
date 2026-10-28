@@ -168,13 +168,13 @@ var takeResume = function() {
 
 
 // ---- Files: a saved city can be exported to a .json file and imported again (e.g. on another computer)
-var download = function(filename, text) {
+var download = function(filename, text, mime) {
   var viaClaude = window.claude && window.claude.use ? window.claude.use('downloads') : Promise.resolve(null);
   return viaClaude.then(function(dl) {
     if (dl)
       return dl.save({filename: filename, data: text});
     var a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
+    a.href = URL.createObjectURL(new Blob([text], {type: mime || 'application/json'}));
     a.download = filename;
     document.body.appendChild(a);
     a.click();
@@ -223,6 +223,8 @@ var CityStore = {
   resume: resume,
   takeResume: takeResume,
   exportCity: exportCity,
+  // v29: any text file (e.g. the "What I did wrong" report, for students to hand in)
+  downloadText: function(filename, text) { return download(filename, text, 'text/plain;charset=utf-8'); },
   importCity: importCity
 };
 

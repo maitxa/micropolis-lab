@@ -684,13 +684,13 @@ Game.prototype.runAdvisor = function(newMonth) {
   var byId = {};
   avail.forEach(function(i) { byId[i.id] = i; });
   var shown = (this._todoIds || []).filter(function(id) { return byId[id]; });
-  var real = avail.filter(function(i) { return i.id !== 'ok' && i.id !== 'start'; });
+  var real = avail.filter(function(i) { return i.id !== 'ok'; });   // v29: the opening tips count as real advice
   if (real.length)
-    shown = shown.filter(function(id) { return id !== 'ok' && id !== 'start'; });
+    shown = shown.filter(function(id) { return id !== 'ok'; });
   avail.forEach(function(i) {
     if (shown.indexOf(i.id) !== -1)
       return;
-    if (real.length && (i.id === 'ok' || i.id === 'start'))
+    if (real.length && i.id === 'ok')
       return;
     if (shown.length < ADVICE_SHOWN) {
       shown.push(i.id);
@@ -741,7 +741,7 @@ Game.prototype.runAdvisor = function(newMonth) {
       });
       actions.append(show);
     }
-    if (item.id !== 'ok' && item.id !== 'start') {
+    if (item.id !== 'ok') {
       var got = $('<button type="button" class="adviceGotIt"></button>').text(I18n.p('Got it', 'Entendido'))
                   .attr('title', I18n.p('Hide this for 3 minutes of play', 'Ocultar durante 3 minutos de juego'));
       got.on('click', function(e) {
