@@ -64,10 +64,6 @@ var oppositeAndUnderwater = function(tileValue, oldDir, newDir) {
       tileValue == TileValues.RAILBASE || tileValue == TileValues.RAILBASE + 1)
     return true;
 
-  // POLICY LAB: ships pass under fixed (high) road bridges
-  if (Policy.bridges === 'fixed' && Policy.isRoadBridge(tileValue))
-    return true;
-
   return false;
 };
 
@@ -164,9 +160,7 @@ BoatSprite.prototype.move = function(spriteCycle, disasterManager, blockMaps) {
 
   // If we didn't find a new direction, we might explode
   // depending on the last tile we looked at.
-  // POLICY LAB: a fixed (high) road bridge is safe for ships
-  var safeBridge = Policy.bridges === 'fixed' && Policy.isRoadBridge(tile);
-  for (var i = 0; i < 8 && !safeBridge; i++) {
+  for (var i = 0; i < 8; i++) {
     if (tile === tileWhiteList[i]) {
       break;
     }

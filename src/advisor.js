@@ -342,7 +342,7 @@ var advise = function(sim, newMonth) {
                        '{0} planta de agua no tiene electricidad', '{0} plantas de agua no tienen electricidad'),
         P('Water treatment plants need electricity.', 'Las plantas de tratamiento de aguas necesitan electricidad.'),
         [P('Connect them with a power line (key 6).', 'Conéctalas con un cable eléctrico (tecla 6).')]);
-  if (Policy.sewagePollution && live.sewageToRiverZones > 0)
+  if (live.sewageToRiverZones > 0)
     add('sewage', 48, N(live.sewageToRiverZones, '{0} zone sends raw sewage into the water', '{0} zones send raw sewage into the water',
                         '{0} zona echa aguas residuales sin tratar al agua', '{0} zonas echan aguas residuales sin tratar al agua'),
         P('In your world model untreated sewage pollutes rivers and their banks.', 'En tu modelo del mundo las aguas residuales sin tratar contaminan los ríos y sus orillas.'),

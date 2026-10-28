@@ -59,7 +59,7 @@ var yesNo = function(x) {
 
 // The name of the preset the city started from (stored in English in saved games)
 var presetLabel = function(name) {
-  name = name || 'Original 1989 rules';
+  name = name || '1989 baseline';
   var m = /^Custom \(starting from (.*)\)$/.exec(name);
   if (m)
     return I18n.t('Custom (starting from {0})', I18n.t(m[1]));
@@ -111,8 +111,7 @@ var cityData = function(sim) {
   if (Policy.densityCap < 40)
     html += '<p class="dataNote">' +
             P('"Room for" reflects your housing density law ({0}).', 'La "capacidad" refleja tu ley de densidad de vivienda ({0}).',
-              Policy.densityCap === 8 ? P('single houses only', 'solo casas unifamiliares')
-                                      : P('medium density at most', 'densidad media como máximo')) + '</p>';
+              P('medium density at most', 'densidad media como máximo')) + '</p>';
 
   // Jobs and workers
   var jobs = comJobs + indJobs;
@@ -142,7 +141,7 @@ var cityData = function(sim) {
   };
   html += q(P('Land value', 'Valor del suelo'), live.landValueAverage, Text.L('landValueStrings'), '#8e6c3a', true);
   // POLICY LAB v25: the land value the city taxes, when each neighbourhood pays on its own value
-  if (Policy.taxByValue && live.taxLandValue !== undefined)
+  if (live.taxLandValue !== undefined)
     html += '<tr><td>' + P('Taxed land value', 'Valor del suelo gravado') + '</td><td>' + bar(live.taxLandValue / 2.5, '#8e6c3a') +
             '</td><td>' + fmt(live.taxLandValue) + ' / 250</td><td class="dataNote">' +
             P('weighted by where people live and work (city-wide average: {0})', 'ponderado según dónde vive y trabaja la gente (promedio de la ciudad: {0})',
@@ -198,48 +197,8 @@ var cityData = function(sim) {
 
 
 // ---------------------------------------------------------------------------------------------------------------
-// "Your policies at work" (Evaluation window)
+// "How your policies are working" (v29: in the "What I did wrong and what to do" report)
 // ---------------------------------------------------------------------------------------------------------------
-
-// Plain-language description of the world model, listing only what differs from the 1989 original
-var worldModelSummary = function() {
-  var d = Policy.ORIGINAL, out = [];
-  var words = {0: P('not at all', 'nada'), 0.5: P('weakly', 'poco'), 1: P('strongly', 'mucho')};
-  if (Policy.povertyCrime !== d.povertyCrime)
-    out.push(P('poverty drives crime {0}', 'la pobreza genera delincuencia: {0}', words[Policy.povertyCrime]));
-  if (Policy.densityCrime !== d.densityCrime)
-    out.push(P('density does not drive crime', 'la densidad no genera delincuencia'));
-  if (Policy.policeStrength !== d.policeStrength)
-    out.push(Policy.policeStrength > 1 ? P('police are more effective than in the original', 'la policía es más eficaz que en el original')
-                                       : P('police are less effective than in the original', 'la policía es menos eficaz que en el original'));
-  if (Policy.socialCrime !== d.socialCrime)
-    out.push(Policy.socialCrime >= 60 ? P('social services reduce crime strongly', 'los servicios sociales reducen mucho la delincuencia')
-                                      : P('social services reduce crime somewhat', 'los servicios sociales reducen algo la delincuencia'));
-  if (Policy.taxGrowth !== d.taxGrowth)
-    out.push(P('high taxes slow growth {0}', 'los impuestos altos frenan el crecimiento: {0}', words[Policy.taxGrowth]));
-  if (Policy.regulationGrowth !== d.regulationGrowth)
-    out.push(P('regulation does not affect industry', 'la regulación no afecta a la industria'));
-  if (Policy.incentiveGrowth !== d.incentiveGrowth)
-    out.push(P('business incentives do not attract business', 'los incentivos a las empresas no atraen empresas'));
-  if (Policy.sewagePollution !== d.sewagePollution)
-    out.push(P('untreated sewage pollutes rivers', 'las aguas residuales sin tratar contaminan los ríos'));
-  if (Policy.growthModel !== d.growthModel)
-    out.push(P('people move for quality of life, and jobs follow people',
-               'la gente se muda por la calidad de vida, y el empleo sigue a la gente'));
-  if (Policy.walkability !== d.walkability)
-    out.push(P('residents value shops within walking distance', 'los residentes valoran tener tiendas a poca distancia a pie'));
-  if (Policy.healthAffects !== d.healthAffects)
-    out.push(P('access to a hospital affects where people live', 'el acceso a un hospital influye en dónde vive la gente'));
-  if (Policy.parksCrime !== d.parksCrime)
-    out.push(P('parks reduce crime nearby', 'los parques reducen la delincuencia cercana'));
-  if (Policy.waterfront !== d.waterfront)
-    out.push(P('people pay more to live near water', 'la gente paga más por vivir cerca del agua'));
-  if (Policy.taxByValue !== d.taxByValue)
-    out.push(P('each neighbourhood pays tax on its own land value', 'cada barrio paga impuestos según el valor de su propio suelo'));
-  if (Policy.commute !== d.commute)
-    out.push(P('people travel up to {0} road tiles (the original: 30)', 'la gente viaja hasta {0} casillas de calle (el original: 30)', Policy.commute));
-  return out;
-};
 
 var transportName = function(law) {
   return {roads: P('roads', 'calles'), balanced: P('balanced', 'equilibrada'), transit: P('transit', 'transporte público')}[law] || law;
@@ -255,10 +214,6 @@ var policyReport = function(sim) {
     items.push('<li><b>' + esc(title) + '.</b> ' + text + '</li>');
   };
 
-  // World model
-  var wm = worldModelSummary();
-  add(P('Your world', 'Tu mundo'), wm.length === 0 ? P('The original SimCity 1989 rules.', 'Las reglas originales de SimCity de 1989.') :
-      P('Original 1989 rules, except: {0}.', 'Reglas originales de 1989, salvo que: {0}.', esc(wm.join('; '))));
   add(P('Starting policies', 'Políticas iniciales'),
       P('This city began with the policies of: <b>{0}</b>. (The world works the same way for every preset.)',
         'Esta ciudad empezó con las políticas de: <b>{0}</b>. (El mundo funciona igual para todos los perfiles).',
@@ -273,10 +228,10 @@ var policyReport = function(sim) {
     var parts = [];
     parts.push(p.poverty >= 0 ? P('cheap land adds {0}', 'el suelo barato suma {0}', fmt(p.poverty))
                               : P('valuable land removes {0}', 'el suelo valioso resta {0}', fmt(-p.poverty)));
-    if (Policy.densityCrime) parts.push(P('crowding adds {0}', 'el hacinamiento suma {0}', fmt(p.density)));
+    parts.push(P('crowding adds {0}', 'el hacinamiento suma {0}', fmt(p.density)));
     parts.push(P('police remove {0}', 'la policía resta {0}', fmt(p.police)));
-    if (Policy.socialCrime) parts.push(P('social services remove {0}', 'los servicios sociales restan {0}', fmt(p.social)));
-    if (Policy.parksCrime) parts.push(P('parks remove {0}', 'los parques restan {0}', fmt(p.parks || 0)));
+    parts.push(P('social services remove {0}', 'los servicios sociales restan {0}', fmt(p.social)));
+    parts.push(P('parks remove {0}', 'los parques restan {0}', fmt(p.parks || 0)));
     crimeText += esc(parts.join(', ')) + ' ' + P('points.', 'puntos.');
     if (live.crimeAverage < 64) {
       crimeText += ' ' + P('Crime is not a problem yet.', 'La delincuencia todavía no es un problema.');
@@ -287,16 +242,14 @@ var policyReport = function(sim) {
       else if (p.police < Math.max(p.poverty, p.density))
         levers.push(P('add police stations where crime is highest, and fund them fully',
                       'añadir estaciones de policía donde hay más delincuencia y financiarlas al 100%'));
-      if (p.poverty >= p.density || !Policy.densityCrime)
+      if (p.poverty >= p.density)
         levers.push(P('raise land value: parks, trees and water nearby, less pollution',
                       'subir el valor del suelo: parques, árboles y agua cerca, menos contaminación'));
       else
         levers.push(P('ease crowding (the housing density law can cap it)',
                       'reducir el hacinamiento (la ley de densidad de vivienda puede limitarlo)'));
-      if (Policy.socialCrime > 0)
-        levers.push(P('fund social services', 'financiar los servicios sociales'));
-      if (Policy.parksCrime)
-        levers.push(P('build big parks (key G) in the worst neighbourhoods', 'construir parques grandes (tecla G) en los peores barrios'));
+      levers.push(P('fund social services', 'financiar los servicios sociales'));
+      levers.push(P('build big parks (key G) in the worst neighbourhoods', 'construir parques grandes (tecla G) en los peores barrios'));
       crimeText += ' ' + P('What would help most: {0}.', 'Lo que más ayudaría: {0}.', esc(levers.join('; ')));
     }
     add(P('Crime', 'Delincuencia'), crimeText);
@@ -306,10 +259,7 @@ var policyReport = function(sim) {
   if (v.lastTaxEffect !== undefined) {
     var diff = v.lastTaxEffect - v.lastDefaultTaxEffect;
     var taxText = P('Tax rate {0}%. ', 'Tasa de impuestos: {0}%. ', b.cityTax);
-    if (Policy.taxGrowth === 0) {
-      taxText += P('In your world model taxes do not change growth, so a higher rate is pure extra revenue.',
-                   'En tu modelo del mundo los impuestos no cambian el crecimiento, así que una tasa más alta es solo más ingreso.');
-    } else if (b.cityTax === 7) {
+    if (b.cityTax === 7) {
       taxText += P('That is the neutral rate: it neither speeds up nor slows down growth.',
                    'Es la tasa neutral: ni acelera ni frena el crecimiento.');
     } else {
@@ -331,25 +281,19 @@ var policyReport = function(sim) {
         P('Commercial and industrial zones cost {0}, and tax breaks cost the city <b>{1}</b> in revenue last year. ',
           'Las zonas comerciales e industriales cuestan {0}, y las exenciones fiscales le costaron a la ciudad <b>{1}</b> en ingresos el año pasado. ',
           money(Policy.businessZoneCost()), money(b.taxBreakCost || 0)) +
-        (Policy.incentiveGrowth ? P('In your world model they do attract business (extra commercial and industrial demand).',
-                                    'En tu modelo del mundo sí atraen empresas (más demanda comercial e industrial).')
-                                : P('In your world model they do <b>not</b> attract business: they only cost money.',
-                                    'En tu modelo del mundo <b>no</b> atraen empresas: solo cuestan dinero.')));
+        P('In return they attract business (extra commercial and industrial demand).',
+          'A cambio atraen empresas (más demanda comercial e industrial).'));
   }
 
   // Social services
   var socialPct = Math.round((b.socialPercent || 0) * 100);
-  if (socialPct > 0 || Policy.socialCrime > 0) {
-    add(P('Social services', 'Servicios sociales'),
-        P('Funded at {0}% ({1} last year). ', 'Financiados al {0}% ({1} el año pasado). ', socialPct, money(b.socialSpend || 0)) +
-        (b.socialMaintenanceBudget === 0 ? P('There is no population to serve yet.', 'Todavía no hay población a la que atender.') :
-         Policy.socialCrime > 0 ? (socialPct > 0 ? P('They are reducing crime, mostly in the poorest neighbourhoods.',
-                                                     'Están reduciendo la delincuencia, sobre todo en los vecindarios más pobres.')
-                                                 : P('Your world model says they would reduce crime, but they are not funded.',
-                                                     'Tu modelo del mundo dice que reducirían la delincuencia, pero no tienen fondos.'))
-                                : P('In your world model they do not affect crime, so this money buys nothing measurable in the game.',
-                                    'En tu modelo del mundo no afectan a la delincuencia, así que este dinero no compra nada medible en el juego.')));
-  }
+  add(P('Social services', 'Servicios sociales'),
+      P('Funded at {0}% ({1} last year). ', 'Financiados al {0}% ({1} el año pasado). ', socialPct, money(b.socialSpend || 0)) +
+      (b.socialMaintenanceBudget === 0 ? P('There is no population to serve yet.', 'Todavía no hay población a la que atender.') :
+       socialPct > 0 ? P('They are reducing crime, mostly in the poorest neighbourhoods.',
+                         'Están reduciendo la delincuencia, sobre todo en los vecindarios más pobres.')
+                     : P('They would reduce crime, mostly in the poorest neighbourhoods, but they are not funded (Budget window).',
+                         'Reducirían la delincuencia, sobre todo en los vecindarios más pobres, pero no tienen fondos (ventana de Presupuesto).')));
 
   // Pollution and environmental rules
   var src = live.pollutionSources;
@@ -360,19 +304,14 @@ var policyReport = function(sim) {
                       'La contaminación promedio es <b>{0}</b>. Fuentes: industria {1}%, plantas eléctricas {2}%, tráfico {3}%, ',
                       esc(level(live.pollutionAverage, Text.L('pollutionStrings'))), pct(src.industry, total),
                       pct(src.power, total), pct(src.traffic, total)) +
-                    (Policy.sewagePollution ? P('sewage in rivers {0}%, ', 'aguas residuales en los ríos {0}%, ',
-                                                pct(src.sewage || 0, total)) : '') +
+                    P('sewage in rivers {0}%, ', 'aguas residuales en los ríos {0}%, ', pct(src.sewage || 0, total)) +
                     P('other {0}%. ', 'otras {0}%. ', pct(src.other, total));
       if (Policy.regulation === 'strict')
-        polText += Policy.regulationGrowth ? P('Your strict environmental rules halve industrial pollution, at the cost of slower industrial growth.',
-                                               'Tus normas ambientales estrictas reducen a la mitad la contaminación industrial, a cambio de un crecimiento industrial más lento.')
-                                           : P('Your strict environmental rules halve industrial pollution.',
-                                               'Tus normas ambientales estrictas reducen a la mitad la contaminación industrial.');
+        polText += P('Your strict environmental rules halve industrial pollution, at the cost of slower industrial growth.',
+                     'Tus normas ambientales estrictas reducen a la mitad la contaminación industrial, a cambio de un crecimiento industrial más lento.');
       else if (Policy.regulation === 'none')
-        polText += Policy.regulationGrowth ? P('With no environmental rules, industry pollutes 50% more (in exchange for faster industrial growth).',
-                                               'Sin normas ambientales, la industria contamina un 50% más (a cambio de un crecimiento industrial más rápido).')
-                                           : P('With no environmental rules, industry pollutes 50% more.',
-                                               'Sin normas ambientales, la industria contamina un 50% más.');
+        polText += P('With no environmental rules, industry pollutes 50% more (in exchange for faster industrial growth).',
+                     'Sin normas ambientales, la industria contamina un 50% más (a cambio de un crecimiento industrial más rápido).');
       else if (Policy.regulation === 'relaxed')
         polText += P('Your relaxed environmental rules let industry pollute 25% more, in exchange for slightly faster industrial growth.',
                      'Tus normas ambientales relajadas dejan que la industria contamine un 25% más, a cambio de un crecimiento industrial algo más rápido.');
@@ -396,10 +335,9 @@ var policyReport = function(sim) {
         P('Mixed use (European-style). {0} apartment block(s) have ground-floor shops: each adds some jobs, and half the time their residents walk to the shops instead of driving.',
           'Uso mixto (al estilo europeo). {0} edificio(s) de apartamentos tienen tiendas en la planta baja: cada uno suma algunos empleos, y la mitad de las veces sus residentes van a las tiendas a pie en vez de en carro.',
           fmt(c.mixedZones || 0)));
-  if (Policy.walkability)
-    add(P('Walkability', 'Caminabilidad'),
-        P('In your world model, neighbourhoods within walking distance of shops gain land value. ',
-          'En tu modelo del mundo, los vecindarios con tiendas a poca distancia a pie ganan valor del suelo. ') +
+  add(P('Walkability', 'Caminabilidad'),
+        P('Neighbourhoods within walking distance of shops gain land value. ',
+          'Los vecindarios con tiendas a poca distancia a pie ganan valor del suelo. ') +
         (Policy.zoning === 'mixed' ? P('Mixed-use blocks count as shops for their immediate surroundings.',
                                        'Los edificios de uso mixto cuentan como tiendas para sus alrededores inmediatos.')
                                    : P('With separate-use zoning, only commercial zones provide this.',
@@ -414,7 +352,7 @@ var policyReport = function(sim) {
           housingPct, money(b.housingSpend || 0), fmt(c.housingSaves || 0)));
 
   // Hospitals
-  if (c.hospitalPop || Policy.healthAffects) {
+  {
     var cov = c.resZonePop > 0 ? Math.round(100 * (c.healthCoveredZones || 0) / c.resZonePop) : 0;
     var builtH = c.builtHospitalPop || 0, autoH = (c.hospitalPop || 0) - builtH;
     var hParts = [];
@@ -428,44 +366,7 @@ var policyReport = function(sim) {
         P('Hospitals: {0}', 'Hospitales: {0}', fmt(c.hospitalPop || 0)) + (hParts.length ? ' (' + hParts.join('; ') + ')' : '') + '. ' +
         P('{0}% of residential zones are within reach of a powered hospital. ',
           'El {0}% de las zonas residenciales tiene acceso a un hospital con electricidad. ', cov) +
-        (Policy.healthAffects ? (Policy.growthModel === 'quality'
-                                  ? P('In your world model this raises land value nearby and makes the city more attractive.',
-                                      'En tu modelo del mundo esto sube el valor del suelo cercano y hace la ciudad más atractiva.')
-                                  : P('In your world model this raises land value nearby.',
-                                      'En tu modelo del mundo esto sube el valor del suelo cercano.'))
-                              : P('In the original world model hospitals do not affect growth.',
-                                  'En el modelo del mundo original, los hospitales no afectan al crecimiento.')));
-  }
-
-  // Car-free downtown and green belt
-  if (Policy.pedestrian)
-    add(P('Car-free downtown', 'Centro sin carros'),
-        P('Within {0} tiles of the city centre (orange circle on the map; it moves as the city grows), three quarters of trips are on foot or by public transport and produce no road traffic or traffic pollution. Cars cannot drive through it, so connect the centre by rail and train depots.',
-          'A menos de {0} casillas del centro (el círculo naranja del mapa, que se mueve a medida que crece la ciudad), tres de cada cuatro viajes son a pie o en transporte público y no generan tráfico ni contaminación por tráfico. Los carros no pueden cruzarlo, así que conecta el centro con vías férreas y estaciones de tren.',
-          Policy.pedestrian));
-  if (Policy.greenBelt)
-    add(P('Green belt', 'Cinturón verde'),
-        P('Nothing can be built, and no trees cleared, in the protected ring (green on the map). Roads, rail and power lines may cross it. The woods keep land value up nearby and stop the city sprawling outward.',
-          'En el anillo protegido (verde en el mapa) no se puede construir nada ni talar árboles. Las calles, las vías férreas y los cables eléctricos sí pueden cruzarlo. El bosque mantiene alto el valor del suelo cercano y frena la expansión de la ciudad hacia afuera.'));
-
-  // Growth model
-  if (v.lastLivability !== undefined) {
-    var L = v.lastLivability;
-    var lText = P('Livability index: <b>{0}</b> (from -1 to +1; based on land value, crime and pollution{1}). ',
-                  'Índice de habitabilidad: <b>{0}</b> (de -1 a +1; según el valor del suelo, la delincuencia y la contaminación{1}). ',
-                  (L >= 0 ? '+' : '') + L.toFixed(2),
-                  Policy.healthAffects ? P(', and hospital access', ', y el acceso a hospitales') : '');
-    if (Policy.growthModel === 'quality')
-      lText += P('In your world model this drives 60% of migration (jobs the other 40%): ',
-                 'En tu modelo del mundo esto explica el 60% de la migración (el empleo, el otro 40%): ') +
-               (L > 0.1 ? P('the city is attracting people.', 'la ciudad está atrayendo gente.') :
-                L < -0.1 ? P('the city is putting people off.', 'la ciudad está ahuyentando a la gente.') :
-                P('roughly neutral.', 'más o menos neutral.')) +
-               ' ' + P('(The 60/40 split is a Policy Lab assumption.)', '(La proporción 60/40 es un supuesto del Laboratorio de Políticas).');
-    else
-      lText += P('In the original world model it does not affect migration: only jobs do.',
-                 'En el modelo del mundo original no afecta a la migración: solo el empleo la afecta.');
-    add(P('What brings people here', 'Qué atrae a la gente'), lText);
+        P('This raises land value nearby.', 'Esto sube el valor del suelo cercano.'));
   }
 
   // Train depots
@@ -483,21 +384,17 @@ var policyReport = function(sim) {
 
   // Water and sewage
   var tr = live.sewageTreatedZones || 0, un = live.sewageUntreatedZones || 0;
-  if (Policy.sewagePollution || c.waterPlantPop) {
+  if (tr + un > 0) {
     var wText = P('{0} of {1} zones have their sewage treated ({2} treatment plant(s)',
                   '{0} de {1} zonas tienen sus aguas residuales tratadas ({2} planta(s) de tratamiento',
                   fmt(tr), fmt(tr + un), fmt(c.waterPlantPop || 0)) +
                 (c.waterPlantUnpowered ? P(', {0} without power', ', {0} sin electricidad', fmt(c.waterPlantUnpowered)) : '') + '). ';
-    if (Policy.sewagePollution)
-      wText += (live.sewageToRiverZones ? P('<b>{0} zones send raw sewage into the nearest water</b>, polluting it and the banks around it (and spoiling the view for nearby homes). ',
+    wText += (live.sewageToRiverZones ? P('<b>{0} zones send raw sewage into the nearest water</b>, polluting it and the banks around it (and spoiling the view for nearby homes). ',
                                             '<b>{0} zonas echan aguas residuales sin tratar al agua más cercana</b>, contaminándola junto con sus orillas (y arruinando la vista de las viviendas cercanas). ',
                                             fmt(live.sewageToRiverZones))
                                         : P('No raw sewage is reaching the water. ', 'No llegan aguas residuales sin tratar al agua. ')) +
                P('Each treatment plant needs power and serves zones within about 24 tiles.',
                  'Cada planta de tratamiento necesita electricidad y atiende a las zonas a unas 24 casillas.');
-    else
-      wText += P('In your world model untreated sewage does not pollute rivers, so treatment plants only cost money.',
-                 'En tu modelo del mundo las aguas residuales sin tratar no contaminan los ríos, así que las plantas de tratamiento solo cuestan dinero.');
     add(P('Water and sewage', 'Agua y aguas residuales'), wText);
   }
 
@@ -506,10 +403,7 @@ var policyReport = function(sim) {
     add(P('Housing density', 'Densidad de vivienda'),
         P('Your law caps housing at {0}. Residential zones have room for {1} people; denser housing is not allowed, which also keeps crowding-related crime lower',
           'Tu ley limita la vivienda a {0}. Las zonas residenciales tienen capacidad para {1} personas; no se permite vivienda más densa, lo que también mantiene más baja la delincuencia por hacinamiento',
-          Policy.densityCap === 8 ? P('single houses', 'casas unifamiliares') : P('medium density', 'densidad media'),
-          fmt(c.resZonePop * Policy.densityCap * 20)) +
-        (Policy.densityCrime ? '.' : P(' (though in your world model density does not cause crime).',
-                                       ' (aunque en tu modelo del mundo la densidad no causa delincuencia).')));
+          P('medium density', 'densidad media'), fmt(c.resZonePop * Policy.densityCap * 20)) + '.');
 
   // Power
   add(P('Energy', 'Energía'),
@@ -519,28 +413,6 @@ var policyReport = function(sim) {
         fmt(c.coalPowerPop), fmt(c.nuclearPowerPop)) +
       (c.coalPowerPop > 0 ? P('; coal plants are a major source of pollution.', '; las plantas de carbón son una fuente importante de contaminación.')
                           : '.'));
-
-  // Bridges
-  if (Policy.bridges === 'fixed')
-    add(P('Bridges', 'Puentes'),
-        P('Fixed high bridges: road bridges over the shipping channel never open, so traffic is never cut off and ships pass underneath. (In the original, drawbridges open for ships and sometimes at random, and while open the road is a dead end.)',
-          'Puentes altos fijos: los puentes sobre el canal de navegación nunca se abren, así que el tráfico nunca se corta y los barcos pasan por debajo. (En el original, los puentes levadizos se abren para los barcos y a veces al azar, y mientras están abiertos la calle es un callejón sin salida.)'));
-
-  // Parks
-  if (Policy.parks !== 'standard')
-    add(P('Parks', 'Parques'),
-        P('Parks cost {0} each under your law. Trees and parks near homes raise land value.',
-          'Con tu ley, cada parque cuesta {0}. Los árboles y los parques cerca de las viviendas suben el valor del suelo.',
-          money(Policy.parkCost())));
-
-  // Budget timing
-  if (Policy.electionCycle) {
-    var year = sim.getDate().year;
-    add(P('Budget timing', 'Calendario del presupuesto'),
-        Policy.isBudgetYear(year) ? P('This is an election year: the budget is open.', 'Este es un año electoral: el presupuesto está abierto.')
-                                  : P('The budget is locked until the next election in {0}.',
-                                      'El presupuesto está bloqueado hasta las próximas elecciones, en {0}.', Policy.nextBudgetYear(year)));
-  }
 
   return '<ul class="policyReport">' + items.join('') + '</ul>';
 };

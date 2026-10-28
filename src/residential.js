@@ -130,9 +130,8 @@ var growZone = function(map, x, y, blockMaps, population, lpValue, zonePower) {
       // Zone capacity not yet reached: build another house
       buildHouse(map, x, y, lpValue);
       ZoneUtils.incRateOfGrowth(blockMaps, x, y, 1);
-    } else if (blockMaps.populationDensityMap.worldGet(x, y) > 64 && Policy.densityCap > 8) {
+    } else if (blockMaps.populationDensityMap.worldGet(x, y) > 64) {
       // There is local demand for higher density housing
-      // POLICY LAB: unless the housing density law only allows single houses
       placeResidential(map, x, y, 0, lpValue, zonePower);
       ZoneUtils.incRateOfGrowth(blockMaps, x, y, 8);
     }

@@ -76,7 +76,7 @@ function GameTools(map) {
   };
 
   // POLICY LAB v25: the big park is built from the ordinary park tiles, not from a building's tile set
-  tools.bigpark.getCost = Policy.bigParkCost;
+  tools.bigpark.getCost = function() { return Policy.BIG_PARK_COST; };
   tools.bigpark.checkBorder = function() {};
   tools.bigpark.putBuilding = function(leftX, topY) {
     var lawns = [TileValues.WOODS2, TileValues.WOODS3, TileValues.WOODS4, TileValues.WOODS5];

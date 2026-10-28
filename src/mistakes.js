@@ -120,11 +120,9 @@ var report = function(game) {
   if (unsafe.length)
     add('crimeNoPolice', 70 + unsafe.length,
         P('{0} home zones have high crime and no police nearby', '{0} zonas residenciales tienen mucha delincuencia y ninguna policía cerca', fmt(unsafe.length)),
-        P('In this game crime rises on cheap land and in crowded areas, and falls near funded police stations{0}.',
-          'En este juego la delincuencia sube en suelo barato y en zonas abarrotadas, y baja cerca de estaciones de policía con fondos{0}.',
-          Policy.parksCrime ? P(' and parks', ' y de los parques') : ''),
-        P('Build a police station (key 8) among these homes and fund it fully{0}.', 'Construye una estación de policía (tecla 8) entre estas viviendas y dale todos los fondos{0}.',
-          Policy.parksCrime ? P('; a big park helps too', '; un parque grande también ayuda') : ''),
+        P('In this game crime rises on cheap land and in crowded areas, and falls near funded police stations and parks.',
+          'En este juego la delincuencia sube en suelo barato y en zonas abarrotadas, y baja cerca de estaciones de policía con fondos y de los parques.'),
+        P('Build a police station (key 8) among these homes and fund it fully; a big park helps too.', 'Construye una estación de policía (tecla 8) entre estas viviendas y dale todos los fondos; un parque grande también ayuda.'),
         frames(unsafe, P('High crime, no police', 'Mucha delincuencia, sin policía')));
 
   // ---- Empty zones (v29): a problem only when they are stuck, or when many stand empty while the city wants no more
@@ -214,7 +212,7 @@ var report = function(game) {
         frames((c.depotUnconnectedList || []).concat(c.depotUnlinkedList || []), P('Not working', 'No funciona')));
 
   // ---- Drawbridges
-  if (s.drawbridges && Policy.bridges !== 'fixed')
+  if (s.drawbridges)
     add('drawbridges', 25,
         P('{0} road bridges are drawbridges', '{0} puentes de calle son levadizos', fmt(s.drawbridges)),
         P('They cross the shipping channel, so they open for ships (and sometimes at random), cutting the road while open.',

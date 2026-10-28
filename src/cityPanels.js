@@ -12,6 +12,7 @@ import { CityStore } from './cityStore.js';
 import { I18n } from './i18n.js';
 import { MiscUtils } from './miscUtils.js';
 import { Mistakes } from './mistakes.js';
+import { Report } from './report.js';
 
 var P = I18n.p;
 var fmt = MiscUtils.formatNumber;
@@ -140,9 +141,7 @@ var openSavedCities = function() {
 var rulesText = function(r) {
   if (!r)
     return '';
-  var world = {original: P('1989 world model', 'modelo del mundo de 1989'), defaults: P('Policy Lab world model', 'modelo del mundo de Policy Lab'),
-               custom: P('custom world model', 'modelo del mundo personalizado')}[r.world] || '';
-  return [I18n.t(r.preset || ''), world, r.level].filter(Boolean).join(' · ');
+  return [I18n.t(r.preset || ''), r.level].filter(Boolean).join(' · ');
 };
 
 var openScoreboard = function(currentCityId, currentRulesKey, onClose) {
@@ -241,7 +240,12 @@ var openMistakes = function(game, onClose, onShow) {
     body.append($('<p></p>').text(P('The report could not be made right now.', 'No se pudo hacer el informe ahora.')));
     return;
   }
-  var text = Mistakes.asText(r);
+  // v29: "How your policies are working" (until v28 in the Evaluation window) goes at the end of this report
+  var policyHTML = '';
+  try { policyHTML = Report.policyReport(game.simulation); } catch (e) { policyHTML = ''; }
+  var policyTitle = P('How your policies are working', 'Cómo están funcionando tus políticas');
+  var policyText = $('<div></div>').html(policyHTML).find('li').map(function() { return '- ' + $(this).text(); }).get().join('\n');
+  var text = Mistakes.asText(r) + (policyText ? '\n\n' + policyTitle + '\n' + policyText : '');
   var head = $('<div class="plReportHead"></div>');
   head.append($('<p class="plNote"></p>').text(P('{0} in {1}, score {2}. The planning mistakes in the city as it is now (and in its money history), the worst first, each checked against this game\'s rules.',
                                                  '{0} en {1}, puntuación {2}. Los errores de planificación de la ciudad tal como está ahora (y en su historial de dinero), los peores primero, cada uno comprobado con las reglas de este juego.',
@@ -279,6 +283,8 @@ var openMistakes = function(game, onClose, onShow) {
   body.append(ol);
   if (r.good.length)
     body.append($('<p class="plGood"></p>').append($('<b></b>').text(P('Going well: ', 'Va bien: ')), document.createTextNode(r.good.join(' '))));
+  if (policyHTML)
+    body.append($('<h3 class="plPolicyTitle"></h3>').text(policyTitle), $(policyHTML));
 };
 
 

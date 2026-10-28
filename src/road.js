@@ -70,9 +70,8 @@ var closeHorizontal = [
 
 
 var doBridge = function(map, x, y, currentTile, simData) {
-  // POLICY LAB: under the "fixed bridges" law, bridges never open; one that is open (e.g. in an old saved game) closes.
-  // POLICY LAB v26: highway bridges never open either.
-  if (Policy.bridges === 'fixed' || Policy.isHighway(x, y)) {
+  // POLICY LAB v26: highway bridges never open; one that is open (it was just upgraded) closes.
+  if (Policy.isHighway(x, y)) {
     if (currentTile === TileValues.BRWV) {
       closeBridge(map, x, y, verticalDeltaX, verticalDeltaY, openVertical, closeVertical);
       return true;

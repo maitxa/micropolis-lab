@@ -35,11 +35,6 @@ Traffic.prototype.makeTraffic = function(x, y, blockMaps, destFn) {
   // their traffic ends up on the roads
   this._byTrain = !!(blockMaps.depotMap && blockMaps.depotMap.worldGet(x, y) > 0);
 
-  // POLICY LAB: in a car-free downtown, three quarters of trips are made on foot or by tram/bus (no road traffic);
-  // the rest can't drive out through the car-free streets
-  if (Policy.isCarFree(this._map, x, y) && !Random.getChance(3))
-    return Traffic.ROUTE_FOUND;
-
   var pos = new Position(x, y);
 
   if (this.findPerimeterRoad(pos)) {
@@ -112,8 +107,8 @@ Traffic.prototype.findPerimeterRoad = function(pos) {
 };
 
 
-// POLICY LAB v25: how far a trip may go is a world-model setting (Policy.commute; 30 in 1989)
-var maxTrafficDistance = function() { return Policy.commute || 30; };
+// POLICY LAB v25: how far a trip may go (Policy.TRIP_LIMIT; 30 in 1989)
+var maxTrafficDistance = function() { return Policy.TRIP_LIMIT; };
 
 Traffic.prototype.tryDrive = function(startPos, destFn) {
   var dirLast;
@@ -134,10 +129,6 @@ Traffic.prototype.tryDrive = function(startPos, destFn) {
       // this line would have thrown an error and frozen the simulation.
       drivePos = Position.move(drivePos, dir);
 
-      // POLICY LAB: cars can't use roads inside the car-free downtown (trains can still use rail)
-      if (Policy.isCarFree(this._map, drivePos.x, drivePos.y) &&
-          TileUtils.isRoad(this._map.getTileValue(drivePos.x, drivePos.y)))
-        return false;
       dirLast = dir.oppositeDirection();
       if (Policy.isHighway(drivePos.x, drivePos.y))
         dist -= 2 / 3;

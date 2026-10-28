@@ -73,7 +73,7 @@ var scan = function(map, blockMaps) {
   var water = blockMaps.waterfrontMap, parks = blockMaps.parkEffectMap;
   water.clear();
   parks.clear();
-  var sewage = Policy.sewagePollution && blockMaps.sewageMap;
+  var sewage = blockMaps.sewageMap;
   var big = bigParkCentres(map);
   var bigSet = {};
   big.forEach(function(p) { bigSet[p[0] + ',' + p[1]] = true; });

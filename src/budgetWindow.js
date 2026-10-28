@@ -155,20 +155,6 @@ BudgetWindow.prototype.open = function(budgetData) {
   $('#previousFunds').text(MiscUtils.formatMoney(previousFunds));
   $('#currentFunds').text(MiscUtils.formatMoney(currentFunds));
 
-  // POLICY LAB: outside election years the budget can be viewed but not changed (except in a cash emergency)
-  var locked = !!budgetData.locked;
-  $('#budgetForm input[type="range"]').prop('disabled', locked);
-  $('#budgetOK').prop('disabled', locked);
-  $('#budgetReset').prop('disabled', locked);
-  if (locked) {
-    $('#budgetLockNote').text(I18n.t('Not an election year: you can look, but the budget can only change in {0}.',
-                                     budgetData.nextBudgetYear)).show();
-  } else if (budgetData.emergency) {
-    $('#budgetLockNote').text('Emergency session: the city has run out of money, so the budget must be revised now.').show();
-  } else {
-    $('#budgetLockNote').text('').hide();
-  }
-
   this._toggleDisplay();
 };
 

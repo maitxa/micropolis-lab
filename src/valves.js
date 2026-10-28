@@ -81,13 +81,6 @@ Valves.prototype.setValves = function(gameLevel, census, budget) {
   // Given the employment rate, calculate expected migration, add in births, and project the new population.
   var migration = normalizedResPop * (employment - 1);
 
-  // POLICY LAB: in the "quality of life" world model, people move in when the city is pleasant to live in, not only
-  // when there are jobs. Livability runs from -1 (awful) to +1 (excellent), from land value, crime and pollution
-  // (and, if the world model says it matters, healthcare). Migration is then 40% jobs, 60% livability.
-  // These weights are a Policy Lab assumption, not something from the original game.
-  this.lastLivability = Valves.livability(census);
-  if (Policy.growthModel === 'quality')
-    migration = normalizedResPop * (0.4 * (employment - 1) + 0.6 * this.lastLivability);
   var births = normalizedResPop * birthRate;
   var projectedResPop = normalizedResPop + migration + births;
 
@@ -104,10 +97,6 @@ Valves.prototype.setValves = function(gameLevel, census, budget) {
   var internalMarket = (normalizedResPop + census.comPop + census.indPop) / internalMarketDenom;
   var projectedComPop = internalMarket * labourBase;
   var projectedIndPop = census.indPop * labourBase * extMarketParamTable[gameLevel];
-  // POLICY LAB: in the "quality of life" world model, jobs partly follow people: half of industry's outlook comes from
-  // the city's own size instead of the outside market
-  if (Policy.growthModel === 'quality')
-    projectedIndPop = 0.5 * projectedIndPop + 0.5 * internalMarket * labourBase;
   projectedIndPop = Math.max(projectedIndPop, projectedIndPopMin);
 
   // Calculate the expected percentage changes in each population type
@@ -135,10 +124,9 @@ Valves.prototype.setValves = function(gameLevel, census, budget) {
 
   // Constrain growth according to the tax level.
   var z = Math.min((budget.cityTax + gameLevel), taxMax);
-  // POLICY LAB: "Do taxes slow growth?" Compare the actual tax rate's effect with the effect of the default 7% rate,
-  // and keep only part of the difference (original: all of it, i.e. taxGrowth = 1 gives exactly taxTable[z]).
+  // POLICY LAB: the effect of the default 7% rate is kept for the report
   var zDefault = Math.min((7 + gameLevel), taxMax);
-  var taxEffect = taxTable[zDefault] + (taxTable[z] - taxTable[zDefault]) * Policy.taxGrowth;
+  var taxEffect = taxTable[z];
   // POLICY LAB: remember the tax effect (and what the default 7% would give) for the Evaluation report
   this.lastTaxEffect = taxEffect;
   this.lastDefaultTaxEffect = taxTable[zDefault];
@@ -169,16 +157,6 @@ Valves.prototype.setValves = function(gameLevel, census, budget) {
       this.indValve = 0;
 
   this._emitEvent(VALVES_UPDATED);
-};
-
-
-// POLICY LAB: livability index, -1 to +1 (0 is about what a young, clean, mid-value town scores)
-Valves.livability = function(census) {
-  var lv = census.landValueAverage || 0, crime = census.crimeAverage || 0, pollution = census.pollutionAverage || 0;
-  var score = (lv - 100) / 150 - 0.8 * crime / 250 - 0.8 * pollution / 250 + 0.2;
-  if (Policy.healthAffects && census.healthCoverage !== undefined)
-    score += 0.3 * (census.healthCoverage - 0.5);
-  return MiscUtils.clamp(score, -1, 1);
 };
 
 

@@ -42,8 +42,7 @@ ParkTool.prototype.doTool = function(x, y, blockMaps) {
   }
 
   this._worldEffects.setTile(x, y, tileValue, tileFlags);
-  // POLICY LAB: park cost depends on the park subsidy law (original: $10)
-  this.addCost(Policy.parkCost());
+  this.addCost(Policy.PARK_COST);
   this.result = this.TOOLRESULT_OK;
 };
 

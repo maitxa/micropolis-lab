@@ -321,7 +321,7 @@ nav li {
   margin-bottom: 0.5em;
 }
 
-#budgetForm > #budgetButtons, #budgetForm > #budgetLockNote {
+#budgetForm > #budgetButtons {
   align: center;
   width: 100%;
 }
@@ -972,40 +972,11 @@ nav li {
   max-width: 260px;
 }
 
-#pl_reset {
-  background-color: darkslategray;
-  color: white;
-  padding: 4px 10px;
-}
-
-#budgetLockNote {
-  display: none;
-  font-weight: bold;
-  color: darkred;
-  margin: 6px 0;
-}
-
-.electionInfo {
-  display: none;
-  font-size: 13px;
-  margin-top: 4px;
-  color: darkslategray;
-}
-
 .bannedTool {
   text-decoration: line-through;
   opacity: 0.6;
 }
 
-#policySetup #pl_reset {
-  height: auto;
-  width: auto;
-}
-
-#budgetForm button:disabled, #budgetForm input[type="submit"]:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
 
 
 /* POLICY LAB: message hover help */
@@ -1179,11 +1150,6 @@ nav li {
   margin: 0;
   padding-left: 18px;
   font-size: 14px;
-}
-
-#policyReport {
-  clear: both;
-  margin-top: 10px;
 }
 
 .policyReport {
@@ -1452,13 +1418,8 @@ nav li {
 }
 
 #policySetup .policyIntro,
-#policySetup #presetBox,
-#policySetup #pl_reset {
+#policySetup #presetBox {
   grid-column: 1 / -1;
-}
-
-#policySetup #pl_reset {
-  justify-self: start;
 }
 
 #policySetup fieldset {
@@ -2818,18 +2779,6 @@ nav li {
 
 #outlineKey .okText {
   flex: 1;
-}
-
-#outlineKey .okToggle {
-  width: auto;
-  height: auto;
-  padding: 1px 8px;
-  border: 1px solid var(--pl-line);
-  border-radius: 10px;
-  background: var(--pl-paper);
-  color: var(--pl-ink);
-  font-family: var(--pl-ui);
-  font-size: calc(var(--advice-size, 14px) - 2px);
 }
 
 #advisor.collapsed #outlineKey {

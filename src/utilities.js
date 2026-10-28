@@ -204,8 +204,6 @@ var sewageScan = function(map, census, blockMaps) {
       }
 
       untreated++;
-      if (!Policy.sewagePollution)
-        continue;
 
       var w = nearestWater(map, x, y);
       if (w === null)

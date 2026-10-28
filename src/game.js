@@ -131,7 +131,7 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
 
   // Hook up listeners to open/close evaluation window
   this.handleEvalRequest = makeWindowOpenHandler('eval', function() {
-    // POLICY LAB: the simulation is passed too, for the "Your policies at work" report
+    // POLICY LAB: the simulation is passed too, for the score breakdown
     return [this.simulation.evaluation, this.simulation];
   }.bind(this));
 
@@ -146,11 +146,10 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   this.evalWindow = new EvaluationWindow(opacityLayerID, 'evalWindow');
   this.evalWindow.addEventListener(Messages.EVAL_WINDOW_CLOSED, this.genericDialogClosure);
 
-  // POLICY LAB: when the language changes, redraw the open report window and the election notice
+  // POLICY LAB: when the language changes, redraw the open report window
   I18n.onChange((function() {
     if (this.dialogOpen && (this._openWindow === 'cityDataWindow' || this._openWindow === 'evalWindow'))
       this[this._openWindow].refresh();
-    this.updateElectionInfo(this.simulation.getDate());
   }).bind(this));
   this.inputStatus.addEventListener(Messages.EVAL_REQUESTED, this.handleEvalRequest.bind(this));
 
@@ -163,15 +162,12 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
       fireRate: Math.floor(this.simulation.budget.firePercent * 100),
       policeMaintenanceBudget: this.simulation.budget.policeMaintenanceBudget,
       policeRate: Math.floor(this.simulation.budget.policePercent * 100),
-      // POLICY LAB: social services, and whether this is an election year
+      // POLICY LAB: social services and social housing
       socialMaintenanceBudget: this.simulation.budget.socialMaintenanceBudget,
       socialRate: Math.round(this.simulation.budget.socialPercent * 100),
       housingMaintenanceBudget: this.simulation.budget.housingMaintenanceBudget,
       housingRate: Math.round(this.simulation.budget.housingPercent * 100),
       utilityCost: this.simulation.budget.utilityCost || 0,
-      locked: !this.simNeededBudget && !Policy.isBudgetYear(this.simulation.getDate().year),
-      nextBudgetYear: Policy.nextBudgetYear(this.simulation.getDate().year),
-      emergency: this.simNeededBudget && !Policy.isBudgetYear(this.simulation.getDate().year),
       taxRate: this.simulation.budget.cityTax,
       totalFunds: this.simulation.budget.totalFunds,
       taxesCollected: this.simulation.budget.taxFund
@@ -276,10 +272,8 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   };
   this.infoBar(this.simulation, initialValues);
 
-  // POLICY LAB: apply the laws to the interface, and show election information
+  // POLICY LAB: apply the laws to the interface
   this.applyPolicyToInterface();
-  this.updateElectionInfo(this.simulation.getDate());
-  this.simulation.addEventListener(Messages.DATE_UPDATED, this.updateElectionInfo.bind(this));
 
   // POLICY LAB v21: a clock that only runs while the game does (for "Got it": back after 3 minutes of play)
   this._playSeconds = 0;
@@ -446,19 +440,14 @@ Game.prototype.saveCurrent = function(name) {
   });
 };
 
-// The rules the city is played with, for the scoreboard
-var WORLD_KEYS = ['povertyCrime', 'densityCrime', 'policeStrength', 'socialCrime', 'taxGrowth', 'regulationGrowth',
-                  'incentiveGrowth', 'sewagePollution', 'walkability', 'growthModel', 'healthAffects', 'parksCrime',
-                  'waterfront', 'taxByValue', 'commute'];
-
+// The rules the city is played with, for the scoreboard (v29: the world is the same for every city, so only the five
+// policy choices and the difficulty differ)
 Game.prototype.rulesKey = function() {
   return JSON.stringify(Object.keys(Policy.DEFAULTS).map(function(k) { return Policy[k]; })) + '|' + this.simulation._gameLevel;
 };
 
 Game.prototype.rulesSummary = function() {
-  var same = function(ref) { return WORLD_KEYS.every(function(k) { return Policy[k] === ref[k]; }); };
-  return {preset: Policy.presetName, world: same(Policy.ORIGINAL) ? 'original' : same(Policy.DEFAULTS) ? 'defaults' : 'custom',
-          level: Text.gameLevel['' + this.simulation._gameLevel]};
+  return {preset: Policy.presetName, level: Text.gameLevel['' + this.simulation._gameLevel]};
 };
 
 Game.prototype.yearly = function(year) {
@@ -648,8 +637,8 @@ Game.prototype.applyPolicyToInterface = function() {
   $('#railButton .price').text(MiscUtils.formatMoney(transport.rail));
   $('#commercialButton .price').text(MiscUtils.formatMoney(Policy.businessZoneCost()));
   $('#industrialButton .price').text(MiscUtils.formatMoney(Policy.businessZoneCost()));
-  $('#parkButton .price').text(MiscUtils.formatMoney(Policy.parkCost()));
-  $('#bigParkButton .price').text(MiscUtils.formatMoney(Policy.bigParkCost()));
+  $('#parkButton .price').text(MiscUtils.formatMoney(Policy.PARK_COST));
+  $('#bigParkButton .price').text(MiscUtils.formatMoney(Policy.BIG_PARK_COST));
   $('#highwayButton .price').text(MiscUtils.formatMoney(Policy.transportCosts().road + Policy.highwayExtra()));
 };
 
@@ -787,38 +776,20 @@ Game.prototype.runAdvisor = function(newMonth) {
 
 // POLICY LAB v23: shops whose trips keep failing (they can't grow) get a red frame on the map, with a key and a switch
 Game.prototype.renderStuckShops = function(list) {
-  if (this._outlinesOn === undefined) {
-    var saved = null;
-    try { saved = window.localStorage.getItem('policyLabOutlines'); } catch (e) {}
-    this._outlinesOn = saved !== 'off';
-  }
+  // v29: always shown (the switch is gone); the "Where to zone" layer frames the same shops
   this._stuckShops = list;
-  this.gameCanvas.setOutlines(this._outlinesOn ? list : null);
+  this.gameCanvas.setOutlines(list);
   var key = $('#outlineKey').empty();
   if (!list.length) {
     key.hide();
     return;
   }
-  var self = this;
   var text = $('<span class="okText"></span>');
-  if (this._outlinesOn) {
-    text.append($('<span class="okSwatch" aria-hidden="true"></span>'));
-    text.append(document.createTextNode(list.length === 1
-      ? I18n.p('Red frame: a shop that can\'t reach customers, so it can\'t grow.', 'Marco rojo: una tienda que no llega a sus clientes, así que no puede crecer.')
-      : I18n.p('Red frames: {0} shops that can\'t reach customers, so they can\'t grow.', 'Marcos rojos: {0} tiendas que no llegan a sus clientes, así que no pueden crecer.', list.length)));
-  } else {
-    text.text(list.length === 1 ? I18n.p('1 shop can\'t reach customers (frame hidden).', '1 tienda no llega a sus clientes (marco oculto).')
-                                : I18n.p('{0} shops can\'t reach customers (frames hidden).', '{0} tiendas no llegan a sus clientes (marcos ocultos).', list.length));
-  }
-  var btn = $('<button type="button" class="okToggle"></button>')
-              .text(this._outlinesOn ? I18n.p('Hide', 'Ocultar') : I18n.p('Show', 'Mostrar'));
-  btn.on('click', function(e) {
-    e.preventDefault();
-    self._outlinesOn = !self._outlinesOn;
-    try { window.localStorage.setItem('policyLabOutlines', self._outlinesOn ? 'on' : 'off'); } catch (err) {}
-    self.renderStuckShops(self._stuckShops || []);
-  });
-  key.append(text, btn).show();
+  text.append($('<span class="okSwatch" aria-hidden="true"></span>'));
+  text.append(document.createTextNode(list.length === 1
+    ? I18n.p('Red frame: a shop that can\'t reach customers, so it can\'t grow.', 'Marco rojo: una tienda que no llega a sus clientes, así que no puede crecer.')
+    : I18n.p('Red frames: {0} shops that can\'t reach customers, so they can\'t grow.', 'Marcos rojos: {0} tiendas que no llegan a sus clientes, así que no pueden crecer.', list.length)));
+  key.append(text).show();
 };
 
 
@@ -1126,22 +1097,6 @@ Game.prototype.adviceSays = function(id) {
 };
 
 
-// POLICY LAB: in election-cycle mode, tell the player when the budget can next be changed
-Game.prototype.updateElectionInfo = function(date) {
-  var elem = $('#electionInfo');
-  if (!Policy.electionCycle) {
-    elem.hide();
-    return;
-  }
-
-  elem.show();
-  if (Policy.isBudgetYear(date.year))
-    elem.text(I18n.t('Election year: budget open'));
-  else
-    elem.text(I18n.t('Next budget vote: {0}', Policy.nextBudgetYear(date.year)));
-};
-
-
 Game.prototype.handleBudgetWindowClosure = function(data) {
   this.dialogOpen = false;
 
@@ -1384,12 +1339,6 @@ Game.prototype.applyToolAt = function(tileX, tileY) {
       this.updateChannel(false);
   }
 
-  // POLICY LAB: explain refusals caused by the laws
-  if (tool.blockedBy === 'greenbelt') {
-    $('#toolOutput').text('Protected green belt: no building here');
-    return;
-  }
-
   switch (tool.result) {
     case tool.TOOLRESULT_NEEDS_BULLDOZE:
       $('#toolOutput').text(Text.toolMessages.needsDoze);
@@ -1419,7 +1368,7 @@ Game.prototype.applyToolAt = function(tileX, tileY) {
 // POLICY LAB v22: show the shipping channel while the road tool is selected or the Dead ends layer is on
 Game.prototype.updateChannel = function(toolChanged) {
   var road = !!this.inputStatus.currentTool && this.inputStatus.toolName === 'road';
-  var show = Policy.bridges !== 'fixed' && (road || this._layerName === 'dead');
+  var show = road || this._layerName === 'dead';
   var cells = show ? Reach.channelTiles(this.simulation._map) : null;
   this._channelShown = !!(cells && cells.length);
   this.gameCanvas.setChannel(cells);

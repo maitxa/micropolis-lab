@@ -21,17 +21,20 @@ Before play, the setup screen (v29) asks for **five policy choices**, or a prese
 **How the world works is fixed, the same for every preset** (a short note on the setup screen says how): crime rises on
 cheap land and in crowded places and falls near police, funded social services and parks; taxes above 7% slow growth;
 people pay more to live near clean water, shops they can walk to and a hospital; untreated sewage pollutes rivers; each
-neighbourhood pays tax on its own land value; trips can go 90 road tiles. Saves from before v29 keep the rules they were
-started with. Budget changes are allowed any time.
+neighbourhood pays tax on its own land value; trips can go 90 road tiles. Cities saved before v29 keep their policy choices but play in
+this world; settings that no longer exist (car-free downtown, green belt, fixed bridges, election-year budgets, park
+subsidies, moderate incentives, single houses only, and the old world-model switches) are dropped. The budget can be
+changed any time.
 
 During play: numbers have thousands separators; hovering over a message explains why it happened and what to do;
 an **Undo** button (Ctrl+Z / Cmd+Z) reverses the last click or drag with a refund; number keys pick tools (press **?**
 for the list); and **Shift+click** draws a straight road, rail or power line from the last tile built.
 
 A **City data** window (button under the tools, or press **I**) shows occupancy and demand for residential,
-commercial and industrial zones, jobs per resident, neighbourhood averages, power, services and money. The
-**Evaluation** window adds "Your policies at work": a plain-language report on how the world model and each law are
-affecting the city (e.g. what is driving crime, where pollution comes from, what tax breaks cost).
+commercial and industrial zones, jobs per resident, neighbourhood averages, power, services and money. The report
+**What I did wrong and what to do** ends with "How your policies are working": a plain-language account of how each
+policy is affecting the city (what is driving crime, where pollution comes from, what tax breaks cost). Until v28 this
+was in the Evaluation window.
 
 Two new buildings (drawn in the original style, in tile slots 956-973 that micropolisJS reserved but never used):
 **Train depot** ($1,000, key **T**): must touch a rail line that goes somewhere: to another depot, or (since v28)
@@ -39,15 +42,12 @@ round a loop and back, so the train can turn around (a circuit of at least 16 ra
 loop further along the line); a depot with a stub of track does nothing; zones within 16 tiles (a true circle, measured in 2×2 blocks) can
 commute twice as far and put half as much traffic on the roads. The water plant, hospital and shop coverage also use
 2×2 blocks now, instead of the coarse 8×8 blocks of the first versions. **Water treatment plant** ($2,000, key **U**): needs power; treats the sewage of
-zones within ~24 tiles. A new world-model question, "Does untreated sewage pollute rivers?", makes untreated zones send
-their sewage to the nearest water, polluting it and its banks (the map has no direction of flow, so "nearest water"
+zones within ~24 tiles. Untreated zones send their sewage to the nearest water, polluting it and its banks (the map has no direction of flow, so "nearest water"
 stands in for "downstream").
 
-European-inspired options (step D): a **zoning principle** law (separate uses, as in U.S. zoning and the original, or
-mixed use, where apartment blocks get ground-floor shops: after Hirt's "exclusivity vs. predominance" contrast);
-world-model questions on **walkable shops**, on **what makes people move** (jobs driven by industry, as in the
-original, or quality of life, with jobs following people), and on **hospital access**; a **car-free downtown** law and
-a **green belt** law (both drawn on the map); a **social housing** budget line that keeps lower-value neighbourhoods
+European-inspired options (step D): **mixed use** zoning (apartment blocks get ground-floor shops: after Hirt's
+"exclusivity vs. predominance" contrast); **walkable shops** and **hospital access** raise land value; a **social
+housing** budget line that keeps lower-value neighbourhoods
 from emptying out; and a **Hospital** tool (key **M**; hospitals the city builds are never removed automatically and
 cost $150 a year).
 
@@ -92,8 +92,7 @@ the details and the game's raw demand. The original "More ... zones needed" mess
 `src/advisor.js`, drawn by `src/needChart.js`).
 
 Shops that can't reach customers: a shop whose trips failed in at least 2 of the last 3 months (and whose reach isn't
-clearly fine) gets a red frame on the map all the time, with a key in the To do card and a Hide / Show switch
-(remembered in this browser). In the 1989 rules these shops can't grow. Homes and factories are not flagged: being far
+clearly fine) gets a red frame on the map all the time, with a key in the To do card. In the 1989 rules these shops can't grow. Homes and factories are not flagged: being far
 from shops, jobs or workers doesn't stop them growing (they only need a road and power). This only describes the city: zones still grow according to the game's original demand.
 
 Shipping channel: the big river has a hidden channel down its middle (drawn with the same picture as ordinary water),
@@ -163,7 +162,7 @@ in `src/i18n-es.js`; the message help, presets and reports keep their Spanish ne
 footer now use Alfa Slab One (SIL Open Font License, in `css/`), because the original ChunkFive font has no accented
 letters.
 
-The Budget window has new **Social services** and **Social housing** lines. Its effect on crime depends on the chosen world model.
+The Budget window has new **Social services** and **Social housing** lines; social services reduce crime, most in the poorest neighbourhoods.
 
 With every setting at its "(original)" value ("Reset to the original 1989 rules" on the setup screen), the simulation
 rules match the original game. Since v25 the **defaults** differ from 1989 in five world-model answers (below); cities
@@ -192,10 +191,10 @@ saved before v25 keep the 1989 answers for those questions.
   near water** (+40 land value within 3 tiles of clean water; water polluted by sewage doesn't count); **expensive
   neighbourhoods pay more tax** (the taxed land value is each zone's own, weighted by the people who live or work there,
   instead of the average over all built-up land; City data shows both); **people travel up to 90 road tiles** on a
-  trip instead of 30 (180 with a linked train depot), so homes, shops and industry can be far apart. Each has its 1989
-  answer on the setup screen (`src/amenities.js`).
-- **Big park** (key **G**, $150, half price or free under the park laws): 3x3 lawns and trees with a fountain; it
-  cleans the air within 8 tiles (pollution x0.6) and, in the default world model, lowers crime there.
+  trip instead of 30 (180 with a linked train depot), so homes, shops and industry can be far apart (`src/amenities.js`).
+  Since v29 these are simply how the world works.
+- **Big park** (key **G**, $150): 3x3 lawns and trees with a fountain; it cleans the air within 8 tiles (pollution x0.6)
+  and lowers crime there.
 - The To do card no longer shows on the start screen (a style was overriding "hidden until the game starts").
 
 ### v26: highways and "What went wrong?" (renamed "What I did wrong and what to do" in v29)

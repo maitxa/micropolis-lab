@@ -69,7 +69,7 @@ var deadEnds = function(sim) {
     legend: [
       {swatch: 'dead', text: P('Dead end: {0}', 'Calle sin salida: {0}', fmt(dead))},
       {swatch: 'bridge', text: P('Drawbridge: {0}', 'Puente levadizo: {0}', fmt(bridges))}
-    ].concat(Policy.bridges !== 'fixed' && Reach.channelTiles(map).length
+    ].concat(Reach.channelTiles(map).length
       ? [{swatch: 'channel', text: P('Shipping channel (dashed water): a road bridge across it is a drawbridge; rail bridges never open',
                                      'Canal de navegación (agua con guiones): un puente de calle que lo cruce es levadizo; los puentes de tren nunca se abren')}]
       : []),

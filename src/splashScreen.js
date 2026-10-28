@@ -213,8 +213,6 @@ var play = function(e) {
   var choices = readPolicyForm();
   Policy.set(choices.policy);
   Policy.presetName = currentPresetLabel();
-  // The green belt is centred on the middle of the map, where the city starts
-  Policy.greenBeltCentre = {x: Math.floor(this.map.width / 2), y: Math.floor(this.map.height / 2)};
   Policy.builtHospitals = {};
   Policy.bigParks = {};
   Policy.cityId = CityStore.newId();
@@ -228,6 +226,8 @@ var play = function(e) {
   g.simulation.budget.housingPercent = choices.housingStart / 100;
   g.simulation.budget.setTax(choices.taxStart);
   g.simulation.budget.updateFundEffects();
+  // v29: redraw the status bubbles and the To do card with the starting tax rate
+  try { g.runAdvisor(false); } catch (e) {}
 };
 
 

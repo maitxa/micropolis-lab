@@ -3,7 +3,7 @@
  * This code is released under the GNU GPL v3, with some additional terms, like the rest of micropolisJS.
  * Modified version: NOT the original micropolisJS / Micropolis.
  *
- * "Reach" of a zone: which roads its trip car can get to within the trip limit (30 road tiles in 1989; see Policy.commute), which destinations it could find
+ * "Reach" of a zone: which roads its trip car can get to within the trip limit (30 road tiles in 1989; see Policy.TRIP_LIMIT), which destinations it could find
  * there, and which dead ends could stop it. This is the BEST case: the game's car turns at random at every junction
  * and gives up at a dead end (as in 1989), so a destination that is far away or behind many junctions will still be
  * missed some of the time.
@@ -21,7 +21,7 @@ var P = I18n.p;
 var fmt = MiscUtils.formatNumber;
 
 // POLICY LAB v25: how far a trip can go is a world-model setting (30 in 1989); "near" is half of it
-var maxDist = function() { return Policy.commute || 30; };
+var maxDist = function() { return Policy.TRIP_LIMIT; };
 var nearDist = function() { return Math.round(maxDist() / 2); };
 
 var perimX = [-1, 0, 1, 2, 2, 2, 1, 0, -1, -2, -2, -2];
@@ -77,7 +77,7 @@ var isRaisedBridge = function(v) {
 
 // A closed road bridge over the shipping channel, which can open (the same test the game uses, in road.js)
 var isDrawbridge = function(map, x, y) {
-  if (Policy.bridges === 'fixed' || Policy.isHighway(x, y))
+  if (Policy.isHighway(x, y))
     return false;
   var v = TileUtils.normalizeRoad(map.getTileValue(x, y));
   if (v === TileValues.HBRIDGE)
@@ -112,10 +112,7 @@ var drivable = function(map, x, y) {
   if (!map.testBounds(x, y))
     return false;
   var v = map.getTileValue(x, y);
-  if (!TileUtils.isDriveable(v))
-    return false;
-  // cars can't use roads inside a car-free downtown
-  return !(TileUtils.isRoad(v) && Policy.isCarFree(map, x, y));
+  return TileUtils.isDriveable(v);
 };
 
 var key = function(x, y) { return x + ',' + y; };

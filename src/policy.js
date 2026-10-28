@@ -3,86 +3,45 @@
  * This code is released under the GNU GPL v3, with some additional terms, like the rest of micropolisJS.
  * Modified version: NOT the original micropolisJS / Micropolis.
  *
- * One place that holds the choices made on the setup screen:
- *   - WORLD MODEL: assumptions about cause and effect (how the world works). Fixed for the whole game.
- *   - LAWS: structural policies chosen at the start. Fixed for the whole game.
- *   - BUDGET TIMING: whether the budget can be changed any time, or only in election years.
- *
- * The defaults reproduce the original 1989 SimCity rules exactly ("SimCity 1989" world, standard laws).
+ * One place that holds:
+ *   - THE WORLD (v29): how the world works in this game. Fixed, the same for every city and every preset (constants
+ *     below; until v28 these were choices on the setup screen).
+ *   - THE FIVE POLICY CHOICES made on the setup screen (laws, fixed for the whole game). The starting tax rate and
+ *     social funding are set in the budget (see splashScreen.js); the player can change those during play.
  */
 
-import { TileUtils } from './tileUtils.js';
-import * as TileValues from './tileValues.ts';
+// ---- The world (v29: fixed) ----
+// Crime: cheap land and crowding push it up; police, funded social services and parks push it down (blockMapUtils.js).
+// Most crime points fully funded social services remove, on the cheapest land (half of it on mid-value land)
+var SOCIAL_CRIME = 30;
+// How far (in road tiles) people will travel on a trip; a linked train depot doubles it; highway tiles count a third.
+// (30 in 1989.)
+var TRIP_LIMIT = 90;
+// Other parts of the world, all always on: taxes above 7% slow growth (valves.js); environmental rules change
+// industrial growth and incentives attract business (valves.js); untreated sewage pollutes rivers (utilities.js);
+// shops within walking distance, clean water and a hospital nearby raise land value (blockMapUtils.js); hospital
+// access matters; each neighbourhood pays tax on its own land value (budget.js, amenities.js).
 
+// ---- The five policy choices (v29) ----
 var DEFAULTS = {
-  // ---- World model ----
-  // How strongly low land value ("poverty") pushes crime up. 1 = original, 0.5 = weakly, 0 = not at all.
-  povertyCrime: 1,
-  // Whether crowded neighbourhoods attract crime. 1 = yes (original), 0 = no.
-  densityCrime: 1,
-  // Multiplier on how much nearby police stations suppress crime. 1 = original.
-  policeStrength: 1,
-  // Maximum crime points removed by fully funded social services in the poorest areas.
-  // 0 = social services do nothing (original game has none), 30 = somewhat, 60 = strongly.
-  // POLICY LAB v25: "somewhat" is now the default (the original is 0, see ORIGINAL below)
-  socialCrime: 30,
-  // How strongly taxes above/below the default 7% slow/speed growth. 1 = original, 0.5 = weakly, 0 = not at all.
-  taxGrowth: 1,
-  // Whether environmental regulation changes industrial growth. 1 = yes, 0 = no.
-  regulationGrowth: 1,
-  // Whether business incentives attract commercial and industrial growth. 1 = yes, 0 = no.
-  incentiveGrowth: 1,
-  // Whether untreated sewage pollutes rivers (and the land along them). 0 = no (original game), 1 = yes.
-  // POLICY LAB v29: on (the world is fixed, the same for every preset, with every feature having its effect)
-  sewagePollution: 1,
-  // Whether residents value having shops within walking distance (raises land value). 0 = no (original), 1 = yes.
-  walkability: 1,
-  // What drives residential growth: 'industry' (original: jobs, ultimately exports) or 'quality' (quality of life).
-  growthModel: 'industry',
-  // Whether access to a hospital affects where people want to live. 0 = no (original), 1 = yes.
-  healthAffects: 1,
-  // POLICY LAB v25 (new questions; their defaults differ from the 1989 original, see ORIGINAL below)
-  // Whether parks reduce crime nearby (big parks strongly, small parks a little). 0 = no (original), 1 = yes.
-  parksCrime: 1,
-  // Whether people pay more to live near clean water (land value bonus within 3 tiles). 0 = no (original), 1 = yes.
-  waterfront: 1,
-  // Whether each neighbourhood pays tax on its own land value (expensive, crowded areas pay more) instead of the
-  // city-wide average land value. 0 = no (original), 1 = yes.
-  taxByValue: 1,
-  // How far (in road tiles) people will travel on a trip; a linked train depot doubles it. 30 = original.
-  commute: 90,
-
-  // ---- Laws ----
+  // Energy and environment
   nuclearAllowed: true,
-  // 'none' | 'relaxed' (v29) | 'standard' (original) | 'strict'
+  // 'none' | 'relaxed' | 'standard' (original) | 'strict'
   regulation: 'standard',
-  // Highest residential density allowed: 40 = no limit (original), 24 = medium, 8 = single houses only
+  // Housing and zoning: highest residential density, 40 = no limit (original), 24 = medium at most
   densityCap: 40,
-  // 'roads' | 'balanced' (original) | 'transit'
-  transport: 'balanced',
-  // 'none' (original) | 'moderate' | 'strong'
-  incentives: 'none',
-  // 'standard' (original) | 'subsidized' | 'free'
-  parks: 'standard',
-  // Zoning principle: 'exclusive' (original, US-style: one use per zone) or 'mixed' (European-style "predominance":
-  // apartment blocks get ground-floor shops)
+  // 'exclusive' (original, US-style: one use per zone) or 'mixed' (European-style: apartment blocks get ground-floor
+  // shops)
   zoning: 'exclusive',
-  // Car-free downtown: radius in tiles around the city centre (0 = none, original)
-  pedestrian: 0,
-  // Green belt: a protected ring of land around the city where nothing may be built. 0 = none (original), 1 = yes
-  greenBelt: 0,
-  // Bridges over the shipping channel: 'draw' (original: drawbridges that open for ships, and sometimes at random,
-  // cutting the road while open) or 'fixed' (high bridges that never open; ships pass underneath)
-  bridges: 'draw',
-
-  // ---- Budget timing ----
-  // 0 = change the budget any time (original). 4 = only in election years (every 4 years).
-  electionCycle: 0
+  // Transportation: 'roads' | 'balanced' (original) | 'transit'
+  transport: 'balanced',
+  // Business incentives: 'none' (original) | 'strong'
+  incentives: 'none'
 };
 
 // How much industrial pollution is multiplied by under each regulation level
 var REGULATION_POLLUTION = {none: 1.5, relaxed: 1.25, standard: 1, strict: 0.5};
-// How much industrial growth is nudged under each regulation level (only if the world model says regulation matters).
+// How much industrial growth is nudged under each regulation level.
 // For scale: the original tax table moves growth by about 10-50 points per 1% of tax.
 var REGULATION_GROWTH = {none: 40, relaxed: 20, standard: 0, strict: -80};
 
@@ -92,29 +51,17 @@ var TRANSPORT = {
   balanced: {road: 10, rail: 20, roadMaintenance: 1, railMaintenance: 2},
   transit:  {road: 15, rail: 10, roadMaintenance: 2, railMaintenance: 1}
 };
-// Business incentives: cost of a commercial/industrial zone, share of tax revenue the city keeps, and growth nudge
-// (the nudge only applies if the world model says incentives attract business). 'none' = original.
+// Business incentives: cost of a commercial/industrial zone, share of tax revenue the city keeps, and growth nudge.
 var INCENTIVES = {
-  none:     {zoneCost: 100, taxShare: 1,   growth: 0},
-  moderate: {zoneCost: 50,  taxShare: 0.9, growth: 30},
-  strong:   {zoneCost: 0,   taxShare: 0.8, growth: 60}
+  none:   {zoneCost: 100, taxShare: 1,   growth: 0},
+  strong: {zoneCost: 0,   taxShare: 0.8, growth: 60}
 };
-var PARK_COST = {standard: 10, subsidized: 5, free: 0};
-
-// Green belt ring, in tiles from its centre (the centre of the map, where the city starts)
-var GREEN_BELT_INNER = 28;
-var GREEN_BELT_OUTER = 34;
-
-// POLICY LAB v25: the 1989 rules. The defaults above now differ from it in a few world-model questions, so "Reset to the
-// original rules" and older saved cities (which don't record these questions) use these values.
-var ORIGINAL = Object.assign({}, DEFAULTS, {socialCrime: 0, parksCrime: 0, waterfront: 0, taxByValue: 0, commute: 30,
-                                            sewagePollution: 0, walkability: 0, healthAffects: 0});
 
 var Policy = Object.assign({}, DEFAULTS);
-Policy.GREEN_BELT_INNER = GREEN_BELT_INNER;
-Policy.GREEN_BELT_OUTER = GREEN_BELT_OUTER;
-// Centre of the green belt (set when a game starts; saved with the city)
-Policy.greenBeltCentre = {x: 60, y: 50};
+Policy.SOCIAL_CRIME = SOCIAL_CRIME;
+Policy.TRIP_LIMIT = TRIP_LIMIT;
+Policy.PARK_COST = 10;
+Policy.BIG_PARK_COST = 150;
 // Hospitals the player built (so the simulation never removes them), as "x,y" keys
 Policy.builtHospitals = {};
 // POLICY LAB v25: big parks the player built (their fountain in the middle), as "x,y" keys
@@ -126,14 +73,13 @@ Policy.highways = {};
 Policy.highwaysVersion = 0;
 // POLICY LAB v25: an identifier for the city (saved cities, the scoreboard and rewind snapshots belong to it)
 Policy.cityId = null;
-// Which preset the city's laws started from (for the report)
-Policy.presetName = 'Original 1989 rules';
+// Which preset the city's policies started from (for the report)
+Policy.presetName = '1989 baseline';
 // The city's history for the charts under Funds: monthly funds, population and tax rate, and each year's surplus or
 // deficit (saved with the city)
 Policy.history = {months: [], years: []};
 
 Policy.DEFAULTS = DEFAULTS;
-Policy.ORIGINAL = ORIGINAL;
 
 Policy.set = function(values) {
   Object.keys(DEFAULTS).forEach(function(key) {
@@ -142,12 +88,21 @@ Policy.set = function(values) {
     else
       Policy[key] = DEFAULTS[key];
   });
+  // v29: choices that no longer exist, in cities saved earlier
+  if (!INCENTIVES[Policy.incentives])
+    Policy.incentives = Policy.incentives === 'moderate' ? 'strong' : 'none';
+  if (!REGULATION_POLLUTION[Policy.regulation])
+    Policy.regulation = 'standard';
+  if (!TRANSPORT[Policy.transport])
+    Policy.transport = 'balanced';
+  Policy.densityCap = Policy.densityCap >= 40 ? 40 : 24;
+  if (Policy.zoning !== 'mixed')
+    Policy.zoning = 'exclusive';
 };
 
 Policy.save = function(saveData) {
   var copy = {};
   Object.keys(DEFAULTS).forEach(function(key) { copy[key] = Policy[key]; });
-  copy.greenBeltCentre = Policy.greenBeltCentre;
   copy.builtHospitals = Policy.builtHospitals;
   copy.bigParks = Policy.bigParks;
   copy.highways = Policy.highways;
@@ -158,41 +113,17 @@ Policy.save = function(saveData) {
 };
 
 Policy.load = function(saveData) {
-  // Games saved before the Policy Lab existed simply get the original rules; questions added later than the save was
-  // made also get the original answer (so an old city keeps playing by the rules it was started with)
-  Policy.set(Object.assign({}, ORIGINAL, saveData.policyLab || {}));
+  // v29: every city plays in the same world; older saves keep their policy choices (games saved before the Policy
+  // Lab existed get the original ones). Settings that no longer exist are dropped.
   var extra = saveData.policyLab || {};
-  Policy.greenBeltCentre = extra.greenBeltCentre || {x: 60, y: 50};
+  Policy.set(extra);
   Policy.builtHospitals = extra.builtHospitals || {};
   Policy.bigParks = extra.bigParks || {};
   Policy.highways = extra.highways || {};
   Policy.highwaysVersion++;
   Policy.cityId = extra.cityId || null;
-  Policy.presetName = extra.presetName || 'Original 1989 rules';
+  Policy.presetName = extra.presetName || '1989 baseline';
   Policy.history = extra.history && extra.history.months ? extra.history : {months: [], years: []};
-};
-
-// Is this tile a road bridge (closed, any traffic level)?
-Policy.isRoadBridge = function(tileValue) {
-  var v = TileUtils.normalizeRoad(tileValue);
-  return v === TileValues.HBRIDGE || v === TileValues.VBRIDGE;
-};
-
-// Is (x, y) inside the car-free downtown?
-Policy.isCarFree = function(map, x, y) {
-  if (!Policy.pedestrian)
-    return false;
-  var dx = x - map.cityCentreX, dy = y - map.cityCentreY;
-  return dx * dx + dy * dy <= Policy.pedestrian * Policy.pedestrian;
-};
-
-// Is (x, y) inside the protected green belt?
-Policy.inGreenBelt = function(x, y) {
-  if (!Policy.greenBelt)
-    return false;
-  var dx = x - Policy.greenBeltCentre.x, dy = y - Policy.greenBeltCentre.y;
-  var d2 = dx * dx + dy * dy;
-  return d2 >= GREEN_BELT_INNER * GREEN_BELT_INNER && d2 <= GREEN_BELT_OUTER * GREEN_BELT_OUTER;
 };
 
 Policy.industrialPollutionFactor = function() {
@@ -200,7 +131,7 @@ Policy.industrialPollutionFactor = function() {
 };
 
 Policy.industrialGrowthNudge = function() {
-  return (REGULATION_GROWTH[Policy.regulation] || 0) * Policy.regulationGrowth;
+  return REGULATION_GROWTH[Policy.regulation] || 0;
 };
 
 Policy.transportCosts = function() {
@@ -216,12 +147,7 @@ Policy.taxShare = function() {
 };
 
 Policy.businessGrowthNudge = function() {
-  return (INCENTIVES[Policy.incentives] || INCENTIVES.none).growth * Policy.incentiveGrowth;
-};
-
-// POLICY LAB v25: a big park (3x3, with a fountain) costs $150 at the standard price; the park subsidy law applies too
-Policy.bigParkCost = function() {
-  return Math.round(150 * PARK_COST[Policy.parks] / PARK_COST.standard);
+  return (INCENTIVES[Policy.incentives] || INCENTIVES.none).growth;
 };
 
 // POLICY LAB v26: highways
@@ -241,27 +167,6 @@ Policy.setHighway = function(x, y, on) {
   else
     delete Policy.highways[k];
   Policy.highwaysVersion++;
-};
-
-Policy.parkCost = function() {
-  var c = PARK_COST[Policy.parks];
-  return c === undefined ? 10 : c;
-};
-
-// Is this an election year (i.e. may the player change the budget)?
-Policy.isBudgetYear = function(year) {
-  if (!Policy.electionCycle)
-    return true;
-  return (year - 1900) % Policy.electionCycle === 0;
-};
-
-Policy.nextBudgetYear = function(year) {
-  if (!Policy.electionCycle)
-    return year;
-  var y = year;
-  while (!Policy.isBudgetYear(y))
-    y++;
-  return y;
 };
 
 

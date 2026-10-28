@@ -98,17 +98,6 @@ BuildingTool.prototype.buildBuilding = function(x, y) {
   x--;
   y--;
 
-  // POLICY LAB: nothing may be built in the protected green belt
-  this.blockedBy = null;
-  for (var gx = x; gx < x + this.size; gx++) {
-    for (var gy = y; gy < y + this.size; gy++) {
-      if (Policy.inGreenBelt(gx, gy)) {
-        this.blockedBy = 'greenbelt';
-        return this.TOOLRESULT_FAILED;
-      }
-    }
-  }
-
   var prepareResult = this.prepareBuildingSite(x, y);
   if (prepareResult !== this.TOOLRESULT_OK)
     return prepareResult;

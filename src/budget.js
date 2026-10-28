@@ -221,9 +221,7 @@ Budget.prototype.doBudgetWindow = function() {
 Budget.prototype.doBudgetNow = function(fromWindow) {
   var costs = this._calculateBestPercentages();
 
-  // POLICY LAB: outside election years the player can't revise the budget, so the city keeps last year's
-  // percentages automatically (unless it can't afford them: see below).
-  var locked = !fromWindow && !Policy.isBudgetYear(this.currentYear);
+  var locked = false;   // v29: the budget can always be changed (the election-year option is gone)
 
   if (!this.autoBudget && !fromWindow && !locked) {
     this.autoBudget = false;
@@ -312,7 +310,7 @@ Budget.prototype.updateFundEffects = function() {
 // POLICY LAB v25: the land value the city taxes. 1989: the average over all built-up land. With "Do expensive
 // neighbourhoods pay more tax?": each zone's own land value, weighted by its people (amenities.js).
 var taxedLandValue = function(census) {
-  if (Policy.taxByValue && census.taxLandValue !== undefined)
+  if (census.taxLandValue !== undefined)
     return census.taxLandValue;
   return census.landValueAverage;
 };

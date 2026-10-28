@@ -246,7 +246,7 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
 
           if (tileValue < TileValues.RUBBLE) {
             // POLICY LAB: water polluted by sewage is no longer a "nice view"
-            if (Policy.sewagePollution && tileValue <= TileValues.LASTRIVEDGE &&
+            if (tileValue <= TileValues.LASTRIVEDGE &&
                 blockMaps.sewageMap.worldGet(mapX, mapY) >= 40)
               continue;
 
@@ -269,11 +269,9 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
       }
 
       // POLICY LAB: untreated sewage pollutes the water and the banks around it
-      if (Policy.sewagePollution) {
-        var sewage = blockMaps.sewageMap.worldGet(worldX, worldY);
-        pollutionLevel += sewage;
-        pollutionSources.sewage += sewage;
-      }
+      var sewage = blockMaps.sewageMap.worldGet(worldX, worldY);
+      pollutionLevel += sewage;
+      pollutionSources.sewage += sewage;
 
       // Clamp pollution in range 0-255 (at the moment it's range is 0-1020) and record it for later.
       pollutionLevel = Math.min(pollutionLevel, 255);
@@ -295,16 +293,16 @@ var pollutionTerrainLandValueScan = function(map, census, blockMaps) {
         if (crimeRateMap.get(x, y) > 190)
           landValue -= 20;
 
-        // POLICY LAB: shops within walking distance raise land value, if the world model says residents value that
-        if (Policy.walkability && blockMaps.shopMap.worldGet(worldX, worldY) > 0)
+        // POLICY LAB: shops within walking distance raise land value
+        if (blockMaps.shopMap.worldGet(worldX, worldY) > 0)
           landValue += 20;
 
-        // POLICY LAB v25: clean water nearby raises land value, if the world model says people pay more for it
-        if (Policy.waterfront && blockMaps.waterfrontMap && blockMaps.waterfrontMap.get(x, y) > 0)
+        // POLICY LAB v25: clean water nearby raises land value
+        if (blockMaps.waterfrontMap && blockMaps.waterfrontMap.get(x, y) > 0)
           landValue += Amenities.WATERFRONT_BONUS;
 
-        // POLICY LAB: being near a hospital raises land value, if the world model says healthcare access matters
-        if (Policy.healthAffects && blockMaps.healthMap.worldGet(worldX, worldY) > 0)
+        // POLICY LAB: being near a hospital raises land value
+        if (blockMaps.healthMap.worldGet(worldX, worldY) > 0)
           landValue += 15;
 
         // Clamp in range 1-250 (0 represents undeveloped land)
@@ -410,35 +408,32 @@ var crimeScan = function(census, blockMaps, budget) {
         var landValue = value;
 
         // Force value in the range -122 to 128. Lower valued pieces of land attract more crime.
-        // POLICY LAB: scaled by "Does poverty drive crime?" (original: x1)
-        var povertyPart = (128 - value) * Policy.povertyCrime;
+        var povertyPart = 128 - value;
         value = povertyPart;
 
         // Add population density (a value between 0 and 510). value now lies in range -260 - 382.
         // Denser areas attract more crime.
-        // POLICY LAB: scaled by "Does density drive crime?" (original: x1)
-        var densityPart = populationDensityMap.worldGet(x, y) * Policy.densityCrime;
+        var densityPart = populationDensityMap.worldGet(x, y);
         value += densityPart;
 
         // Clamp in range -260 to 300
         value = Math.min(value, 300);
 
         // If the police are nearby, there's no point committing the crime of the century
-        // POLICY LAB: scaled by "How effective are police?" (original: x1)
-        var policePart = policeStationMap.worldGet(x, y) * Policy.policeStrength;
+        var policePart = policeStationMap.worldGet(x, y);
         value -= policePart;
 
         // POLICY LAB (new factor): social services reduce crime, most in the poorest neighbourhoods
         // (up to 2x the base effect on the cheapest land, almost nothing on the most valuable land).
-        // Only active if the world model says social services work, and scaled by how well they're funded.
+        // Scaled by how well they're funded.
         var socialPart = 0;
-        if (Policy.socialCrime > 0 && socialFunding > 0)
-          socialPart = Policy.socialCrime * socialFunding * 2 * (250 - landValue) / 250;
+        if (socialFunding > 0)
+          socialPart = Policy.SOCIAL_CRIME * socialFunding * 2 * (250 - landValue) / 250;
         value -= socialPart;
 
-        // POLICY LAB v25 (new factor): parks reduce crime nearby, if the world model says so (big parks more)
+        // POLICY LAB v25 (new factor): parks reduce crime nearby (big parks more)
         var parkPart = 0;
-        if (Policy.parksCrime && blockMaps.parkEffectMap) {
+        if (blockMaps.parkEffectMap) {
           var park = blockMaps.parkEffectMap.worldGet(x, y);
           parkPart = park === 2 ? Amenities.BIG_PARK_CRIME : park === 1 ? Amenities.SMALL_PARK_CRIME : 0;
         }

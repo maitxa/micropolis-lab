@@ -74,7 +74,7 @@ var taxShare = function(sim, zx, zy, totalTaxes) {
       if (!kind)
         continue;
       var w = zoneWeight(map, x, y, v, kind);
-      var s = Policy.taxByValue ? w * lv.worldGet(x, y) : w;
+      var s = w * lv.worldGet(x, y);
       all += s;
       if (x === zx && y === zy)
         mine = s;
@@ -93,11 +93,11 @@ var landValueParts = function(sim, x, y) {
   var terrain = bm.terrainDensityMap.worldGet(x, y);
   if (terrain)
     rows.push({label: P('Unspoiled land nearby (trees, water, parks)', 'Terreno sin construir cerca (árboles, agua, parques)'), value: terrain});
-  if (Policy.waterfront && bm.waterfrontMap && bm.waterfrontMap.worldGet(x, y) > 0)
+  if (bm.waterfrontMap && bm.waterfrontMap.worldGet(x, y) > 0)
     rows.push({label: P('Waterfront', 'Junto al agua'), value: 40});
-  if (Policy.walkability && bm.shopMap && bm.shopMap.worldGet(x, y) > 0)
+  if (bm.shopMap && bm.shopMap.worldGet(x, y) > 0)
     rows.push({label: P('Shops within walking distance', 'Tiendas a poca distancia a pie'), value: 20});
-  if (Policy.healthAffects && bm.healthMap && bm.healthMap.worldGet(x, y) > 0)
+  if (bm.healthMap && bm.healthMap.worldGet(x, y) > 0)
     rows.push({label: P('A hospital nearby', 'Un hospital cerca'), value: 15});
   var pollution = bm.pollutionDensityMap.worldGet(x, y);
   if (pollution)
@@ -112,18 +112,16 @@ var crimeParts = function(sim, x, y) {
   var bm = sim.blockMaps;
   var lv = bm.landValueMap.worldGet(x, y);
   var rows = [];
-  var poverty = (128 - lv) * Policy.povertyCrime;
+  var poverty = 128 - lv;
   rows.push({label: poverty >= 0 ? P('Cheap land', 'Suelo barato') : P('Valuable land', 'Suelo valioso'), value: poverty});
-  var density = bm.populationDensityMap.worldGet(x, y) * Policy.densityCrime;
+  var density = bm.populationDensityMap.worldGet(x, y);
   if (density)
     rows.push({label: P('Crowding', 'Hacinamiento'), value: density});
-  var police = bm.policeStationEffectMap.worldGet(x, y) * Policy.policeStrength;
+  var police = bm.policeStationEffectMap.worldGet(x, y);
   rows.push({label: P('Police (all stations nearby)', 'Policía (todas las estaciones cercanas)'), value: -police});
-  if (Policy.socialCrime > 0) {
-    var social = Policy.socialCrime * (sim.budget.socialEffect || 0) * 2 * (250 - lv) / 250;
-    rows.push({label: P('Social services ({0}% funded)', 'Servicios sociales (con un {0}% de fondos)', Math.round((sim.budget.socialPercent || 0) * 100)), value: -social});
-  }
-  if (Policy.parksCrime && bm.parkEffectMap) {
+  var social = Policy.SOCIAL_CRIME * (sim.budget.socialEffect || 0) * 2 * (250 - lv) / 250;
+  rows.push({label: P('Social services ({0}% funded)', 'Servicios sociales (con un {0}% de fondos)', Math.round((sim.budget.socialPercent || 0) * 100)), value: -social});
+  if (bm.parkEffectMap) {
     var park = bm.parkEffectMap.worldGet(x, y);
     if (park)
       rows.push({label: park === 2 ? P('A big park nearby', 'Un parque grande cerca') : P('A park right here', 'Un parque justo aquí'), value: park === 2 ? -40 : -15});
@@ -208,7 +206,7 @@ var spot = function(game, x, y, zone) {
     out.sections.push({title: P('Crime {0} ({1}): what pushes it up and down', 'Delincuencia {0} ({1}): qué la sube y qué la baja', fmt(crime), levelWord(crime, 'crimeStrings')),
                        rows: crimeParts(sim, cx, cy), total: crime, max: 250,
                        note: P('Limited to 0-250.{0}', 'Limitada a 0-250.{0}',
-                               Policy.socialCrime > 0 && !(sim.budget.socialPercent > 0) ? P(' Social services would help if funded (Budget window).', ' Los servicios sociales ayudarían si tuvieran fondos (ventana de Presupuesto).') : '')});
+                               !(sim.budget.socialPercent > 0) ? P(' Social services would help if funded (Budget window).', ' Los servicios sociales ayudarían si tuvieran fondos (ventana de Presupuesto).') : '')});
 
   // Pollution
   var pol = bm.pollutionDensityMap.worldGet(cx, cy);
@@ -233,13 +231,13 @@ var spot = function(game, x, y, zone) {
   // Services that reach this spot
   var cov = [];
   var police = bm.policeStationEffectMap.worldGet(cx, cy), fire = bm.fireStationEffectMap.worldGet(cx, cy);
-  cov.push({label: P('Police', 'Policía'), text: police > 0 ? P('yes: removes about {0} crime points here', 'sí: resta unos {0} puntos de delincuencia aquí', fmt(Math.round(police * Policy.policeStrength))) : P('no', 'no'), good: police > 0});
+  cov.push({label: P('Police', 'Policía'), text: police > 0 ? P('yes: removes about {0} crime points here', 'sí: resta unos {0} puntos de delincuencia aquí', fmt(Math.round(police))) : P('no', 'no'), good: police > 0});
   cov.push({label: P('Fire stations', 'Bomberos'), text: fire > 0 ? P('yes (strength {0})', 'sí (fuerza {0})', fmt(fire)) : P('no: fires spread freely here', 'no: aquí los incendios se extienden sin control'), good: fire > 0});
   if (bm.healthMap)
     cov.push({label: P('Hospital within {0} tiles', 'Hospital a menos de {0} casillas', Utilities.HEALTH_RADIUS), text: bm.healthMap.worldGet(cx, cy) > 0 ? P('yes', 'sí') : P('no', 'no'), good: bm.healthMap.worldGet(cx, cy) > 0});
   if (bm.depotMap)
     cov.push({label: P('A working train depot', 'Una estación de tren que funciona'), text: bm.depotMap.worldGet(cx, cy) > 0 ? P('yes: trips go twice as far, half the traffic', 'sí: los viajes llegan el doble de lejos, la mitad de tráfico') : P('no', 'no'), good: bm.depotMap.worldGet(cx, cy) > 0});
-  if (Policy.sewagePollution && bm.waterMap)
+  if (bm.waterMap)
     cov.push({label: P('Water treatment', 'Tratamiento de aguas'), text: bm.waterMap.worldGet(cx, cy) > 0 ? P('yes', 'sí') : P('no: its sewage goes to the river', 'no: sus aguas residuales van al río'), good: bm.waterMap.worldGet(cx, cy) > 0});
   if (bm.parkEffectMap && bm.parkEffectMap.worldGet(cx, cy) > 0)
     cov.push({label: P('Parks', 'Parques'), text: bm.parkEffectMap.worldGet(cx, cy) === 2 ? P('a big park nearby', 'un parque grande cerca') : P('a park right here', 'un parque justo aquí'), good: true});
@@ -315,7 +313,7 @@ var building = function(game, x, y) {
     if (police) {
       lines.push(P('Removes about {0} crime points next to it, fading with distance (all stations add up).',
                    'Resta unos {0} puntos de delincuencia a su lado, y menos con la distancia (todas las estaciones se suman).',
-                   fmt(Math.round(eff.worldGet(cx, cy) * Policy.policeStrength))));
+                   fmt(Math.round(eff.worldGet(cx, cy)))));
       lines.push(P('Strong within about {0} tiles, still felt to about {1}: {2} home zones.', 'Fuerte a unas {0} casillas, todavía se nota hasta unas {1}: {2} zonas residenciales.',
                    strong, weak, homesWithin(map, cx, cy, weak)));
     } else {
@@ -331,8 +329,7 @@ var building = function(game, x, y) {
     title = P('Hospital', 'Hospital');
     var hr = Utilities.HEALTH_RADIUS;
     lines.push(P('Serves homes within {0} tiles: {1} home zones.', 'Atiende a las viviendas a menos de {0} casillas: {1} zonas residenciales.', hr, homesWithin(map, cx, cy, hr)));
-    lines.push(Policy.healthAffects ? P('In your world model, homes it serves are worth more (+15 land value).', 'En tu modelo del mundo, las viviendas que atiende valen más (+15 de valor del suelo).')
-                                    : P('In your world model, hospital access does not change where people live.', 'En tu modelo del mundo, el acceso a un hospital no cambia dónde vive la gente.'));
+    lines.push(P('Homes it serves are worth more (+15 land value).', 'Las viviendas que atiende valen más (+15 de valor del suelo).'));
     if (!powered) lines.push(P('It has no power, so it serves no one.', 'No tiene electricidad, así que no atiende a nadie.'));
     circle(hr, P('Serves homes here', 'Atiende a las viviendas de aquí'));
   } else if (found && v === TileValues.DEPOT) {
@@ -345,8 +342,7 @@ var building = function(game, x, y) {
   } else if (found && v === TileValues.WATERPLANT) {
     title = P('Water treatment plant', 'Planta de tratamiento de aguas');
     lines.push(P('Treats the sewage of zones within 24 tiles: {0} home zones.', 'Trata las aguas residuales de las zonas a menos de 24 casillas: {0} zonas residenciales.', homesWithin(map, cx, cy, 24)));
-    lines.push(Policy.sewagePollution ? P('In your world model, untreated sewage pollutes the river and its banks.', 'En tu modelo del mundo, las aguas residuales sin tratar contaminan el río y sus orillas.')
-                                      : P('In your world model sewage does not pollute, so it changes nothing.', 'En tu modelo del mundo las aguas residuales no contaminan, así que no cambia nada.'));
+    lines.push(P('Untreated sewage pollutes the river and its banks.', 'Las aguas residuales sin tratar contaminan el río y sus orillas.'));
     if (!powered) lines.push(P('It has no power, so it treats nothing.', 'No tiene electricidad, así que no trata nada.'));
     circle(24, P('Treated here', 'Tratadas aquí'));
   } else if (found && (v === TileValues.POWERPLANT || v === TileValues.NUCLEAR)) {
@@ -374,7 +370,7 @@ var building = function(game, x, y) {
   } else if (v === TileValues.FOUNTAIN && Policy.bigParks && Policy.bigParks[cx + ',' + cy]) {
     title = P('Big park', 'Parque grande');
     lines.push(P('Within 8 tiles: pollution {0}40%{1}.', 'A menos de 8 casillas: contaminación {0}40%{1}.', '−',
-                 Policy.parksCrime ? P(', and crime −40 points', ', y delincuencia −40 puntos') : P(' (in your world model parks don\'t change crime)', ' (en tu modelo del mundo los parques no cambian la delincuencia)')));
+                 P(', and crime −40 points', ', y delincuencia −40 puntos')));
     lines.push(P('{0} home zones are within its reach. Overlapping big parks don\'t add up.', '{0} zonas residenciales están a su alcance. Los parques grandes superpuestos no se suman.', homesWithin(map, cx, cy, 8)));
     circle(8, P('Big park reach', 'Alcance del parque grande'));
   } else {
@@ -382,8 +378,7 @@ var building = function(game, x, y) {
     if ((pv >= TileValues.WOODS2 && pv <= TileValues.WOODS5) || pv === TileValues.FOUNTAIN) {
       cx = x; cy = y;
       title = P('Park', 'Parque');
-      lines.push(Policy.parksCrime ? P('Crime −15 points within 2 tiles, and it raises land value nearby (unspoiled land).', 'Delincuencia −15 puntos a menos de 2 casillas, y sube el valor del suelo cercano (terreno sin construir).')
-                                   : P('Raises land value nearby (unspoiled land).', 'Sube el valor del suelo cercano (terreno sin construir).'));
+      lines.push(P('Crime −15 points within 2 tiles, and it raises land value nearby (unspoiled land).', 'Delincuencia −15 puntos a menos de 2 casillas, y sube el valor del suelo cercano (terreno sin construir).'));
       circle(2, P('Park reach', 'Alcance del parque'));
     } else {
       return null;
