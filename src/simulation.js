@@ -386,10 +386,10 @@ var simulate = function(simData) {
                                     this.lastCensus.healthCoveredZones / this.lastCensus.resZonePop : 0;
 
       if (this._cityTime % CENSUS_FREQUENCY_10 === 0)
-        this._census.take10Census(budget);
+        this._census.take10Census(this.budget);   // POLICY LAB v29: was the undeclared "budget" (the page element with that id)
 
       if (this._cityTime % CENSUS_FREQUENCY_120 === 0)
-        this._census.take120Census(budget);
+        this._census.take120Census(this.budget);
 
       if (this._cityTime % TAX_FREQUENCY === 0)  {
         // POLICY LAB: the budget needs to know the year, to decide whether this is an election year

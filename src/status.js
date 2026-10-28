@@ -220,7 +220,7 @@ var compute = function(sim, history) {
                'Es la estimación aproximada del propio juego: compara la población residencial con los empleos que ofrecen las tiendas y fábricas.'),
         fixes: m.unemployed > 0 ? [P('Zone more commercial and industrial land, with roads and power.', 'Zonifica más terreno comercial e industrial, con calles y electricidad.')]
                                 : m.unfilled >= 0.5 ? [P('Zone more residential land near the jobs.', 'Zonifica más terreno residencial cerca de los empleos.')] : [],
-        layer: 'workers'});
+        layer: 'zoning'});
 
   // ---- Taxes
   push({id: 'tax', name: P('Taxes', 'Impuestos'), level: level(m.tax > 12, m.tax >= 10), value: m.tax + '%',

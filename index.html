@@ -71,87 +71,41 @@
             <input type="radio" class="difficulty" name="difficulty" id="difficultyHard" value="2"><label for="difficultyHard">Hard</label>
             <!-- POLICY LAB: setup screen -->
             <div id="policySetup">
-              <p class="policyIntro"><strong>Policy Lab.</strong> Choose how this world works and which laws your city starts with.
-                Leave everything as it is to play the original 1989 rules.</p>
+              <p class="policyIntro"><strong>Policy Lab.</strong> Pick a preset, or make the five choices yourself. The world
+                works the same way whichever you pick, so the results come from the policies.</p>
               <div id="presetBox">
-                <label class="policyRow"><span><b>Start from a preset</b></span>
+                <label class="policyRow"><span><b>Preset</b></span>
                   <select id="pl_preset">
-                    <option value="original" selected>Original 1989 rules</option>
+                    <option value="original" selected>1989 baseline</option>
                     <option value="progressive">Progressive (Sanders-style)</option>
                     <option value="populist">Conservative-populist (MAGA-style)</option>
+                    <option value="libertarian">Libertarian</option>
                     <option value="custom">Custom</option>
                   </select></label>
                 <div id="presetNote"></div>
               </div>
               <fieldset>
-                <legend>World model: how the world works (fixed all game)</legend>
-                <label class="policyRow"><span>Does poverty (cheap land) drive crime?</span>
-                  <select id="pl_povertyCrime"><option value="1" selected>Strongly (original)</option><option value="0.5">Weakly</option><option value="0">Not at all</option></select></label>
-                <label class="policyRow"><span>Does density drive crime?</span>
-                  <select id="pl_densityCrime"><option value="1" selected>Yes (original)</option><option value="0">No</option></select></label>
-                <label class="policyRow"><span>How effective are police?</span>
-                  <select id="pl_policeStrength"><option value="0.5">Weak</option><option value="1" selected>Normal (original)</option><option value="1.5">Strong</option></select></label>
-                <label class="policyRow"><span>Do social services reduce crime?</span>
-                  <select id="pl_socialCrime"><option value="0">No (original)</option><option value="30" selected>Somewhat</option><option value="60">Strongly</option></select></label>
-                <label class="policyRow"><span>Do high taxes slow growth?</span>
-                  <select id="pl_taxGrowth"><option value="1" selected>Strongly (original)</option><option value="0.5">Weakly</option><option value="0">Not at all</option></select></label>
-                <label class="policyRow"><span>Does regulation slow industry?</span>
-                  <select id="pl_regulationGrowth"><option value="1" selected>Yes</option><option value="0">No</option></select></label>
-                <label class="policyRow"><span>What makes people move to a city?</span>
-                  <select id="pl_growthModel"><option value="industry" selected>Jobs, driven by industry and exports (original)</option><option value="quality">Quality of life (jobs follow people)</option></select></label>
-                <label class="policyRow"><span>Do residents value shops within walking distance?</span>
-                  <select id="pl_walkability"><option value="0" selected>No (original)</option><option value="1">Yes</option></select></label>
-                <label class="policyRow"><span>Does access to a hospital affect where people live?</span>
-                  <select id="pl_healthAffects"><option value="0" selected>No (original)</option><option value="1">Yes</option></select></label>
-                <label class="policyRow"><span>Does untreated sewage pollute rivers?</span>
-                  <select id="pl_sewagePollution"><option value="0" selected>No (original)</option><option value="1">Yes</option></select></label>
-                <label class="policyRow"><span>Do parks reduce crime?</span>
-                  <select id="pl_parksCrime"><option value="0">No (original)</option><option value="1" selected>Yes</option></select></label>
-                <label class="policyRow"><span>Do people pay more to live near water?</span>
-                  <select id="pl_waterfront"><option value="0">No (original)</option><option value="1" selected>Yes</option></select></label>
-                <label class="policyRow"><span>Do expensive neighbourhoods pay more tax?</span>
-                  <select id="pl_taxByValue"><option value="0">No: the city-wide average (original)</option><option value="1" selected>Yes: each pays on its own land value</option></select></label>
-                <label class="policyRow"><span>How far will people travel on a trip?</span>
-                  <select id="pl_commute"><option value="30">30 road tiles (original)</option><option value="60">60 road tiles</option><option value="90" selected>90 road tiles</option></select></label>
-                <label class="policyRow"><span>Do business incentives attract business?</span>
-                  <select id="pl_incentiveGrowth"><option value="1" selected>Yes</option><option value="0">No</option></select></label>
-              </fieldset>
-              <fieldset>
-                <legend>Laws (fixed all game)</legend>
-                <label class="policyRow"><span>Nuclear power</span>
-                  <select id="pl_nuclearAllowed"><option value="true" selected>Allowed (original)</option><option value="false">Banned</option></select></label>
-                <label class="policyRow"><span>Environmental rules on industry</span>
-                  <select id="pl_regulation"><option value="none">None (more pollution)</option><option value="standard" selected>Standard (original)</option><option value="strict">Strict (half the pollution)</option></select></label>
-                <label class="policyRow"><span>Zoning principle</span>
-                  <select id="pl_zoning"><option value="exclusive" selected>Separate uses, U.S.-style (original)</option><option value="mixed">Mixed use (European-style: shops below apartments)</option></select></label>
-                <label class="policyRow"><span>Car-free downtown</span>
-                  <select id="pl_pedestrian"><option value="0" selected>None (original)</option><option value="6">Small (6 tiles around the centre)</option><option value="12">Large (12 tiles around the centre)</option></select></label>
-                <label class="policyRow"><span>Green belt (protected ring of land)</span>
-                  <select id="pl_greenBelt"><option value="0" selected>None (original)</option><option value="1">Yes</option></select></label>
-                <label class="policyRow"><span>Bridges over the shipping channel</span>
-                  <select id="pl_bridges"><option value="draw" selected>Drawbridges: open for ships (original)</option><option value="fixed">Fixed high bridges: never open</option></select></label>
-                <label class="policyRow"><span>Housing density</span>
-                  <select id="pl_densityCap"><option value="40" selected>No limit (original)</option><option value="24">Medium at most</option><option value="8">Single houses only</option></select></label>
-                <label class="policyRow"><span>Transportation priority</span>
-                  <select id="pl_transport"><option value="roads">Roads (cheap roads, pricey rail)</option><option value="balanced" selected>Balanced (original)</option><option value="transit">Transit (cheap rail, pricey roads)</option></select></label>
+                <legend>Your city's policies</legend>
+                <label class="policyRow"><span>Taxes and social programs</span>
+                  <select id="pl_taxes"><option value="high">High: 9%, social services and housing fully funded</option><option value="medium" selected>Medium: 7%, no social programs (original)</option><option value="low">Low: 5%, social services at 25%</option><option value="minimal">Minimal: 3%, no social programs</option></select></label>
                 <label class="policyRow"><span>Business incentives</span>
-                  <select id="pl_incentives"><option value="none" selected>None (original)</option><option value="moderate">Moderate (zones half price, 10% tax break)</option><option value="strong">Strong (zones free, 20% tax break)</option></select></label>
-                <label class="policyRow"><span>Parks</span>
-                  <select id="pl_parks"><option value="standard" selected>Standard price (original)</option><option value="subsidized">Subsidized (half price)</option><option value="free">Free</option></select></label>
+                  <select id="pl_business"><option value="none" selected>None (original)</option><option value="strong">Strong: free zones, 20% tax break</option></select></label>
+                <label class="policyRow"><span>Energy and environment</span>
+                  <select id="pl_energy"><option value="strict">Strict rules, no nuclear</option><option value="standard" selected>Standard rules, nuclear allowed (original)</option><option value="relaxed">Relaxed rules, nuclear allowed</option><option value="none">No rules, nuclear allowed</option></select></label>
+                <label class="policyRow"><span>Housing and zoning</span>
+                  <select id="pl_housing"><option value="mixed">Mixed use, no density limit</option><option value="separate" selected>Separate uses, no density limit (original)</option><option value="suburban">Separate uses, medium density at most</option></select></label>
+                <label class="policyRow"><span>Transportation</span>
+                  <select id="pl_transport"><option value="transit">Transit first: cheap rail, pricey roads</option><option value="balanced" selected>Balanced (original)</option><option value="roads">Roads first: cheap roads, pricey rail</option></select></label>
               </fieldset>
-              <fieldset>
-                <legend>Budget (taxes and funding can change during play)</legend>
-                <label class="policyRow"><span>When can the budget change?</span>
-                  <select id="pl_electionCycle"><option value="0" selected>Any time (original)</option><option value="4">Election years only (every 4 years)</option></select></label>
-                <label class="policyRow"><span>Starting tax rate</span>
-                  <select id="pl_taxStart"><option value="3">3%</option><option value="5">5%</option><option value="7" selected>7% (original)</option><option value="9">9%</option><option value="11">11%</option></select></label>
-                <label class="policyRow"><span>Starting social housing funding</span>
-                  <select id="pl_housingStart"><option value="0" selected>0% (original)</option><option value="25">25%</option><option value="50">50%</option><option value="100">100%</option></select></label>
-                <label class="policyRow"><span>Starting social services funding</span>
-                  <select id="pl_socialStart"><option value="0" selected>0% (original)</option><option value="25">25%</option><option value="50">50%</option><option value="100">100%</option></select></label>
-              </fieldset>
-              <button type="button" id="pl_reset" class="miscButton">Reset to the original 1989 rules</button>
-              <button type="button" id="pl_defaults" class="miscButton">Policy Lab defaults</button>
+              <details id="worldNote">
+                <summary>How the world works in this game</summary>
+                <p>The same for every preset. Crime rises on cheap land and in crowded places, and falls near police,
+                  funded social services and parks. Taxes above 7% slow growth and lower ones speed it up. Environmental rules
+                  change both industrial pollution and industrial growth; business incentives attract shops and factories.
+                  Jobs (driven by industry) bring residents. People pay more to live near clean water, near shops they can
+                  walk to and near a hospital. Untreated sewage pollutes rivers (water treatment plants prevent it). Each
+                  neighbourhood pays tax on its own land value. Trips can go 90 road tiles (more on highways and by train).</p>
+              </details>
             </div>
             <div id="playSubmitDiv">
               <input id="playit" type="submit" value="Play!">
@@ -202,7 +156,7 @@
               <button id="rewindRequest" class="miscButton" title="Go back to an earlier year of this city">Go back in time</button>
             </div>
             <div>
-              <button id="mistakesRequest" class="miscButton" title="A report of the planning mistakes in this city, and why they matter">What went wrong?</button>
+              <button id="mistakesRequest" class="miscButton" title="A report of the planning mistakes in this city, why they matter and how to fix them">What I did wrong</button>
             </div>
             <div>
               <button id="settingsRequest" class="miscButton">Settings</button>
@@ -242,7 +196,7 @@
             <span class="layerLabel">Show on map:</span>
             <button type="button" data-layer="pollution" aria-pressed="false">Pollution</button>
             <button type="button" data-layer="dead" aria-pressed="false">Dead ends</button>
-            <button type="button" data-layer="workers" aria-pressed="false">Workers nearby</button>
+            <button type="button" data-layer="zoning" aria-pressed="false">Where to zone</button>
           </div>
           <!-- POLICY LAB: what is highlighted on the map right now, with controls -->
           <div id="hintBar" role="status" aria-live="polite" style="display:none">

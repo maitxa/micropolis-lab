@@ -395,7 +395,8 @@ var building = function(game, x, y) {
 
 var Influence = {
   spot: spot,
-  building: building
+  building: building,
+  landValueParts: landValueParts
 };
 
 

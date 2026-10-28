@@ -7,15 +7,22 @@ original game, and it is not affiliated with Electronic Arts, Maxis, or the micr
 
 ## What the Policy Lab adds
 
-Before play, a setup screen separates two kinds of choices:
+Before play, the setup screen (v29) asks for **five policy choices**, or a preset that fills them in:
 
-- **World model**: assumptions about cause and effect, fixed for the whole game. Does poverty (cheap land) drive crime? Does
-  density? How effective are police? Do social services reduce crime? Do high taxes slow growth? Does regulation slow industry?
-  Do business incentives attract business?
-- **Laws**: structural policies, fixed for the whole game: nuclear power allowed or banned; environmental rules on industry;
-  housing density cap; transportation priority (roads vs. transit costs); business incentives (cheaper zones, tax breaks);
-  park subsidies.
-- **Budget timing**: change the budget any time (original) or only in election years (every 4 years).
+- **Taxes and social programs**: high (9%, social services and social housing fully funded), medium (7%, none: the
+  original), low (5%, social services at 25%) or minimal (3%, none).
+- **Business incentives**: none (original) or strong (free commercial and industrial zones, 20% tax break).
+- **Energy and environment**: strict rules and no nuclear, standard rules (original), relaxed rules, or no rules (the
+  last three allow nuclear). Rules scale industrial pollution (x0.5, x1, x1.25, x1.5) and industrial growth.
+- **Housing and zoning**: mixed use with no density limit, separate uses with no limit (original), or separate uses with
+  medium density at most.
+- **Transportation**: transit first (cheap rail, pricey roads), balanced (original) or roads first.
+
+**How the world works is fixed, the same for every preset** (a short note on the setup screen says how): crime rises on
+cheap land and in crowded places and falls near police, funded social services and parks; taxes above 7% slow growth;
+people pay more to live near clean water, shops they can walk to and a hospital; untreated sewage pollutes rivers; each
+neighbourhood pays tax on its own land value; trips can go 90 road tiles. Saves from before v29 keep the rules they were
+started with. Budget changes are allowed any time.
 
 During play: numbers have thousands separators; hovering over a message explains why it happened and what to do;
 an **Undo** button (Ctrl+Z / Cmd+Z) reverses the last click or drag with a refund; number keys pick tools (press **?**
@@ -44,10 +51,10 @@ a **green belt** law (both drawn on the map); a **social housing** budget line t
 from emptying out; and a **Hospital** tool (key **M**; hospitals the city builds are never removed automatically and
 cost $150 a year).
 
-**Presets** (setup screen): Original 1989 rules, Progressive (Sanders-style) and Conservative-populist (MAGA-style).
-A preset fills in the laws and the starting budget only, never the world model, so no preset can "win" because the
-rules were written to agree with it. Each preset lists the sources its settings are based on (see `src/presets.js`),
-and notes where a setting is an inference rather than a stated position.
+**Presets** (setup screen): 1989 baseline (a neutral starting point), Progressive (Sanders-style),
+Conservative-populist (MAGA-style) and Libertarian. A preset fills in the five choices only, never how the world works,
+so no preset can "win" because the rules were written to agree with it. Each preset lists the sources its settings are
+based on (see `src/presets.js`), and notes where a setting is an inference rather than a stated position.
 
 Interface: the tool panel is a grouped legend (zones, getting around, power and water, services, landmarks, change and
 inspect) with original icons; the setup screen is a two-column sheet whose choices are buttons ("chips"), with the
@@ -76,12 +83,13 @@ rough comparison of residents and jobs. Thresholds: urgent at 25% of residents (
 (the original blackout alert); taxes urgent above 12%. See `src/status.js`.
 
 Zoning need (lower left; replaces the original R / C / I demand bars): one bar each for homes, shops and factories.
-**Above the line: zone more** of that kind (the city's demand is positive and the zones you have are full or nearly
-full). **Below the line: don't** (more than 1 zone, or more than 10%, of that kind is standing empty, or the city doesn't
-want more). A bar can also say that growth is stopped until you build a stadium, airport or seaport. Point at (or tab
-to) a bar for the reason, including how many empty zones lack power or a road, and the game's raw demand. This is the only place
-zoning advice appears: the To do card has no "Zone more" / "Don't zone" items, and the original "More ... zones
-needed" messages are no longer shown (`zoningNeed` in `src/advisor.js`, drawn by `src/needChart.js`).
+Since v29 **the bar is the game's own demand**. **Above the line: zone more** of that kind, even if some zones are still
+empty: zones fill a little at a time, by chance, so 5 empty homes next to 20 full ones are just filling. **Below the
+line: not needed now.** A bar can also say that growth is stopped until you build a stadium, airport or seaport. Under
+each name a small line counts the empty zones: **stuck** (no power, no road, or, for homes, a spot where a home can't
+grow at today's demand because land value minus pollution is too low) or **filling**. Point at (or tab to) a bar for
+the details and the game's raw demand. The original "More ... zones needed" messages are not shown (`zoningNeed` in
+`src/advisor.js`, drawn by `src/needChart.js`).
 
 Shops that can't reach customers: a shop whose trips failed in at least 2 of the last 3 months (and whose reach isn't
 clearly fine) gets a red frame on the map all the time, with a key in the To do card and a Hide / Show switch
@@ -133,8 +141,9 @@ this browser; "Reset layout" is in the keyboard help (`src/panels.js`).
 
 Map layers (buttons in the To do card, one at a time, stay on until clicked again): **Pollution** (the game's pollution
 map in its levels: moderate, heavy, very heavy), **Dead ends** (every dead-end road or rail tile, and drawbridges) and
-**Workers nearby** (every shop and factory framed by how far, along the roads, the nearest built homes are: within 15,
-15 to 30, or none within 30). Keys are shown in the card (`src/layers.js`).
+**Where to zone** (v29; open land and home zones coloured by how a home would do there at today's demand, using the
+game's own rule: green, homes grow and stay; yellow, they may grow and may empty again; red, they can't grow now; and
+shops whose trips keep failing framed in red). Keys are shown in the card (`src/layers.js`).
 
 City history: hovering over (or clicking) the funds opens charts over the years: funds, each year's surplus or
 deficit (taxes minus running costs), population and tax rate. Recorded monthly and saved with the city
@@ -189,7 +198,7 @@ saved before v25 keep the 1989 answers for those questions.
   cleans the air within 8 tiles (pollution x0.6) and, in the default world model, lowers crime there.
 - The To do card no longer shows on the start screen (a style was overriding "hidden until the game starts").
 
-### v26: highways and "What went wrong?"
+### v26: highways and "What went wrong?" (renamed "What I did wrong and what to do" in v29)
 
 - **Highways** (key **E**, $40 a tile: a road plus three times the road price; drag over an existing road to upgrade it
   for $30 a tile). A highway is an ordinary road tile that the city also lists as highway (saved with the city): on it a
@@ -224,6 +233,9 @@ saved before v25 keep the 1989 answers for those questions.
 - Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
 
 ### Bug fix
+
+v29: the 10-year and 120-year history counts read an undeclared `budget` (in the browser, the Budget window's page
+element, so the money history was recorded as "not a number"; nothing displays it yet). They now read the city's budget.
 
 In upstream micropolisJS the crime calculation never ran (it read `mapWidth`/`mapHeight`, which `BlockMap` doesn't define), so
 crime was always zero. This version fixes it, restoring the original crime behaviour.

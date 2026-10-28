@@ -259,9 +259,9 @@ var policyReport = function(sim) {
   var wm = worldModelSummary();
   add(P('Your world', 'Tu mundo'), wm.length === 0 ? P('The original SimCity 1989 rules.', 'Las reglas originales de SimCity de 1989.') :
       P('Original 1989 rules, except: {0}.', 'Reglas originales de 1989, salvo que: {0}.', esc(wm.join('; '))));
-  add(P('Starting laws', 'Leyes iniciales'),
-      P('This city began with the laws and budget of: <b>{0}</b>. (Presets never change the world model above.)',
-        'Esta ciudad empezó con las leyes y el presupuesto de: <b>{0}</b>. (Los perfiles nunca cambian el modelo del mundo de arriba).',
+  add(P('Starting policies', 'Políticas iniciales'),
+      P('This city began with the policies of: <b>{0}</b>. (The world works the same way for every preset.)',
+        'Esta ciudad empezó con las políticas de: <b>{0}</b>. (El mundo funciona igual para todos los perfiles).',
         esc(presetLabel(Policy.presetName))));
 
   // Crime
@@ -373,6 +373,9 @@ var policyReport = function(sim) {
                                                'Sin normas ambientales, la industria contamina un 50% más (a cambio de un crecimiento industrial más rápido).')
                                            : P('With no environmental rules, industry pollutes 50% more.',
                                                'Sin normas ambientales, la industria contamina un 50% más.');
+      else if (Policy.regulation === 'relaxed')
+        polText += P('Your relaxed environmental rules let industry pollute 25% more, in exchange for slightly faster industrial growth.',
+                     'Tus normas ambientales relajadas dejan que la industria contamine un 25% más, a cambio de un crecimiento industrial algo más rápido.');
       else
         polText += P('Standard environmental rules (as in the original).', 'Normas ambientales estándar (como en el original).');
       add(P('Pollution', 'Contaminación'), polText);

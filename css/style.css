@@ -2594,6 +2594,9 @@ nav li {
 #layerOverlay .cri1, .lg-cri1 { fill: rgba(120, 60, 170, 0.22); background: rgba(120, 60, 170, 0.22); }
 #layerOverlay .cri2, .lg-cri2 { fill: rgba(120, 60, 170, 0.45); background: rgba(120, 60, 170, 0.45); }
 #layerOverlay .cri3, .lg-cri3 { fill: rgba(80, 20, 130, 0.68); background: rgba(80, 20, 130, 0.68); }
+#layerOverlay .wz1, .lg-wz1 { fill: rgba(40, 160, 70, 0.30); background: rgba(40, 160, 70, 0.30); }
+#layerOverlay .wz2, .lg-wz2 { fill: rgba(230, 180, 0, 0.32); background: rgba(230, 180, 0, 0.32); }
+#layerOverlay .wz3, .lg-wz3 { fill: rgba(200, 40, 40, 0.34); background: rgba(200, 40, 40, 0.34); }
 #layerOverlay .tra1, .lg-tra1 { fill: rgba(200, 120, 20, 0.25); background: rgba(200, 120, 20, 0.25); }
 #layerOverlay .tra2, .lg-tra2 { fill: rgba(200, 120, 20, 0.5); background: rgba(200, 120, 20, 0.5); }
 #layerOverlay .tra3, .lg-tra3 { fill: rgba(140, 70, 0, 0.72); background: rgba(140, 70, 0, 0.72); }
@@ -2740,6 +2743,9 @@ nav li {
 #needChart .needCell.st-more .needStatus { background: #e2f3e5; color: #1a5229; font-weight: 600; }
 #needChart .needCell.st-empty .needStatus, #needChart .needCell.st-capped .needStatus { background: #fff0d3; color: #6b3f00; font-weight: 600; }
 #needChart .needCell.st-noNeed .needStatus, #needChart .needCell.st-enough .needStatus { color: var(--pl-ink-soft); }
+#needChart .needSub { font-size: 9.5px; margin-top: 1px; }
+#needChart .needSub.stuck { color: #a02020; font-weight: 600; }
+#needChart .needSub.filling { color: var(--pl-ink-soft); }
 
 #needChart .needNote {
   margin: 5px 0 0 0;

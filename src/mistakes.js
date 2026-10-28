@@ -127,24 +127,31 @@ var report = function(game) {
           Policy.parksCrime ? P('; a big park helps too', '; un parque grande también ayuda') : ''),
         frames(unsafe, P('High crime, no police', 'Mucha delincuencia, sin policía')));
 
-  // ---- Too many zones of one kind (the zoning-need rule)
+  // ---- Empty zones (v29): a problem only when they are stuck, or when many stand empty while the city wants no more
   var need = game._need || {};
   var names = {res: P('home', 'residenciales'), com: P('shop', 'comerciales'), ind: P('factory', 'industriales')};
   ['res', 'com', 'ind'].forEach(function(t) {
     var nd = need[t];
-    if (!nd || nd.state !== 'empty')
+    if (!nd || !nd.empty)
       return;
     var list = (t === 'res' ? s.homes : t === 'com' ? s.shops : s.factories).filter(function(z) { return z.empty; });
-    var blocked = nd.emptyNoPower + nd.emptyNoRoad;
-    add('empty_' + t, 30 + nd.empty * 3,
-        P('{0} of your {1} {2} zones are standing empty', '{0} de tus {1} zonas {2} están vacías', fmt(nd.empty), fmt(nd.n), names[t]),
-        blocked ? P('Some of them can\'t fill: they have no power or no road touching them.', 'Algunas no pueden llenarse: no tienen electricidad o ninguna calle las toca.')
-                : P('More was zoned than the city wanted. Every zone cost money to build, and its roads cost upkeep every year.',
-                    'Se zonificó más de lo que la ciudad quería. Cada zona costó dinero, y sus calles cuestan mantenimiento todos los años.'),
-        blocked ? P('Give them power and a road first.', 'Primero dales electricidad y calle.')
-                : P('Wait for the Zoning need bar to rise above the line before zoning more; bulldoze some if money is short.',
-                    'Espera a que la barra de Necesidad de zonas suba por encima de la línea antes de zonificar más; demuele algunas si falta dinero.'),
-        frames(list, P('Empty', 'Vacía')));
+    if (nd.badSpot)
+      add('badSpot_' + t, 35 + nd.badSpot * 3,
+          P('{0} empty home zones are in spots where homes can\'t grow', '{0} zonas residenciales vacías están en lugares donde no pueden crecer viviendas', fmt(nd.badSpot)),
+          P('A home grows only where land value minus pollution is high enough for the current demand. These spots are too polluted or too cheap.',
+            'Una vivienda solo crece donde el valor del suelo menos la contaminación es suficiente para la demanda actual. Estos lugares están demasiado contaminados o son demasiado baratos.'),
+          P('Move factories and busy roads away, add a park or a police station nearby, or zone homes where the "Where to zone" layer is green.',
+            'Aleja las fábricas y las calles con mucho tráfico, añade un parque o una estación de policía cerca, o zonifica viviendas donde la capa "Dónde zonificar" está en verde.'),
+          frames(list, P('Empty', 'Vacía')));
+    var tooMany = nd.demand <= 0 && nd.filling > Math.max(2, Math.floor(nd.n * 0.3));
+    if (tooMany)
+      add('empty_' + t, 30 + nd.filling * 2,
+          P('{0} of your {1} {2} zones stand empty and the city wants no more', '{0} de tus {1} zonas {2} están vacías y la ciudad no quiere más', fmt(nd.filling), fmt(nd.n), names[t]),
+          P('More was zoned than the city wanted. Every zone cost money to build, and its roads cost upkeep every year.',
+            'Se zonificó más de lo que la ciudad quería. Cada zona costó dinero, y sus calles cuestan mantenimiento todos los años.'),
+          P('Wait for the Zoning need bar to rise above the line before zoning more of this kind. If homes are the ones empty, the city needs jobs: zone shops or factories.',
+            'Espera a que la barra de Necesidad de zonas suba por encima de la línea antes de zonificar más de este tipo. Si las vacías son viviendas, la ciudad necesita empleos: zonifica comercios o fábricas.'),
+          frames(list, P('Empty', 'Vacía')));
   });
 
   // ---- Zones without power or road
@@ -252,7 +259,7 @@ var report = function(game) {
 
 // The report as plain text (for Copy)
 var asText = function(r) {
-  var lines = [P('{0}, {1}: what went wrong (score {2})', '{0}, {1}: qué salió mal (puntuación {2})', r.city, r.year, r.score), ''];
+  var lines = [P('{0}, {1}: what I did wrong and what to do (score {2})', '{0}, {1}: qué hice mal y qué hacer (puntuación {2})', r.city, r.year, r.score), ''];
   if (!r.findings.length)
     lines.push(P('No planning mistakes found right now.', 'Ahora mismo no se encontraron errores de planificación.'));
   r.findings.forEach(function(f, i) {

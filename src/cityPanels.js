@@ -232,7 +232,7 @@ var openRewind = function(game, onClose) {
 
 // ---- What went wrong (during a game). onShow(finding) highlights a finding's spots on the map.
 var openMistakes = function(game, onClose, onShow) {
-  var o = overlay(P('What went wrong', 'Qué salió mal'), onClose);
+  var o = overlay(P('What I did wrong and what to do', 'Qué hice mal y qué hacer'), onClose);
   var body = o.body;
   var r;
   try {

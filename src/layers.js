@@ -8,18 +8,20 @@
  *    heavy - the same words the Query tool uses).
  *  - Dead ends: every road or rail tile a car can only enter from one side (and drawbridges, which cut the road while
  *    open).
- *  - Workers nearby: for every shop and factory, how far away (along the roads) the nearest built homes are.
- *    This shows commuting distance and where traffic comes from; in this game it does not stop factories growing
- *    (only shops need their trips to succeed).
+ *  - Where to zone (v29): open land and home zones coloured by how well a home would grow there (the game's own rule:
+ *    land value minus pollution), and shops framed by whether their trips succeed. Factories grow anywhere with a road
+ *    and power, so they are not coloured.
  *
  * Only READS the simulation.
  */
 
 import { I18n } from './i18n.js';
+import { Influence } from './influence.js';
 import { MiscUtils } from './miscUtils.js';
 import { Policy } from './policy.js';
 import { Reach } from './reach.js';
 import { TileUtils } from './tileUtils.js';
+import * as TileValues from './tileValues.ts';
 
 var P = I18n.p;
 var fmt = MiscUtils.formatNumber;
@@ -75,33 +77,59 @@ var deadEnds = function(sim) {
   };
 };
 
-var workers = function(sim) {
-  var map = sim._map, shapes = [], counts = {good: 0, warn: 0, bad: 0};
-  var depots = sim.blockMaps && sim.blockMaps.depotMap;
-  for (var x = 0; x < map.width; x++) {
-    for (var y = 0; y < map.height; y++) {
-      var tile = map.getTile(x, y);
-      if (!tile.isZone())
+// v29: how would a home do on this 2x2 block, at today's demand? The game's rule (residential.js): the zone's score is
+// the demand for homes plus (land value - pollution) x 32, capped at 6000, minus 3000. Above -350 an empty zone can grow;
+// at 350 or more it never shrinks back; at -350 or less it cannot grow at all. Open land has no land value yet, so it is estimated the way the game will
+// work it out once something is built there (the same parts the Query tool lists).
+var homeScore = function(sim, x, y) {
+  var bm = sim.blockMaps;
+  var lv = bm.landValueMap.worldGet(x, y);
+  if (!lv) {
+    lv = 0;
+    Influence.landValueParts(sim, x, y).forEach(function(r) { lv += r.value; });
+    lv = MiscUtils.clamp(lv, 1, 250);
+  }
+  return Math.max(0, lv - bm.pollutionDensityMap.worldGet(x, y));
+};
+
+var openOrHome = function(v) {
+  return v === TileValues.DIRT || (v >= TileValues.WOODS_LOW && v <= TileValues.WOODS_HIGH) ||
+         (TileUtils.isResidential(v) && v !== TileValues.HOSPITAL);
+};
+
+var zoning = function(sim, game) {
+  var map = sim._map, bm = sim.blockMaps.landValueMap, size = bm.blockSize;
+  var cells = [], counts = [0, 0, 0, 0];
+  var valve = sim._valves ? sim._valves.resValve : 0;
+  for (var bx = 0; bx < bm.width; bx++) {
+    for (var by = 0; by < bm.height; by++) {
+      var x = bx * size, y = by * size;
+      var ok = false;
+      for (var dx = 0; dx < size && !ok; dx++)
+        for (var dy = 0; dy < size && !ok; dy++)
+          if (map.testBounds(x + dx, y + dy) && openOrHome(map.getTileValue(x + dx, y + dy)))
+            ok = true;
+      if (!ok)
         continue;
-      var v = tile.getValue();
-      if (!TileUtils.isCommercial(v) && !TileUtils.isIndustrial(v))
-        continue;
-      // where are the nearest built homes along the roads? (same search as the reach view, looking for homes)
-      var r = Reach.compute(map, x, y, 'ind', !!depots && depots.worldGet(x, y) > 0);
-      var tone = !r.dests.length ? 'bad' : r.dests[0].d <= Reach.nearDist() ? 'good' : 'warn';
-      counts[tone]++;
-      shapes.push({kind: 'zone', x: x, y: y, tone: tone, label: ''});
+      var score = Math.min(6000, homeScore(sim, x, y) * 32) - 3000 + valve;
+      var level = score >= 350 ? 1 : score > -350 ? 2 : 3;
+      counts[level]++;
+      cells.push([x, y, level]);
     }
   }
+  var shapes = [{kind: 'blocks', size: size, cells: cells, cls: 'wz'}];
+  var stuck = (game && game._stuckShops) || [];
+  stuck.forEach(function(q) { shapes.push({kind: 'zone', x: q.x, y: q.y, tone: 'bad', label: ''}); });
   return {
     shapes: shapes,
     legend: [
-      {swatch: 'good', text: P('Homes within {1} road tiles: {0}', 'Viviendas a menos de {1} casillas: {0}', fmt(counts.good), Reach.nearDist())},
-      {swatch: 'warn', text: P('Homes {1} to {2} road tiles away: {0}', 'Viviendas a {1}-{2} casillas: {0}', fmt(counts.warn), Reach.nearDist(), Reach.maxDist())},
-      {swatch: 'bad', text: P('No homes within {1} road tiles: {0}', 'Ninguna vivienda a menos de {1} casillas: {0}', fmt(counts.bad), Reach.maxDist())}
+      {swatch: 'wz1', text: P('Homes grow and stay', 'Las viviendas crecen y se quedan')},
+      {swatch: 'wz2', text: P('Homes may grow, and may empty again', 'Las viviendas pueden crecer, y vaciarse otra vez')},
+      {swatch: 'wz3', text: P('Homes can\'t grow now (too polluted, too cheap, or no demand)', 'Ahora las viviendas no pueden crecer (demasiado contaminado, barato, o sin demanda)')},
+      {swatch: 'bad', text: P('Shops whose trips fail: {0} (they can\'t grow)', 'Tiendas cuyos viajes fallan: {0} (no pueden crecer)', fmt(stuck.length))}
     ],
-    note: P('Shops and factories, by how far their workers live. Long commutes mean more traffic; only shops need their trips to succeed to grow.',
-            'Tiendas y fábricas, según lo lejos que viven sus trabajadores. Los trayectos largos generan más tráfico; solo las tiendas necesitan que sus viajes tengan éxito para crecer.')
+    note: P('Homes: today\'s demand for homes plus land value minus pollution, the game\'s own rule; it changes as demand changes. Shops grow near the city centre and need a road trip that reaches other zones. Factories grow anywhere with a road and power: put them where their pollution won\'t reach homes.',
+            'Viviendas: la demanda de viviendas de hoy más el valor del suelo menos la contaminación, la regla del propio juego; cambia cuando cambia la demanda. Las tiendas crecen cerca del centro y necesitan un viaje por calle que llegue a otras zonas. Las fábricas crecen en cualquier lugar con calle y electricidad: ponlas donde su contaminación no llegue a las viviendas.')
   };
 };
 
@@ -172,7 +200,7 @@ var power = function(sim) {
 var Layers = {
   pollution: pollution,
   dead: deadEnds,
-  workers: workers,
+  zoning: zoning,
   crime: crime,
   traffic: traffic,
   power: power

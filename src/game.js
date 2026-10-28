@@ -1057,7 +1057,7 @@ Game.prototype.refreshLayer = function() {
     $('#layerLegend').hide();
     return;
   }
-  var result = Layers[name](this.simulation);
+  var result = Layers[name](this.simulation, this);
   this.gameCanvas.setLayer(result.shapes);
   var list = $('#layerLegendList').empty();
   result.legend.forEach(function(item) {

@@ -33,13 +33,14 @@ var DEFAULTS = {
   // Whether business incentives attract commercial and industrial growth. 1 = yes, 0 = no.
   incentiveGrowth: 1,
   // Whether untreated sewage pollutes rivers (and the land along them). 0 = no (original game), 1 = yes.
-  sewagePollution: 0,
+  // POLICY LAB v29: on (the world is fixed, the same for every preset, with every feature having its effect)
+  sewagePollution: 1,
   // Whether residents value having shops within walking distance (raises land value). 0 = no (original), 1 = yes.
-  walkability: 0,
+  walkability: 1,
   // What drives residential growth: 'industry' (original: jobs, ultimately exports) or 'quality' (quality of life).
   growthModel: 'industry',
   // Whether access to a hospital affects where people want to live. 0 = no (original), 1 = yes.
-  healthAffects: 0,
+  healthAffects: 1,
   // POLICY LAB v25 (new questions; their defaults differ from the 1989 original, see ORIGINAL below)
   // Whether parks reduce crime nearby (big parks strongly, small parks a little). 0 = no (original), 1 = yes.
   parksCrime: 1,
@@ -53,7 +54,7 @@ var DEFAULTS = {
 
   // ---- Laws ----
   nuclearAllowed: true,
-  // 'none' | 'standard' (original) | 'strict'
+  // 'none' | 'relaxed' (v29) | 'standard' (original) | 'strict'
   regulation: 'standard',
   // Highest residential density allowed: 40 = no limit (original), 24 = medium, 8 = single houses only
   densityCap: 40,
@@ -80,10 +81,10 @@ var DEFAULTS = {
 };
 
 // How much industrial pollution is multiplied by under each regulation level
-var REGULATION_POLLUTION = {none: 1.5, standard: 1, strict: 0.5};
+var REGULATION_POLLUTION = {none: 1.5, relaxed: 1.25, standard: 1, strict: 0.5};
 // How much industrial growth is nudged under each regulation level (only if the world model says regulation matters).
 // For scale: the original tax table moves growth by about 10-50 points per 1% of tax.
-var REGULATION_GROWTH = {none: 40, standard: 0, strict: -80};
+var REGULATION_GROWTH = {none: 40, relaxed: 20, standard: 0, strict: -80};
 
 // Building and yearly maintenance costs (per tile) under each transportation priority. 'balanced' = original.
 var TRANSPORT = {
@@ -106,7 +107,8 @@ var GREEN_BELT_OUTER = 34;
 
 // POLICY LAB v25: the 1989 rules. The defaults above now differ from it in a few world-model questions, so "Reset to the
 // original rules" and older saved cities (which don't record these questions) use these values.
-var ORIGINAL = Object.assign({}, DEFAULTS, {socialCrime: 0, parksCrime: 0, waterfront: 0, taxByValue: 0, commute: 30});
+var ORIGINAL = Object.assign({}, DEFAULTS, {socialCrime: 0, parksCrime: 0, waterfront: 0, taxByValue: 0, commute: 30,
+                                            sewagePollution: 0, walkability: 0, healthAffects: 0});
 
 var Policy = Object.assign({}, DEFAULTS);
 Policy.GREEN_BELT_INNER = GREEN_BELT_INNER;

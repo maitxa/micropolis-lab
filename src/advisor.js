@@ -100,30 +100,40 @@ var typeName = function(type, plural) {
 
 
 // POLICY LAB v22: "zoning need" for each kind of zone, shown by the bars in the lower left and used by the To do card.
-// Above zero: zone more (the zones you have are full, or nearly, and the game's demand is positive).
-// Below zero: don't (several zones of that kind are empty, or the game's demand is negative).
+// v29: the bar is the game's own demand. Above zero: zone more, even if some zones are still filling. Below zero: the
+// city doesn't want more. Empty zones are reported apart, as "stuck" (no power, no road, a spot too poor) or "filling".
 // It only describes the city: growth itself still follows the game's original demand.
-var zoningNeed = function(z, v) {
+var zoningNeed = function(z, v, bm) {
   var demand = {res: v.resValve / 2000, com: v.comValve / 1500, ind: v.indValve / 1500};
   var capped = {res: v.resCap, com: v.comCap, ind: v.indCap};
   var out = {};
   ['res', 'com', 'ind'].forEach(function(t) {
     var zt = z[t], d = demand[t];
-    var allowance = Math.max(1, Math.floor(zt.n * 0.1));   // "several empty" = more than this
-    var r = {n: zt.n, empty: zt.empty, emptyNoPower: zt.emptyNoPower, emptyNoRoad: zt.emptyNoRoad, demand: d,
-             emptyPos: zt.emptyPos, allowance: allowance};
-    if (zt.empty > allowance) {
-      r.state = 'empty';
-      r.value = -Math.min(1, Math.max(0.2, zt.empty / zt.n));
-    } else if (capped[t]) {
+    // POLICY LAB v29: empty zones are a problem only when they are STUCK: no power, no road, or (homes) a spot so poor
+    // that a home can't grow there at the current demand (land value minus pollution too low). Otherwise they are just
+    // filling: each zone fills a little at a time, by chance, so more zones fill the city faster.
+    var badSpot = 0;
+    if (t === 'res' && bm && bm.landValueMap && bm.pollutionDensityMap)
+      zt.emptyList.forEach(function(q) {
+        var g = Math.max(0, bm.landValueMap.worldGet(q.x, q.y) - bm.pollutionDensityMap.worldGet(q.x, q.y));
+        if (Math.min(6000, g * 32) - 3000 + v.resValve <= -350)
+          badSpot++;
+      });
+    var stuck = Math.min(zt.empty, zt.emptyNoPower + zt.emptyNoRoad + badSpot);
+    var r = {n: zt.n, empty: zt.empty, emptyNoPower: zt.emptyNoPower, emptyNoRoad: zt.emptyNoRoad, badSpot: badSpot,
+             stuck: stuck, filling: zt.empty - stuck, demand: d, emptyPos: zt.emptyPos};
+    if (capped[t]) {
       r.state = 'capped';
       r.value = 0;
     } else if (d > 0.1) {
       r.state = 'more';
       r.value = Math.min(1, Math.max(0.15, d));
+    } else if (d < -0.1) {
+      r.state = 'noNeed';
+      r.value = Math.max(-1, d);
     } else {
-      r.state = d < -0.1 ? 'noNeed' : 'enough';
-      r.value = Math.max(-1, Math.min(0, d));
+      r.state = 'enough';
+      r.value = d;
     }
     out[t] = r;
   });
@@ -293,7 +303,7 @@ var advise = function(sim, newMonth) {
 
   // ---- Demand compared with empty zones ----
   // POLICY LAB v23: shown only by the zoning-need bars in the lower left (no "Zone more" / "Don't zone" items here)
-  var need = zoningNeed(z, v);
+  var need = zoningNeed(z, v, sim.blockMaps);
 
   // ---- Services ----
   if (live.totalPop > 60 && c.policeStationPop === 0)
@@ -406,7 +416,8 @@ var advise = function(sim, newMonth) {
 
 
 var Advisor = {
-  advise: advise
+  advise: advise,
+  zoningNeed: zoningNeed
 };
 
 

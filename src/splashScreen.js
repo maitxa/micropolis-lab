@@ -178,8 +178,6 @@ var acquireNameAndDifficulty = function(e) {
   $('#playForm').submit(play.bind(this));
 
   // POLICY LAB: "Reset to original rules" button, and presets
-  $('#pl_reset').click(resetPolicyForm);
-  $('#pl_defaults').click({rules: Policy.DEFAULTS}, resetPolicyForm);
   $('#pl_preset').on('change', applyPreset);
   Presets.fields.forEach(function(f) {
     $('#pl_' + f).on('change', markCustom);
@@ -233,28 +231,25 @@ var play = function(e) {
 };
 
 
-// POLICY LAB: helpers for the setup screen
-var numberFields = ['povertyCrime', 'densityCrime', 'policeStrength', 'socialCrime', 'taxGrowth',
-                    'regulationGrowth', 'incentiveGrowth', 'sewagePollution', 'walkability', 'densityCap', 'electionCycle',
-                    'pedestrian', 'greenBelt', 'healthAffects', 'parksCrime', 'waterfront', 'taxByValue', 'commute'];
-var textFields = ['regulation', 'transport', 'incentives', 'parks', 'zoning', 'growthModel', 'bridges'];
-
+// POLICY LAB v29: the setup screen has five choices (Presets.choices says what each sets); the world model is fixed
+// (Policy.DEFAULTS), the same for every preset
 var readPolicyForm = function() {
-  var policy = {};
-  numberFields.forEach(function(key) {
-    policy[key] = parseFloat($('#pl_' + key).val());
+  var policy = Object.assign({}, Policy.DEFAULTS);
+  var budget = {taxStart: 7, socialStart: 0, housingStart: 0};
+  Presets.fields.forEach(function(field) {
+    var set = Presets.choices[field][$('#pl_' + field).val()] || {};
+    Object.keys(set).forEach(function(k) {
+      if (k in budget)
+        budget[k] = set[k];
+      else
+        policy[k] = set[k];
+    });
   });
-  policy.nuclearAllowed = $('#pl_nuclearAllowed').val() === 'true';
-  textFields.forEach(function(key) {
-    policy[key] = $('#pl_' + key).val();
-  });
-  return {policy: policy, socialStart: parseFloat($('#pl_socialStart').val()) || 0,
-          housingStart: parseFloat($('#pl_housingStart').val()) || 0,
-          taxStart: parseInt($('#pl_taxStart').val(), 10) || 7};
+  return {policy: policy, socialStart: budget.socialStart, housingStart: budget.housingStart, taxStart: budget.taxStart};
 };
 
 
-// POLICY LAB: presets fill in laws and the starting budget (never the world model)
+// POLICY LAB: presets fill in the five choices (never the world model)
 var basedOn = null;  // the preset the current settings started from
 
 var escapeHTML = function(s) {
@@ -364,22 +359,8 @@ var currentPresetLabel = function() {
 var resetPolicyForm = function(e) {
   if (e)
     e.preventDefault();
-  // POLICY LAB v25: "Reset to the original rules" means the 1989 rules (the defaults now differ in a few questions);
-  // the "Policy Lab defaults" button passes the defaults instead
-  var rules = (e && e.data && e.data.rules) || Policy.ORIGINAL;
-  numberFields.forEach(function(key) {
-    $('#pl_' + key).val(String(rules[key]));
-  });
-  $('#pl_nuclearAllowed').val('true');
-  textFields.forEach(function(key) {
-    $('#pl_' + key).val(rules[key]);
-  });
-  $('#pl_socialStart').val('0');
-  $('#pl_housingStart').val('0');
-  $('#pl_taxStart').val('7');
   $('#pl_preset').val('original');
-  showPresetNote('original');
-  refreshChips();
+  applyPreset();
 };
 
 
