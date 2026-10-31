@@ -231,6 +231,20 @@ saved before v25 keep the 1989 answers for those questions.
   removed, home zones covered, funding, capacity in use) and whether it is working (no power, no rail link).
 - Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
 
+### v31: city rating and graduation
+
+- **Grade (A-F)** in the city box, from 0-100 points: approval in the yearly poll (up to 30), the status bubbles (up to
+  40: green counts fully, orange half, red nothing), money (up to 15: surplus 15, deficit under $500 8, otherwise 0),
+  and the game's own city score (up to 15). A from 85, B from 70, C from 55, D from 40. Click the grade for the parts,
+  what pulls it down most, and the average of the last 10 years (a grade is recorded every January).
+- **Graduation:** a city graduates when, in five Januaries in a row, approval is 70% or more, every bubble is green,
+  last year had no deficit, and the population reaches the target. Targets: 1989 baseline 50,000 and libertarian
+  50,000, conservative-populist 45,000, progressive 25,000 (in proportion to how big the test cities grew under each
+  preset, never above the baseline); custom policies use the preset they started from. Medium difficulty: 80% of that,
+  hard: 60%. A graduation screen appears once; you can keep playing.
+- "What I did wrong" and its downloaded report include the grade, the 10-year average and the graduation checklist.
+- The Policy Lab Opening Guide's numbers were measured again under the v30 traffic rule.
+
 ### v30: easier to read, more to build, and cars that turn back
 
 Built on v29.3, merged with a side version of the Policy Lab made in October 2026 (its ideas are credited in the code).

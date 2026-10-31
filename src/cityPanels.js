@@ -12,6 +12,8 @@ import { CityStore } from './cityStore.js';
 import { I18n } from './i18n.js';
 import { MiscUtils } from './miscUtils.js';
 import { Mistakes } from './mistakes.js';
+import { Policy } from './policy.js';
+import { Rating } from './rating.js';
 import { Report } from './report.js';
 
 var P = I18n.p;
@@ -245,7 +247,21 @@ var openMistakes = function(game, onClose, onShow) {
   try { policyHTML = Report.policyReport(game.simulation); } catch (e) { policyHTML = ''; }
   var policyTitle = P('How your policies are working', 'Cómo están funcionando tus políticas');
   var policyText = $('<div></div>').html(policyHTML).find('li').map(function() { return '- ' + $(this).text(); }).get().join('\n');
-  var text = Mistakes.asText(r) + (policyText ? '\n\n' + policyTitle + '\n' + policyText : '');
+  // v31: the city rating and graduation progress
+  var gradeText = '';
+  try {
+    var hh = Policy.history || {years: []}, rr = Rating.compute(game.simulation, game._status, hh), aa = Rating.average(hh);
+    var gl = [P('City rating', 'Calificación de la ciudad')];
+    gl.push(rr ? P('- Grade now: {0} ({1}/100). Pulling it down most: {2}.', '- Nota actual: {0} ({1}/100). Lo que más la baja: {2}.', rr.grade, rr.points, rr.weakest.name.toLowerCase())
+               : P('- No grade yet (no one lives in the city).', '- Todavía sin nota (no vive nadie en la ciudad).'));
+    if (aa)
+      gl.push(P('- Average of the last {0} years: {1} ({2}/100).', '- Media de los últimos {0} años: {1} ({2}/100).', aa.years, aa.grade, aa.points));
+    gl.push(hh.graduated ? P('- Graduated in {0}.', '- Se graduó en {0}.', hh.graduated)
+                         : P('- Graduation: {0} of {1} years in a row so far.', '- Graduación: {0} de {1} años seguidos por ahora.', hh.gradStreak || 0, Rating.YEARS_NEEDED));
+    Rating.conditions(game.simulation, game._status, hh).forEach(function(k) { gl.push('  ' + (k.ok ? '[x] ' : '[ ] ') + k.text); });
+    gradeText = gl.join('\n');
+  } catch (e) { gradeText = ''; }
+  var text = Mistakes.asText(r) + (gradeText ? '\n\n' + gradeText : '') + (policyText ? '\n\n' + policyTitle + '\n' + policyText : '');
   var head = $('<div class="plReportHead"></div>');
   head.append($('<p class="plNote"></p>').text(P('{0} in {1}, score {2}. The planning mistakes in the city as it is now (and in its money history), the worst first, each checked against this game\'s rules.',
                                                  '{0} en {1}, puntuación {2}. Los errores de planificación de la ciudad tal como está ahora (y en su historial de dinero), los peores primero, cada uno comprobado con las reglas de este juego.',
@@ -298,7 +314,35 @@ var openMistakes = function(game, onClose, onShow) {
 };
 
 
+// v31: the graduation screen (the city met every condition for five Januaries in a row)
+var openGraduation = function(game, onClose) {
+  var sim = game.simulation, h = Policy.history || {years: []};
+  var o = overlay(P('{0} graduated!', '¡{0} se graduó!', game.name || P('Your city', 'Tu ciudad')), onClose);
+  var r = Rating.compute(sim, game._status, h), avg = Rating.average(h);
+  var body = o.body.addClass('plGraduation');
+  body.append($('<p class="plGradLead"></p>').text(P('For {0} years in a row the city kept approval at 70% or more, every bubble green, no deficit, and at least {1} people.',
+                                                     'Durante {0} años seguidos la ciudad mantuvo una aprobación del 70% o más, todas las burbujas en verde, sin déficit y al menos {1} habitantes.',
+                                                     Rating.YEARS_NEEDED, fmt(Rating.populationTarget(sim)))));
+  var dl = $('<dl class="plGradFacts"></dl>');
+  var fact = function(k, v) { dl.append($('<dt></dt>').text(k), $('<dd></dd>').text(v)); };
+  fact(P('Year', 'Año'), h.graduated);
+  fact(P('Policies', 'Políticas'), Report.presetLabel ? Report.presetLabel(Policy.presetName) : Policy.presetName);
+  fact(P('People', 'Habitantes'), fmt(sim.evaluation.cityPop || 0));
+  fact(P('Approval', 'Aprobación'), (sim.evaluation.cityYes || 0) + '%');
+  if (r)
+    fact(P('Grade now', 'Nota actual'), r.grade + ' (' + r.points + ')');
+  if (avg)
+    fact(P('Average of the last {0} years', 'Media de los últimos {0} años', avg.years), avg.grade + ' (' + avg.points + ')');
+  body.append(dl);
+  body.append($('<p></p>').text(P('You can keep playing: the grade goes on being recorded every January. To hand in a report, open "What I did wrong" and press Download report.',
+                                  'Puedes seguir jugando: la nota se sigue registrando cada enero. Para entregar un informe, abre "Qué hice mal" y pulsa Descargar informe.')));
+  var keep = $('<button type="button" class="plGradKeep"></button>').text(P('Keep playing', 'Seguir jugando'));
+  keep.on('click', function(e) { e.preventDefault(); o.close(); });
+  body.append(keep);
+};
+
 var CityPanels = {
+  openGraduation: openGraduation,
   openMistakes: openMistakes,
   openSavedCities: openSavedCities,
   openScoreboard: openScoreboard,

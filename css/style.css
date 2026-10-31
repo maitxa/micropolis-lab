@@ -3109,3 +3109,38 @@ nav li {
 #infobar #cclass { display: inline-block; text-transform: lowercase; }
 #infobar #cclass::first-letter { text-transform: uppercase; }
 #infobar .infoTiny { font-size: 12px; line-height: 1.25; color: #4d5f5b; }
+
+/* v31: the grade in the city box, and the rating panel */
+#gradeLine { cursor: pointer; border-radius: 4px; }
+#gradeLine:hover, #gradeLine:focus-visible { background: rgba(30, 52, 54, 0.06); outline: none; }
+#gradeLine .gradeScore { color: #4d5f5b; font-size: 12px; }
+#gradeLetter.grade-A, .grBig.grade-A { color: #1a7a35; }
+#gradeLetter.grade-B, .grBig.grade-B { color: #3d7a1a; }
+#gradeLetter.grade-C, .grBig.grade-C { color: #8a6a00; }
+#gradeLetter.grade-D, .grBig.grade-D { color: #a86400; }
+#gradeLetter.grade-F, .grBig.grade-F { color: #b3362b; }
+#gradePopup {
+  position: absolute; z-index: 6; width: 340px; padding: 8px 10px 10px 10px;
+  font-family: var(--pl-ui); color: var(--pl-ink); font-size: 13px;
+  background: #fcfcfb; border: 1px solid var(--pl-line); border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+#gradeClose { width: auto; height: auto; padding: 0 6px; border: none; background: transparent; color: var(--pl-ink-soft); font-size: 18px; line-height: 1; cursor: pointer; }
+#gradePopup .grTop { display: flex; align-items: center; gap: 12px; margin: 4px 0 6px 0; }
+#gradePopup .grBig { font-size: 40px; font-weight: 800; line-height: 1; min-width: 34px; text-align: center; }
+#gradePopup .grSum div:first-child { font-weight: 700; }
+#gradePopup .grParts { width: 100%; border-collapse: collapse; margin: 2px 0 4px 0; }
+#gradePopup .grParts td { padding: 2px 4px; vertical-align: top; border-top: 1px solid var(--pl-line); }
+#gradePopup .grParts .grPts { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#gradePopup .grParts .grWhy { color: #4d5f5b; font-size: 12px; }
+#gradePopup .grParts tr.weak .grName { color: #b3362b; font-weight: 700; }
+#gradePopup .grHead { font-size: 13px; margin: 8px 0 2px 0; }
+#gradePopup .grNote { margin: 3px 0; }
+#gradePopup .grNote.small { font-size: 11.5px; color: #4d5f5b; }
+#gradePopup .grConds { list-style: none; margin: 2px 0; padding: 0; }
+#gradePopup .grConds li.ok { color: #1a7a35; }
+#gradePopup .grConds li.no { color: #8a3b30; }
+.plGraduation .plGradLead { font-size: 16px; }
+.plGraduation .plGradFacts { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; margin: 10px 0; }
+.plGraduation .plGradFacts dt { font-weight: 700; }
+.plGraduation .plGradFacts dd { margin: 0; }
+.plGraduation .plGradKeep { margin-top: 8px; }

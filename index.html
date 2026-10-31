@@ -127,8 +127,9 @@
             </div>
             <!-- POLICY LAB v30: how much of the power plants' capacity is in use -->
             <div id="powerLine" class="infoSmall" title="Power plant capacity in use (zones and wires each take one unit)"></div>
-            <div class="elided infoSmall">
-              Score: <span id="score">0</span>
+            <!-- POLICY LAB v31: the city's grade (click for the rating and graduation progress) -->
+            <div id="gradeLine" class="infoSmall" tabindex="0" role="button" aria-controls="gradePopup" title="City rating and graduation: click for details">
+              <span class="gradeLabel">Grade:</span> <b id="gradeLetter">&ndash;</b> <span class="gradeScore" id="gradePoints"></span><span id="score" hidden>0</span>
             </div>
             <!-- POLICY LAB v30: city size with its icon and population, and the next size up -->
             <div class="infoSmall classLine" title="City size and population">
@@ -172,6 +173,11 @@
         <div id="RCIContainer" class="controlShadow leftedge width140 padding10 mintcream z1 initialHidden"><div id="needChart" aria-label="Zoning need"></div></div>
         <!-- POLICY LAB: map layers -->
         <!-- POLICY LAB: charts over the years, shown from the funds in the city box -->
+        <!-- POLICY LAB v31: the city rating and graduation progress, shown from the grade in the city box -->
+        <div id="gradePopup" style="display:none" role="dialog" aria-label="City rating">
+          <div class="historyHead"><span id="gradeTitle">City rating</span><button type="button" id="gradeClose" aria-label="Close">&times;</button></div>
+          <div id="gradeBody"></div>
+        </div>
         <div id="historyPopup" style="display:none" role="dialog" aria-label="City history">
           <div class="historyHead"><span>City history</span><button type="button" id="historyClose" aria-label="Close">&times;</button></div>
           <div id="historyCharts"></div>

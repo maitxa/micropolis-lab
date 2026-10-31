@@ -100,6 +100,9 @@ var ES = {
   // ---- Top bar ----
   'Funds $': 'Fondos $',
   'Score:': 'Puntuación:',
+  'Grade:': 'Nota:',
+  'City rating': 'Calificación de la ciudad',
+  'City rating and graduation: click for details': 'Calificación y graduación de la ciudad: haz clic para ver los detalles',
   'Population:': 'Población:',
   'City size and population': 'Tamaño de la ciudad y población',
   'Budget': 'Presupuesto',

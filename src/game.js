@@ -44,6 +44,7 @@ import * as TileValues from './tileValues.ts';
 import { CityDataWindow } from './cityDataWindow.js';
 import { I18n } from './i18n.js';
 import { Preview } from './preview.js';
+import { Rating } from './rating.js';
 import { Advisor } from './advisor.js';
 import { Panels } from './panels.js';
 import { Reach } from './reach.js';
@@ -374,6 +375,14 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     e.preventDefault();
     $('#historyPopup').removeClass('pinned').hide();
   });
+  // v31: the city rating and graduation progress, from the grade in the city box
+  $('#gradeLine').on('click', function(e) {
+    e.preventDefault();
+    if ($('#gradePopup').is(':visible')) $('#gradePopup').hide(); else game.showGrade();
+  }).on('keydown', function(e) {
+    if (e.keyCode === 13 || e.keyCode === 32) { e.preventDefault(); $(this).trigger('click'); }
+  });
+  $('#gradeClose').on('click', function(e) { e.preventDefault(); $('#gradePopup').hide(); });
   // Hints on the map
   this._hint = null;
   $('#hintPrev').on('click', (function(e) { e.preventDefault(); this.stepHint(-1); }).bind(this));
@@ -469,6 +478,11 @@ Game.prototype.rulesSummary = function() {
 };
 
 Game.prototype.yearly = function(year) {
+  // v31: record this year's grade and count the years towards graduation
+  var h = Policy.history = Policy.history || {months: [], years: []};
+  if (Rating.yearly(this.simulation, this._status, h))
+    this.showGraduation();
+  this.updateGrade();
   var info = this.cityInfo();
   // a city joins the scoreboard once someone lives there (not every map that was only tried out)
   if (info.pop > 0)
@@ -838,6 +852,7 @@ Game.prototype.renderStatus = function(newMonth) {
     return;
   }
   this._status = res.list;
+  this.updateGrade();
   // keep this month's key figures in the city's history, for "a year ago" (saved with the city)
   if (newMonth && Policy.history && Policy.history.months.length)
     Policy.history.months[Policy.history.months.length - 1].st = res.figures;
@@ -1793,6 +1808,71 @@ Game.prototype.processFrontEndMessage = function(message) {
 
 
 // POLICY LAB v30: power capacity in use, under the funds
+// POLICY LAB v31: the grade in the city box, and its panel
+Game.prototype.updateGrade = function() {
+  var r = Rating.compute(this.simulation, this._status, Policy.history);
+  $('#gradeLetter').text(r ? r.grade : '–').attr('class', r ? 'grade-' + r.grade : '');
+  $('#gradePoints').text(r ? '(' + r.points + '/100)' : '');
+  if ($('#gradePopup').is(':visible'))
+    this.showGrade(true);
+};
+
+Game.prototype.showGrade = function(refresh) {
+  var P = I18n.p, h = Policy.history || {months: [], years: []};
+  var r = Rating.compute(this.simulation, this._status, h), avg = Rating.average(h);
+  var body = $('#gradeBody').empty();
+  $('#gradeTitle').text(P('City rating', 'Calificación de la ciudad'));
+  if (!r) {
+    body.append($('<p class="grNote"></p>').text(P('The city gets a grade once people live in it.', 'La ciudad recibe una nota cuando vive gente en ella.')));
+  } else {
+    var top = $('<div class="grTop"></div>');
+    top.append($('<div class="grBig"></div>').addClass('grade-' + r.grade).text(r.grade));
+    top.append($('<div class="grSum"></div>')
+      .append($('<div></div>').text(P('{0} of 100 points', '{0} de 100 puntos', r.points)))
+      .append($('<div></div>').text(avg ? P('Average of the last {0} years: {1} ({2})', 'Media de los últimos {0} años: {1} ({2})', avg.years, avg.grade, avg.points)
+                                         : P('The 10-year average starts in January.', 'La media de 10 años empieza en enero.'))));
+    body.append(top);
+    var tb = $('<table class="grParts"></table>');
+    r.parts.forEach(function(p) {
+      var tr = $('<tr></tr>').toggleClass('weak', p === r.weakest);
+      tr.append($('<td class="grName"></td>').text(p.name));
+      tr.append($('<td class="grPts"></td>').text(Math.round(p.points) + '/' + p.max));
+      tr.append($('<td class="grWhy"></td>').text(p.text));
+      tb.append(tr);
+    });
+    body.append(tb);
+    body.append($('<p class="grNote"></p>').text(P('Pulling the grade down most: {0}. Grades: A from 85 points, B from 70, C from 55, D from 40.',
+                                                   'Lo que más baja la nota: {0}. Notas: A desde 85 puntos, B desde 70, C desde 55, D desde 40.', r.weakest.name.toLowerCase())));
+  }
+  // graduation
+  body.append($('<h3 class="grHead"></h3>').text(P('Graduation', 'Graduación')));
+  if (h.graduated) {
+    body.append($('<p class="grNote"></p>').text(P('This city graduated in {0}.', 'Esta ciudad se graduó en {0}.', h.graduated)));
+  } else {
+    body.append($('<p class="grNote"></p>').text(P('Meet all four in {0} Januaries in a row. So far: {1} of {0}.',
+                                                   'Cumple las cuatro en {0} eneros seguidos. Por ahora: {1} de {0}.', Rating.YEARS_NEEDED, h.gradStreak || 0)));
+  }
+  var ul = $('<ul class="grConds"></ul>');
+  Rating.conditions(this.simulation, this._status, h).forEach(function(k) {
+    ul.append($('<li></li>').addClass(k.ok ? 'ok' : 'no').append($('<span aria-hidden="true"></span>').text(k.ok ? '✓ ' : '✗ '), document.createTextNode(k.text)));
+  });
+  body.append(ul);
+  body.append($('<p class="grNote small"></p>').text(P('The population target depends on the preset (harder presets get a lower one) and the difficulty.',
+                                                       'La población necesaria depende del perfil (los más difíciles tienen una menor) y de la dificultad.')));
+  if (refresh)
+    return;
+  var popup = $('#gradePopup');
+  var box = document.getElementById('infobar').getBoundingClientRect();
+  var host = document.getElementById('canvasContainer').getBoundingClientRect();
+  popup.css({left: (box.right - host.left + 10) + 'px', top: Math.max(4, box.top - host.top) + 'px'}).show();
+};
+
+// POLICY LAB v31: the graduation screen
+Game.prototype.showGraduation = function() {
+  var game = this;
+  this.openPanel(function(done) { CityPanels.openGraduation(game, done); });
+};
+
 // POLICY LAB v30: city sizes (the 1989 thresholds: a city becomes a town above 2,000 people, and so on)
 var CITY_SIZES = [
   {min: 0, en: 'Village', es: 'Aldea',
