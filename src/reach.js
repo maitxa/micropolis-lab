@@ -420,8 +420,8 @@ var roadReport = function(map, x, y) {
   var here = TileUtils.normalizeRoad(map.getTileValue(x, y));
   // POLICY LAB v26
   if (Policy.isHighway(x, y))
-    lines.push({mark: 'info', text: P('This is a highway: trips go three times as far on it, it builds up half the congestion, and its bridges never open.',
-                                      'Esta es una autopista: los viajes llegan tres veces más lejos por ella, se congestiona la mitad y sus puentes nunca se abren.')});
+    lines.push({mark: 'info', text: P('This is a highway: trips go three times as far on it, it builds up half the congestion, and its bridges never open (ships pass under them).',
+                                      'Esta es una autopista: los viajes llegan tres veces más lejos por ella, se congestiona la mitad y sus puentes nunca se abren (los barcos pasan por debajo).')});
   if (isDrawbridge(map, x, y))
     lines.push({mark: 'warn', text: P('This is a drawbridge: it opens for ships (and sometimes at random), cutting the road.',
                                       'Este es un puente levadizo: se abre para los barcos (y a veces al azar) y corta la calle.')});
@@ -450,7 +450,53 @@ var roadReport = function(map, x, y) {
 };
 
 
+// v30: the city's roads at a glance: dead ends, drawbridges, and "stubs" (dead-end stretches of road that no building
+// touches, which only cost upkeep). Shared by the report, the Roads bubble and the Roads map layer.
+var roadSurvey = function(map) {
+  var out = {roads: 0, deadEnds: [], drawbridges: [], stubs: []};
+  for (var x = 0; x < map.width; x++) {
+    for (var y = 0; y < map.height; y++) {
+      if (!drivable(map, x, y))
+        continue;
+      var v = map.getTileValue(x, y);
+      if (TileUtils.isRoad(v)) out.roads++;
+      if (isDrawbridge(map, x, y))
+        out.drawbridges.push({x: x, y: y});
+      else if (TileUtils.isRoad(v) && countLinks(map, x, y) <= 1 && !nextToOpenBridge(map, x, y))
+        out.deadEnds.push({x: x, y: y});
+    }
+  }
+  var touchesBuilding = function(x, y) {
+    for (var k = 0; k < 4; k++) {
+      var nx = x + DIRS[k][0], ny = y + DIRS[k][1];
+      if (map.testBounds(nx, ny) && map.getTileValue(nx, ny) >= TileValues.RESBASE)
+        return true;
+    }
+    return false;
+  };
+  var seen = {};
+  out.deadEnds.forEach(function(d) {
+    var path = [], x = d.x, y = d.y, px = -1, py = -1;
+    for (var steps = 0; steps < 200; steps++) {
+      if (seen[x + ',' + y] || touchesBuilding(x, y) || countLinks(map, x, y) >= 3)
+        break;   // reached a building, a junction, or a stretch already counted
+      path.push({x: x, y: y});
+      var next = null;
+      for (var k = 0; k < 4; k++) {
+        var nx = x + DIRS[k][0], ny = y + DIRS[k][1];
+        if ((nx !== px || ny !== py) && drivable(map, nx, ny)) { next = [nx, ny]; break; }
+      }
+      if (!next) break;
+      px = x; py = y; x = next[0]; y = next[1];
+    }
+    path.forEach(function(q) { seen[q.x + ',' + q.y] = true; out.stubs.push(q); });
+  });
+  return out;
+};
+
+
 var Reach = {
+  roadSurvey: roadSurvey,
   maxDist: maxDist,
   nearDist: nearDist,
   channelTiles: channelTiles,

@@ -69,6 +69,11 @@ var closeHorizontal = [
 ];
 
 
+// POLICY LAB v30: drawbridges open when a ship is within 30 tiles (1989: about 19) and close once it is 32 away, so a ship
+// rarely reaches a bridge that is still shut (distances in pixels, 16 to a tile)
+var BRIDGE_OPEN_DIST = 480;
+var BRIDGE_CLOSE_DIST = 520;
+
 var doBridge = function(map, x, y, currentTile, simData) {
   // POLICY LAB v26: highway bridges never open; one that is open (it was just upgraded) closes.
   if (Policy.isHighway(x, y)) {
@@ -85,7 +90,7 @@ var doBridge = function(map, x, y, currentTile, simData) {
 
   if (currentTile === TileValues.BRWV) {
     // We have an open vertical bridge. Possibly close it.
-    if (Random.getChance(3) && simData.spriteManager.getBoatDistance(x, y) > 340)
+    if (Random.getChance(3) && simData.spriteManager.getBoatDistance(x, y) > BRIDGE_CLOSE_DIST)
       closeBridge(map, x, y, verticalDeltaX, verticalDeltaY, openVertical, closeVertical);
 
     return true;
@@ -93,13 +98,13 @@ var doBridge = function(map, x, y, currentTile, simData) {
 
   if (currentTile == TileValues.BRWH) {
     // We have an open horizontal bridge. Possibly close it.
-    if (Random.getChance(3) && simData.spriteManager.getBoatDistance(x, y) > 340)
+    if (Random.getChance(3) && simData.spriteManager.getBoatDistance(x, y) > BRIDGE_CLOSE_DIST)
       closeBridge(map, x, y, horizontalDeltaX, horizontalDeltaY, openHorizontal, closeHorizontal);
 
     return true;
   }
 
-  if (simData.spriteManager.getBoatDistance(x, y) < 300 || Random.getChance(7)) {
+  if (simData.spriteManager.getBoatDistance(x, y) < BRIDGE_OPEN_DIST || Random.getChance(7)) {
     if (currentTile & 1) {
       if (x < map.width - 1) {
         if (map.getTileValue(x + 1, y) === TileValues.CHANNEL) {

@@ -19,6 +19,7 @@ import { Random } from './random.ts';
 import { SPRITE_SHIP } from './spriteConstants.ts';
 import { SpriteConstants } from './spriteConstants.ts';
 import { SpriteUtils } from './spriteUtils.js';
+import { TileUtils } from './tileUtils.js';
 import * as TileValues from "./tileValues.ts";
 
 function BoatSprite(map, spriteManager, x, y) {
@@ -65,6 +66,27 @@ var oppositeAndUnderwater = function(tileValue, oldDir, newDir) {
     return true;
 
   return false;
+};
+
+
+// POLICY LAB v30: a crossing high enough for ships to sail under: rail or a power line over the water, or a highway
+// bridge (highway bridges never open)
+// (only where it lies across the channel: channel on both sides, so ships don't sail along the crossing itself)
+var isChannel = function(map, x, y) {
+  if (!map.testBounds(x, y))
+    return true;   // the channel runs off the edge of the map
+  var v = map.getTileValue(x, y);
+  return v === TileValues.CHANNEL || v === TileValues.BRWH || v === TileValues.BRWV;
+};
+
+var highCrossing = function(map, x, y, tileValue) {
+  var high = tileValue === TileValues.HPOWER || tileValue === TileValues.VPOWER ||
+             tileValue === TileValues.HRAIL || tileValue === TileValues.VRAIL;
+  if (!high) {
+    var r = TileUtils.normalizeRoad(tileValue);
+    high = (r === TileValues.HBRIDGE || r === TileValues.VBRIDGE) && Policy.isHighway(x, y);
+  }
+  return high && ((isChannel(map, x, y - 1) && isChannel(map, x, y + 1)) || (isChannel(map, x - 1, y) && isChannel(map, x + 1, y)));
 };
 
 
@@ -127,8 +149,11 @@ BoatSprite.prototype.move = function(spriteCycle, disasterManager, blockMaps) {
         tile = this.map.getTileValue(x, y);
 
         // Test for a suitable water tile
+        // POLICY LAB v30: ships also pass under highway bridges, rail bridges and power lines (high crossings)
         if (tile === TileValues.CHANNEL || tile === TileValues.BRWH ||
-            tile === TileValues.BRWV || oppositeAndUnderwater(tile, this.dir, frame)) {
+            tile === TileValues.BRWV || highCrossing(this.map, x, y, tile) || oppositeAndUnderwater(tile, this.dir, frame)) {
+          if (highCrossing(this.map, x, y, tile))
+            tile = TileValues.CHANNEL;   // safe for the wreck test below
           this.newDir = frame;
           this.frame = SpriteUtils.turnTo(this.frame, this.newDir);
           this.dir = frame + 4;

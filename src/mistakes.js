@@ -177,32 +177,7 @@ var report = function(game) {
   // need that road, and in this game only shops need their car trips to succeed (they get their own finding above).
   // What wastes money is a stub: a dead-end stretch of road that no building touches, and a city with far more road
   // than zones.
-  var touchesBuilding = function(x, y) {
-    for (var k = 0; k < 4; k++) {
-      var nx = x + [1, -1, 0, 0][k], ny = y + [0, 0, 1, -1][k];
-      if (map.testBounds(nx, ny) && map.getTileValue(nx, ny) >= TileValues.RESBASE)
-        return true;
-    }
-    return false;
-  };
-  var stubTiles = [], seen = {};
-  s.deadEnds.forEach(function(d) {
-    var path = [], x = d.x, y = d.y, px = -1, py = -1, ok = true;
-    for (var steps = 0; steps < 200; steps++) {
-      var key = x + ',' + y;
-      if (seen[key] || touchesBuilding(x, y)) { ok = !touchesBuilding(x, y) && ok; break; }
-      if (Reach.countLinks(map, x, y) >= 3) break;   // a junction: the stub ends here
-      path.push({x: x, y: y});
-      var next = null;
-      for (var k = 0; k < 4; k++) {
-        var nx = x + [1, -1, 0, 0][k], ny = y + [0, 0, 1, -1][k];
-        if ((nx !== px || ny !== py) && Reach.isDrivable(map, nx, ny)) { next = [nx, ny]; break; }
-      }
-      if (!next) break;
-      px = x; py = y; x = next[0]; y = next[1];
-    }
-    path.forEach(function(q) { seen[q.x + ',' + q.y] = true; stubTiles.push(q); });
-  });
+  var stubTiles = Reach.roadSurvey(map).stubs;
   var zones = s.homes.length + s.shops.length + s.factories.length;
   var roadsAll = Status.measure(sim).roads;
   var perTile = roadsAll ? (sim.budget.roadMaintenanceBudget || 0) / roadsAll : 0;

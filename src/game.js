@@ -50,6 +50,7 @@ import { Layers } from './layers.js';
 import { HistoryCharts } from './historyCharts.js';
 import { Status } from './status.js';
 import { NeedChart } from './needChart.js';
+import { Help } from './help.js';
 import { CityStore } from './cityStore.js';
 import { CityPanels } from './cityPanels.js';
 import { Influence } from './influence.js';
@@ -124,6 +125,11 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
 
   // Initialise monsterTV
   this.monsterTV = new MonsterTV(this.gameMap, tileSet, spriteSheet, this.gameCanvas.animationManager);
+  // POLICY LAB v30: click the little disaster view to bring the main map there
+  $('#tvContainer').css('cursor', 'pointer').attr('title', 'Click to go there on the map').on('click', (function() {
+    var o = this.monsterTV.canvas.getTileOrigin(), m = this.monsterTV.canvas.getMaxTile();
+    this.gameCanvas.centreOn(Math.round((o.x + m.x) / 2), Math.round((o.y + m.y) / 2));
+  }).bind(this));
 
   var opacityLayerID = 'opaque';
 
@@ -328,11 +334,6 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   // Map layers (one at a time; click again to turn off)
   this._layerName = null;
   var game = this;
-  $('#layerControls button[data-layer]').on('click', function(e) {
-    e.preventDefault();
-    var name = $(this).attr('data-layer');
-    game.setLayer(game._layerName === name ? null : name);
-  });
 
   // History charts when hovering over (or focusing, or clicking) the funds
   var hideTimer = null;
@@ -668,7 +669,13 @@ Game.prototype.runAdvisor = function(newMonth) {
   this.renderStuckShops(result.stuckShops || []);
 
   // POLICY LAB v22: zoning-need bars in the lower left (same rule as the To do card's "Zone more" / "Don't zone" items)
-  NeedChart.render(document.getElementById('needChart'), result.need);
+  var gm = Status.measure(this.simulation), lc = this.simulation.lastCensus || {};
+  var gauge = {roads: gm.roads, heavy: gm.heavy, zones: gm.zones, rail: lc.railTotal || 0,
+               highway: Object.keys(Policy.highways || {}).length, people: this.simulation.evaluation.cityPop || 0};
+  var self2 = this;
+  NeedChart.onPick = function(t) { self2.setLayer(t ? 'zoning_' + t : null); };
+  NeedChart.render(document.getElementById('needChart'), result.need, gauge);
+  this.updatePowerLine();
 
   // POLICY LAB v21: status bubbles (pollution, crime, traffic, power, jobs, taxes)
   this.renderStatus(newMonth);
@@ -821,7 +828,10 @@ Game.prototype.renderStatus = function(newMonth) {
     chip.toggleClass('open', self._statusOpen === st.id);
     chip.on('click', function(e) {
       e.preventDefault();
-      self._statusOpen = self._statusOpen === st.id ? null : st.id;
+      // v30: a bubble shows its problem areas on the map at once; clicking it again (or Close) clears the map
+      var opening = self._statusOpen !== st.id;
+      self._statusOpen = opening ? st.id : null;
+      self.setLayer(opening && st.layer && Layers[st.layer] ? st.layer : null);
       self.renderStatus(false);
       $('#advisorBody').scrollTop(0);
     });
@@ -856,21 +866,11 @@ Game.prototype.renderStatusDetail = function() {
     box.append(fx);
   }
   var actions = $('<div class="stdActions"></div>');
-  if (st.layer && Layers[st.layer]) {
-    var on = this._layerName === st.layer;
-    var btn = $('<button type="button" class="stdMap"></button>')
-                .text(on ? I18n.t('Hide from map') : I18n.p('Show on map', 'Mostrar en el mapa'));
-    btn.on('click', function(e) {
-      e.preventDefault();
-      self.setLayer(self._layerName === st.layer ? null : st.layer);
-      self.renderStatusDetail();
-    });
-    actions.append(btn);
-  }
   var close = $('<button type="button" class="stdClose"></button>').text(I18n.p('Close', 'Cerrar'));
   close.on('click', function(e) {
     e.preventDefault();
     self._statusOpen = null;
+    self.setLayer(null);
     self.renderStatus(false);
   });
   actions.append(close);
@@ -1037,11 +1037,9 @@ Game.prototype.refreshLayer = function() {
     li.append($('<span></span>').text(item.text));
     list.append(li);
   });
-  var title = $('#layerControls button[data-layer="' + name + '"]').text();
-  if (!title) {
-    var st = (this._status || []).filter(function(x) { return x.layer === name; })[0];
-    title = st ? st.name : '';
-  }
+  var st = (this._status || []).filter(function(x) { return x.layer === name; })[0];
+  var title = {zoning_res: I18n.p('Where to zone homes', 'Dónde zonificar viviendas'), zoning_com: I18n.p('Where to zone shops', 'Dónde zonificar tiendas'),
+               zoning_ind: I18n.p('Where to zone factories', 'Dónde zonificar fábricas')}[name] || (st ? st.name : '');
   $('#layerLegendTitle').text(title);
   $('#layerLegendNote').text(result.note);
   $('#layerLegend').show();
@@ -1062,7 +1060,8 @@ Game.prototype.recordHistory = function(date) {
   // population as the game counts it (computed here, so the game's own yearly figures are not disturbed)
   var c = sim.lastCensus || sim._census.snapshot();
   h.months.push({y: date.year, m: date.month, funds: b.totalFunds,
-                 pop: (c.resPop + (c.comPop + c.indPop) * 8) * 20, tax: b.cityTax});
+                 pop: (c.resPop + (c.comPop + c.indPop) * 8) * 20, tax: b.cityTax,
+                 appr: c.resPop > 0 ? sim.evaluation.cityYes : null});   // v30: approval, % (the yearly poll)
   if (h.months.length > 1200)
     h.months.shift();
   // In January, the tax year that just ended: taxes collected minus what was spent on upkeep
@@ -1368,7 +1367,7 @@ Game.prototype.applyToolAt = function(tileX, tileY) {
 // POLICY LAB v22: show the shipping channel while the road tool is selected or the Dead ends layer is on
 Game.prototype.updateChannel = function(toolChanged) {
   var road = !!this.inputStatus.currentTool && this.inputStatus.toolName === 'road';
-  var show = road || this._layerName === 'dead';
+  var show = road || (this._layerName === 'dead' || this._layerName === 'roads');
   var cells = show ? Reach.channelTiles(this.simulation._map) : null;
   this._channelShown = !!(cells && cells.length);
   this.gameCanvas.setChannel(cells);
@@ -1383,8 +1382,8 @@ Game.prototype.updateChannel = function(toolChanged) {
 };
 
 Game.prototype.highwayToolHint = function() {
-  $('#toolOutput').addClass('toolHint').text(I18n.p('Highway: drag over a road to upgrade it, or build new. Trips go 3x as far on it; its bridges never open.',
-                                                    'Autopista: arrastra sobre una calle para mejorarla, o construye una nueva. Los viajes llegan 3 veces más lejos; sus puentes nunca se abren.'));
+  $('#toolOutput').addClass('toolHint').text(I18n.p('Highway: drag over a road to upgrade it, or build new. Trips go 3x as far on it; its bridges never open (ships pass under them).',
+                                                    'Autopista: arrastra sobre una calle para mejorarla, o construye una nueva. Los viajes llegan 3 veces más lejos; sus puentes nunca se abren (los barcos pasan por debajo).'));
 };
 
 Game.prototype.roadToolHint = function() {
@@ -1475,9 +1474,17 @@ Game.prototype.handleUndo = function() {
 
   // Only undo if the city hasn't changed those tiles since (e.g. a zone that has already started to grow)
   var map = this.simulation._map;
+  // v30: roads, power lines and rail change their picture by themselves soon after they are built (traffic, joining up
+  // with neighbours, a wire crossing), so for those only the kind of tile has to match
+  var kind = function(v) {
+    if (v >= TileValues.ROADBASE && v <= TileValues.LASTROAD) return 'road';
+    if (v >= TileValues.POWERBASE && v <= TileValues.LASTPOWER) return 'power';
+    if (v >= TileValues.RAILBASE && v <= TileValues.LASTRAIL) return 'rail';
+    return v;
+  };
   var unchanged = entry.tiles.every(function(t) {
     var now = map.getTileValue(t.x, t.y);
-    if (now === t.newValue)
+    if (now === t.newValue || kind(now) === kind(t.newValue))
       return true;
     // Bulldozing leaves an explosion that turns into rubble or clear land: that still counts as unchanged
     return t.newValue >= TileValues.TINYEXP && t.newValue <= TileValues.TINYEXPLAST && isExplosion(now);
@@ -1645,6 +1652,10 @@ Game.prototype.processFrontEndMessage = function(message) {
     return;
   }
 
+  // POLICY LAB v30: disasters and crashes get a large red banner, and a big red frame on the map where it happened
+  if (Messages.DISASTER_MESSAGES.indexOf(subject) !== -1 || Messages.CRASHES.indexOf(subject) !== -1)
+    this.showDisaster(message);
+
   // Show disaster if applicable
   if (message.data) {
     if (message.data.showable)
@@ -1666,6 +1677,52 @@ Game.prototype.processFrontEndMessage = function(message) {
   }
 
   console.warn('Unexpected message: ', subject);
+};
+
+
+// POLICY LAB v30: power capacity in use, under the funds
+Game.prototype.updatePowerLine = function() {
+  var use = this.simulation._powerManager && this.simulation._powerManager.lastUse;
+  var el = $('#powerLine');
+  if (!use || !use.max) {
+    el.text(I18n.p('Power: no plant', 'Electricidad: sin planta')).attr('class', 'infoSmall pw-none');
+    return;
+  }
+  var pctUsed = Math.round(100 * use.used / use.max);
+  el.text(I18n.p('Power: {0}% used ({1} of {2})', 'Electricidad: {0}% en uso ({1} de {2})', Math.min(pctUsed, 999),
+                 MiscUtils.formatNumber(use.used), MiscUtils.formatNumber(use.max)))
+    .attr('class', 'infoSmall ' + (use.used >= use.max ? 'pw-bad' : pctUsed >= 80 ? 'pw-warn' : 'pw-ok'));
+};
+
+// POLICY LAB v30: the disaster banner
+Game.prototype.showDisaster = function(message) {
+  var self = this;
+  var data = message.data || {};
+  var hasSpot = data.x !== undefined && data.y !== undefined && data.x >= 0;
+  var banner = $('#disasterBanner').empty();
+  var h = Help.forMessage(message.subject);
+  banner.append($('<div class="dbTitle"></div>').text(I18n.t(Text.messageText[message.subject] || '')));
+  if (h && h.why)
+    banner.append($('<div class="dbWhy"></div>').text(h.why));
+  var actions = $('<div class="dbActions"></div>');
+  if (hasSpot) {
+    var show = $('<button type="button"></button>').text(I18n.p('Show me', 'Muéstramelo'));
+    show.on('click', function(e) { e.preventDefault(); self.gameCanvas.centreOn(data.x, data.y); });
+    actions.append(show);
+    this.gameCanvas.setAlert({x: data.x, y: data.y});
+  }
+  var close = $('<button type="button"></button>').text(I18n.p('Close', 'Cerrar'));
+  close.on('click', function(e) { e.preventDefault(); self.hideDisaster(); });
+  actions.append(close);
+  banner.append(actions).show();
+  window.clearTimeout(this._disasterTimer);
+  // the frame on the map stays for 2 minutes; the banner until it is closed
+  this._disasterTimer = window.setTimeout(function() { self.gameCanvas.setAlert(null); }, 120000);
+};
+
+Game.prototype.hideDisaster = function() {
+  $('#disasterBanner').hide().empty();
+  this.gameCanvas.setAlert(null);
 };
 
 

@@ -909,6 +909,23 @@ GameCanvas.prototype._paintHighways = function() {
                   '<path d="' + path + '" class="hwyBand" stroke-width="' + (tw * 0.42) + '"/>';
 };
 
+// POLICY LAB v30: a big red frame where a disaster happened ({x, y} or null)
+GameCanvas.prototype.setAlert = function(pos) {
+  this._alert = pos ? [{kind: 'alert', x: pos.x, y: pos.y}] : null;
+  this._layerVersion = (this._layerVersion || 0) + 1;
+  this._lastLayerKey = null;
+};
+
+// POLICY LAB v30: what a building would do, shown while placing it (shapes in layer form, or null)
+GameCanvas.prototype.setPreview = function(shapes, key) {
+  if (key !== undefined && key === this._previewKey)
+    return;
+  this._previewKey = key;
+  this._preview = shapes && shapes.length ? shapes : null;
+  this._layerVersion = (this._layerVersion || 0) + 1;
+  this._lastLayerKey = null;
+};
+
 // POLICY LAB v23: permanent red frames on shops that can't reach customers. list: [{x, y}] zone centres, or null.
 GameCanvas.prototype.setOutlines = function(list) {
   var key = list && list.length ? list.map(function(z) { return z.x + ':' + z.y; }).join(',') : '';
@@ -924,7 +941,7 @@ GameCanvas.prototype._paintLayer = function() {
   if (this._canvas.id !== GameCanvas.DEFAULT_ID)
     return;
   var svg = this._layerOverlay;
-  var allShapes = (this._channel || []).concat(this._layer || [], this._outlines || []);
+  var allShapes = (this._channel || []).concat(this._layer || [], this._outlines || [], this._preview || [], this._alert || []);
   if (!allShapes.length) {
     if (svg && svg.style.display !== 'none')
       svg.style.display = 'none';
@@ -975,6 +992,27 @@ GameCanvas.prototype._paintLayer = function() {
           parts.push('<rect x="' + (c[0] - ox) * tw + '" y="' + (c[1] - oy) * tw + '" width="' + s.size * tw + '" height="' +
                      s.size * tw + '" class="' + (s.cls || 'pol') + c[2] + '"/>');
       });
+    } else if (s.kind === 'alert') {
+      // a large pulsing frame, 11 tiles across, centred on the spot
+      parts.push('<rect x="' + ((s.x - 5 - ox) * tw) + '" y="' + ((s.y - 5 - oy) * tw) + '" width="' + (11 * tw) + '" height="' + (11 * tw) +
+                 '" stroke-width="' + (line * 2.5) + '" rx="' + tw + '" class="lyAlert"/>');
+    } else if (s.kind === 'pcircle') {
+      parts.push('<circle cx="' + ((s.x - ox) * tw + tw / 2) + '" cy="' + ((s.y - oy) * tw + tw / 2) + '" r="' + (s.r * tw) +
+                 '" stroke-width="' + line + '" stroke-dasharray="' + (2 * line) + ' ' + line + '" class="lyPrev ' + (s.cls || '') + '"/>');
+      if (s.label)
+        parts.push('<text x="' + ((s.x - ox) * tw + tw / 2) + '" y="' + ((s.y - s.r - oy) * tw - line) + '" text-anchor="middle" font-size="' +
+                   Math.max(10, Math.round(tw * 0.7)) + '" class="lyLabel">' + escapeSVG(s.label) + '</text>');
+    } else if (s.kind === 'pdelta') {
+      // the change a building would make to a map layer: one shaded 2x2 block per cell, with its change in points
+      s.cells.forEach(function(c) {
+        if (visible(c[0], c[1], s.size))
+          parts.push('<rect x="' + (c[0] - ox) * tw + '" y="' + (c[1] - oy) * tw + '" width="' + s.size * tw + '" height="' +
+                     s.size * tw + '" class="pd' + c[2] + '"/>');
+      });
+    } else if (s.kind === 'stub') {
+      if (visible(s.x, s.y, 1))
+        parts.push('<rect x="' + ((s.x - ox) * tw + line / 2) + '" y="' + ((s.y - oy) * tw + line / 2) + '" width="' + (tw - line) +
+                   '" height="' + (tw - line) + '" stroke-width="' + line + '" class="lyStub"/>');
     } else if (s.kind === 'dead' || s.kind === 'bridge') {
       if (visible(s.x, s.y, 1))
         parts.push('<rect x="' + ((s.x - ox) * tw + line / 2) + '" y="' + ((s.y - oy) * tw + line / 2) + '" width="' + (tw - line) +
@@ -985,6 +1023,12 @@ GameCanvas.prototype._paintLayer = function() {
         parts.push('<rect x="' + ((s.x - 1 - ox) * tw + line / 2) + '" y="' + ((s.y - 1 - oy) * tw + line / 2) + '" width="' +
                    (3 * tw - line) + '" height="' + (3 * tw - line) + '" rx="' + Math.round(tw / 5) + '" stroke-width="' + line +
                    '" class="ly-' + s.tone + '"/>');
+      // v30: a short reason under the zone (e.g. why it is stuck)
+      if (s.label && visible(s.x - 1, s.y - 1, 3)) {
+        var fs = Math.max(9, Math.round(tw * 0.62));
+        parts.push('<text x="' + ((s.x - ox) * tw + tw / 2) + '" y="' + ((s.y + 2 - oy) * tw + fs) + '" font-size="' + fs +
+                   '" text-anchor="middle" class="lyLabel">' + escapeSVG(s.label) + '</text>');
+      }
     }
   });
   svg.innerHTML = parts.join('');

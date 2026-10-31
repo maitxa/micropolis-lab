@@ -456,6 +456,7 @@ var advise = function(sim, newMonth) {
 
 var Advisor = {
   advise: advise,
+  hasRoad: hasRoad,
   isEmptyZone: isEmptyZone,
   zoningNeed: zoningNeed
 };

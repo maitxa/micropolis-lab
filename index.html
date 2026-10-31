@@ -125,6 +125,8 @@
               <div id="fundsBig">$<span id="funds">20,000</span></div>
               <div id="balanceLine" title="Estimated taxes minus running costs over a year"><span id="balance">$0</span> <span class="perYear">a year</span></div>
             </div>
+            <!-- POLICY LAB v30: how much of the power plants' capacity is in use -->
+            <div id="powerLine" class="infoSmall" title="Power plant capacity in use (zones and wires each take one unit)"></div>
             <div class="elided infoSmall">
               Score: <span id="score">0</span>
             </div>
@@ -190,13 +192,6 @@
           <div id="advisorBody">
           <div id="outlineKey" style="display:none" aria-live="polite"></div>
           <div id="statusDetail" style="display:none" aria-live="polite"></div>
-          <!-- POLICY LAB: map layers -->
-          <div id="layerControls" role="group" aria-label="Map layers">
-            <span class="layerLabel">Show on map:</span>
-            <button type="button" data-layer="pollution" aria-pressed="false">Pollution</button>
-            <button type="button" data-layer="dead" aria-pressed="false">Dead ends</button>
-            <button type="button" data-layer="zoning" aria-pressed="false">Where to zone</button>
-          </div>
           <!-- POLICY LAB: what is highlighted on the map right now, with controls -->
           <div id="hintBar" role="status" aria-live="polite" style="display:none">
             <div id="hintText"></div>
@@ -300,6 +295,8 @@
           </div>
         </div>
         <div id="notifications" class="initialHidden neutral z1 rightedge alignCenter elided padding10 controlShadow"></div>
+        <!-- POLICY LAB v30: disasters -->
+        <div id="disasterBanner" role="alert" style="display:none"></div>
         <!-- POLICY LAB: zoom -->
         <div id="zoomControls" class="initialHidden" role="group" aria-label="Zoom">
           <button id="zoomOut" title="Zoom out (key -)" aria-label="Zoom out">&minus;</button>

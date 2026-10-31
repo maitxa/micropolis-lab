@@ -246,6 +246,9 @@ var Utilities = {
   WATER_PLANT_MAINTENANCE: WATER_PLANT_MAINTENANCE,
   HOSPITAL_MAINTENANCE: HOSPITAL_MAINTENANCE,
   HEALTH_RADIUS: HEALTH_RADIUS,
+  WATER_RADIUS: WATER_RADIUS,
+  SEWAGE_SEARCH_RADIUS: SEWAGE_SEARCH_RADIUS,
+  nearestWater: nearestWater,
   isWater: isWater,
   registerHandlers: function(mapScanner, repairManager) {
     mapScanner.addAction(TileValues.DEPOT, depotFound);

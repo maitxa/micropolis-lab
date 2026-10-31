@@ -79,7 +79,7 @@ var reason = function(t, r) {
   }
   text += emptyText(r);
   if (r.stuck)
-    text += ' ' + P('Fix the stuck ones (the To do card and the "Where to zone" layer show where).', 'Arregla las atascadas (la tarjeta Por hacer y la capa "Dónde zonificar" muestran dónde).');
+    text += ' ' + P('Click the bar to see them on the map, each with the reason.', 'Haz clic en la barra para verlas en el mapa, cada una con el motivo.');
   var d = Math.round(r.demand * 100);
   return text + ' ' + P('(Game\'s raw demand: {0}%.)', '(Demanda del juego: {0}%.)', (d > 0 ? '+' : '') + d);
 };
@@ -112,13 +112,13 @@ var bar = function(r, t) {
 };
 
 var defaultNote = function() {
-  return P('The city\'s demand. Above the line: zone more. Below: not needed now. Point at a bar for why.',
-           'La demanda de la ciudad. Arriba de la línea: zonifica más. Abajo: no hace falta ahora. Señala una barra para ver por qué.');
+  return P('The city\'s demand. Above the line: zone more. Below: not needed now. Click a bar to see where that kind would grow.',
+           'La demanda de la ciudad. Arriba de la línea: zonifica más. Abajo: no hace falta ahora. Haz clic en una barra para ver dónde crecería ese tipo.');
 };
 
 var pinned = null;   // the bar the player clicked: its reason stays shown
 
-var render = function(container, need) {
+var render = function(container, need, gauge) {
   if (!container || !need)
     return;
   container.innerHTML = '';
@@ -161,6 +161,14 @@ var render = function(container, need) {
     st.textContent = status(t, r);
     cell.appendChild(nm);
     cell.appendChild(st);
+    // v30: how many zones of this kind are in use (have any buildings)
+    if (r.n) {
+      var oc = document.createElement('span');
+      oc.className = 'needOcc';
+      var used = r.n - r.empty;
+      oc.textContent = P('{0}/{1} in use ({2}%)', '{0}/{1} en uso ({2}%)', fmt(used), fmt(r.n), Math.round(100 * used / r.n));
+      cell.appendChild(oc);
+    }
     var sb = sub(r);
     if (sb) {
       var sp = document.createElement('span');
@@ -176,6 +184,9 @@ var render = function(container, need) {
         pinned = pinned === t ? null : t;
         setPinned();
         show(pinned);
+        // v30: clicking a bar shows where that kind would grow, and its stuck zones with the reason
+        if (NeedChart.onPick)
+          NeedChart.onPick(pinned);
       });
     });
     col.addEventListener('focus', function() { show(t); });
@@ -192,6 +203,43 @@ var render = function(container, need) {
   container.appendChild(labels);
   show(null);
   container.appendChild(note);
+  if (gauge)
+    container.appendChild(trafficGauge(gauge));
+};
+
+// v30: road, rail and highway for the size of the city, to keep traffic in check
+var trafficGauge = function(g) {
+  var box = document.createElement('div');
+  box.className = 'needGauge';
+  var head = document.createElement('div');
+  head.className = 'needGaugeTitle';
+  head.textContent = P('Roads and traffic', 'Calles y tráfico');
+  box.appendChild(head);
+  var per = g.zones ? g.roads / g.zones : 0;
+  var k = g.people > 0 ? 1000 / g.people : 0;
+  var rows = [
+    [P('Road per zone', 'Calle por zona'), g.zones ? per.toFixed(1) : '–', per > 8 ? 'bad' : per > 6 ? 'warn' : 'ok',
+     P('Compact: 3-4 road tiles per zone. More costs upkeep and spreads traffic.', 'Compacto: 3-4 casillas de calle por zona. Más cuesta mantenimiento y reparte el tráfico.')],
+    [P('Jammed roads', 'Calles congestionadas'), g.roads ? Math.round(g.heavy * 100) + '%' : '–', g.heavy >= 0.30 ? 'bad' : g.heavy >= 0.15 ? 'warn' : 'ok',
+     P('Share of road tiles with heavy traffic.', 'Parte de las casillas de calle con tráfico intenso.')],
+    [P('Rail per 1,000 people', 'Tren por cada 1.000 personas'), g.people ? (g.rail * k).toFixed(1) : '–', 'info',
+     P('Rail tiles. With linked train depots, trips go twice as far and put half the traffic on the roads.', 'Casillas de vía. Con estaciones unidas, los viajes llegan el doble de lejos y ponen la mitad del tráfico en las calles.')],
+    [P('Highway per 1,000 people', 'Autopista por cada 1.000 personas'), g.people ? (g.highway * k).toFixed(1) : '–', 'info',
+     P('Highway tiles: trips go three times as far on them, with half the congestion.', 'Casillas de autopista: los viajes llegan tres veces más lejos, con la mitad de congestión.')]
+  ];
+  rows.forEach(function(r) {
+    var row = document.createElement('div');
+    row.className = 'needGaugeRow g-' + r[2];
+    row.title = r[3];
+    var a = document.createElement('span');
+    a.textContent = r[0];
+    var b = document.createElement('b');
+    b.textContent = r[1];
+    row.appendChild(a);
+    row.appendChild(b);
+    box.appendChild(row);
+  });
+  return box;
 };
 
 

@@ -19,9 +19,11 @@
 
 import { I18n } from './i18n.js';
 import { MiscUtils } from './miscUtils.js';
+import { Reach } from './reach.js';
 import { Residential } from './residential.js';
 import { TileUtils } from './tileUtils.js';
 import * as TileValues from './tileValues.ts';
+import { Utilities } from './utilities.js';
 
 var P = I18n.p;
 var fmt = MiscUtils.formatNumber;
@@ -121,6 +123,7 @@ var level = function(urgent, watch) { return urgent ? 'urgent' : watch ? 'watch'
 
 var compute = function(sim, history) {
   var m = measure(sim);
+  var c = sim.lastCensus || sim._census.snapshot(), live = sim._census;
   var before = yearAgo(history);
   var out = [];
   var push = function(s) { out.push(s); };
@@ -182,6 +185,24 @@ var compute = function(sim, history) {
                 P('Build a parallel road, or put jobs closer to homes.', 'Construye una calle paralela, o pon los empleos más cerca de las viviendas.')],
         layer: 'traffic'});
 
+  // ---- Roads (v30): road per zone, and road that leads to no zone
+  var rs = Reach.roadSurvey(sim._map);
+  var zoneN = m.zones || 0;
+  var perZone = zoneN ? rs.roads / zoneN : 0;
+  var roadsUrgent = rs.roads > 80 && perZone > 8, roadsWatch = (rs.roads > 40 && perZone > 6) || rs.stubs.length >= 6;
+  push({id: 'roads', name: P('Roads', 'Calles'), level: rs.roads ? level(roadsUrgent, roadsWatch) : 'good',
+        value: zoneN && rs.roads ? perZone.toFixed(1) : '',
+        summary: rs.roads ? P('{0} road tiles per zone; {1} tiles lead to no zone', '{0} casillas de calle por zona; {1} casillas no llevan a ninguna zona', perZone.toFixed(1), fmt(rs.stubs.length))
+                          : P('No roads yet.', 'Todavía no hay calles.'),
+        lines: rs.roads ? [P('Road tiles: {0} for {1} zones ({2} per zone; compact: 3-4)', 'Casillas de calle: {0} para {1} zonas ({2} por zona; compacto: 3-4)', fmt(rs.roads), fmt(zoneN), perZone.toFixed(1)),
+                           P('Road that leads to no zone: {0} tiles', 'Calle que no lleva a ninguna zona: {0} casillas', fmt(rs.stubs.length)),
+                           P('Dead ends: {0} (fine beside zones)', 'Calles sin salida: {0} (bien junto a zonas)', fmt(rs.deadEnds.length))] : [],
+        why: P('Every road tile costs upkeep every year. Road that leads to no zone earns nothing back.',
+               'Cada casilla de calle cuesta mantenimiento todos los años. Una calle que no lleva a ninguna zona no devuelve nada.'),
+        fixes: [P('Bulldoze the red stretches on the map, or zone along them.', 'Demuele los tramos rojos del mapa, o zonifica a lo largo de ellos.'),
+                P('Build new road only where you are about to zone.', 'Construye calles nuevas solo donde vayas a zonificar.')],
+        layer: 'roads'});
+
   // ---- Power
   var noPlant = m.zones > 0 && m.plants === 0;
   push({id: 'power', name: P('Power', 'Electricidad'), level: m.zones ? level(noPlant || m.powered < 0.7, m.powered < 1) : 'good',
@@ -221,7 +242,41 @@ var compute = function(sim, history) {
                'Es la estimación aproximada del propio juego: compara la población residencial con los empleos que ofrecen las tiendas y fábricas.'),
         fixes: m.unemployed > 0 ? [P('Zone more commercial and industrial land, with roads and power.', 'Zonifica más terreno comercial e industrial, con calles y electricidad.')]
                                 : m.unfilled >= 0.5 ? [P('Zone more residential land near the jobs.', 'Zonifica más terreno residencial cerca de los empleos.')] : [],
-        layer: 'zoning'});
+        layer: m.unemployed > 0 ? 'zoning_ind' : 'zoning_res'});
+
+  // ---- Water (v30): zones sending raw sewage into the water
+  var toWater = live.sewageToRiverZones || 0, treatedZ = live.sewageTreatedZones || 0;
+  var wz = toWater + treatedZ;
+  push({id: 'water', name: P('Water', 'Agua'), level: wz ? level(toWater >= 5 && toWater / wz >= 0.25, toWater > 0 || (c.waterPlantUnpowered || 0) > 0) : 'good',
+        value: toWater ? fmt(toWater) : '',
+        summary: toWater ? P('{0} zones send raw sewage into the water', '{0} zonas echan aguas residuales sin tratar al agua', fmt(toWater))
+                         : P('No raw sewage is reaching the water.', 'No llegan aguas residuales sin tratar al agua.'),
+        lines: [P('Zones with treated sewage: {0}', 'Zonas con aguas residuales tratadas: {0}', fmt(treatedZ)),
+                P('Zones sending raw sewage into the water: {0}', 'Zonas que echan aguas sin tratar al agua: {0}', fmt(toWater)),
+                P('Water treatment plants: {0}{1}', 'Plantas de tratamiento: {0}{1}', fmt(c.waterPlantPop || 0),
+                  c.waterPlantUnpowered ? P(' ({0} without power)', ' ({0} sin electricidad)', fmt(c.waterPlantUnpowered)) : '')],
+        why: P('Sewage from zones within {0} tiles of water pollutes it and its banks, and spoils the waterfront for nearby homes.',
+               'Las aguas residuales de las zonas a menos de {0} casillas del agua la contaminan junto con sus orillas, y arruinan la vista de las viviendas cercanas.', Utilities.SEWAGE_SEARCH_RADIUS),
+        fixes: [P('Build a water treatment plant (key U) within {0} tiles of these zones, touching a power line.', 'Construye una planta de tratamiento (tecla U) a menos de {0} casillas de estas zonas, tocando un cable.', Utilities.WATER_RADIUS)],
+        layer: 'water'});
+
+  // ---- Fire (v30): only when fires can happen (disasters on) or have happened
+  var disastersOn = sim.disasterManager && sim.disasterManager.disastersEnabled;
+  if (disastersOn || (live.firePop || 0) > 0 || (c.firePop || 0) > 0) {
+    var fireNone = (c.fireStationPop || 0) === 0 && m.people > 2000;
+    var burning = (c.firePop || live.firePop || 0) > 0;
+    push({id: 'fire', name: P('Fire', 'Incendios'), level: level(burning || fireNone, (c.fireStationPop || 0) === 0 && m.hasHomes),
+          value: burning ? fmt(c.firePop || live.firePop) : '',
+          summary: burning ? P('Fires are burning ({0} tiles)', 'Hay incendios ({0} casillas)', fmt(c.firePop || live.firePop))
+                           : (c.fireStationPop || 0) ? P('{0} fire stations', '{0} estaciones de bomberos', fmt(c.fireStationPop))
+                                                     : P('No fire station yet.', 'Todavía no hay estación de bomberos.'),
+          lines: [P('Fire stations: {0}', 'Estaciones de bomberos: {0}', fmt(c.fireStationPop || 0)),
+                  P('Tiles on fire: {0}', 'Casillas en llamas: {0}', fmt(c.firePop || live.firePop || 0))],
+          why: P('Fires spread freely where no fire station covers. They start from disasters, crashes, shipwrecks and meltdowns.',
+                 'Los incendios se extienden sin control donde no llega ninguna estación de bomberos. Empiezan por desastres, accidentes, naufragios y fusiones nucleares.'),
+          fixes: [P('Build a fire station (key 9) among the homes and fund it fully.', 'Construye una estación de bomberos (tecla 9) entre las viviendas y dale todos los fondos.')],
+          layer: 'fire'});
+  }
 
   // ---- Taxes
   push({id: 'tax', name: P('Taxes', 'Impuestos'), level: level(m.tax > 12, m.tax >= 10), value: m.tax + '%',

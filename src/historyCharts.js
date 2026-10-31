@@ -69,16 +69,33 @@ var setReadout = function(box, text) {
 };
 
 // A line chart of monthly values: points [{y, m, v}]
-var lineChart = function(box, points, fmt, latestText, readFmt) {
+var lineChart = function(box, points, fmt, latestText, readFmt, second) {
   readFmt = readFmt || fmt;
+  // v30: an optional second line on its own 0-100% scale (right-hand axis), e.g. approval next to population
+  var PADR = second ? 36 : PAD.r;
   var svg = el('svg', {width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, role: 'img'});
   var vals = points.map(function(p) { return p.v; });
   var range = niceRange(Math.min.apply(null, vals), Math.max.apply(null, vals));
-  var plotW = W - PAD.l - PAD.r, plotH = H - PAD.t - PAD.b;
+  var plotW = W - PAD.l - PADR, plotH = H - PAD.t - PAD.b;
   var sx = function(i) { return PAD.l + (points.length > 1 ? i / (points.length - 1) : 0.5) * plotW; };
   var sy = function(v) { return PAD.t + plotH - (v - range.min) / (range.max - range.min) * plotH; };
   axisFrame(svg, range, fmt);
   timeLabels(svg, String(points[0].y), String(points[points.length - 1].y));
+  if (second) {
+    var sy2 = function(v) { return PAD.t + plotH - v / 100 * plotH; };
+    [0, 100].forEach(function(v) {
+      var t = el('text', {x: W - PADR + 6, y: sy2(v) + 4, class: 'hcAxis hcAxis2', 'text-anchor': 'start'});
+      t.textContent = v + '%';
+      svg.appendChild(t);
+    });
+    var seg = [];
+    second.points.forEach(function(p, i) {
+      if (p !== null && p !== undefined)
+        seg.push((seg.length ? 'L' : 'M') + sx(i).toFixed(1) + ' ' + sy2(p).toFixed(1));
+    });
+    if (seg.length)
+      svg.appendChild(el('path', {d: seg.join(' '), class: 'hcLine2'}));
+  }
   var d = points.map(function(p, i) { return (i ? 'L' : 'M') + sx(i).toFixed(1) + ' ' + sy(p.v).toFixed(1); }).join(' ');
   svg.appendChild(el('path', {d: d, class: 'hcLine'}));
   var last = points.length - 1;
@@ -97,7 +114,8 @@ var lineChart = function(box, points, fmt, latestText, readFmt) {
     i = MiscUtils.clamp(i, 0, last);
     hair.setAttribute('x1', sx(i)); hair.setAttribute('x2', sx(i)); hair.setAttribute('visibility', 'visible');
     mark.setAttribute('cx', sx(i)); mark.setAttribute('cy', sy(points[i].v)); mark.setAttribute('visibility', 'visible');
-    setReadout(box, monthLabel(points[i]) + ': ' + readFmt(points[i].v));
+    setReadout(box, monthLabel(points[i]) + ': ' + readFmt(points[i].v) +
+             (second && second.points[i] !== null && second.points[i] !== undefined ? ' · ' + second.label + ' ' + Math.round(second.points[i]) + '%' : ''));
   });
   hit.addEventListener('pointerleave', function() {
     hair.setAttribute('visibility', 'hidden');
@@ -214,11 +232,22 @@ var render = function(container, history) {
     setReadout(b2, P('After the first tax year', 'Después del primer año fiscal'));
   }
 
-  var b3 = block(container, P('Population', 'Población'));
+  var b3 = block(container, P('Population and approval', 'Población y aprobación'));
   var t3 = P('Now: {0}', 'Ahora: {0}', MiscUtils.formatNumber(last.pop));
   setReadout(b3, t3);
+  // v30: approval (the yearly poll) on the same chart, so the two can be compared
+  var appr = months.map(function(q) { return q.appr === undefined ? null : q.appr; });
+  var hasAppr = appr.some(function(v) { return v !== null; });
   b3.appendChild(lineChart(b3, months.map(function(q) { return {y: q.y, m: q.m, v: q.pop}; }), shortNumber, t3,
-                           function(v) { return MiscUtils.formatNumber(v); }));
+                           function(v) { return MiscUtils.formatNumber(v); },
+                           hasAppr ? {points: appr, label: P('approval', 'aprobación')} : null));
+  if (hasAppr) {
+    var k3 = document.createElement('div');
+    k3.className = 'hcKey';
+    k3.innerHTML = '<span class="hcSw hcPopSw"></span>' + P('population (left scale)', 'población (escala izquierda)') +
+                   ' <span class="hcSw hcApprSw"></span>' + P('approval (right scale, once a year)', 'aprobación (escala derecha, una vez al año)');
+    b3.appendChild(k3);
+  }
 
   var b4 = block(container, P('Tax rate', 'Tasa de impuestos'));
   var t4 = P('Now: {0}%', 'Ahora: {0}%', last.tax);
