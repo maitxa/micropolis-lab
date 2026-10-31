@@ -48,6 +48,9 @@ function GameTools(map) {
     depot: new BuildingTool(1000, TileValues.DEPOT, map, 3, false),
     water: new BuildingTool(2000, TileValues.WATERPLANT, map, 3, false),
     hospital: new BuildingTool(3000, TileValues.HOSPITAL, map, 3, false),
+    // v30: schools and colleges
+    school: new BuildingTool(1500, TileValues.SCHOOL, map, 3, false),
+    college: new BuildingTool(5000, TileValues.COLLEGE, map, 3, false),
     // POLICY LAB v25: a big park (3x3 trees and lawns with a fountain in the middle)
     bigpark: new BuildingTool(150, TileValues.FOUNTAIN, map, 3, false),
   });

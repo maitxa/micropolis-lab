@@ -122,13 +122,18 @@ Traffic.prototype.tryDrive = function(startPos, destFn) {
   // POLICY LAB v26: a highway tile only uses up a third of a tile of the trip's distance. `steps` keeps the original
   // every-other-tile pattern for remembering where the car has been.
   var steps = 0;
+  var path = [new Position(drivePos.x, drivePos.y)];
+  var visited = Object.create(null);
+  visited[drivePos.x + ',' + drivePos.y] = true;
   for (var dist = 0; dist < maxDistance; dist++) {
-    var  dir = this.tryGo(drivePos, dirLast);
+    var  dir = this.tryGo(drivePos, dirLast, visited);
     if (dir) {
       // POLICY LAB BUG FIX: was Position.move(pos, dir), but there is no `pos` here. Once the bug above was fixed,
       // this line would have thrown an error and frozen the simulation.
       drivePos = Position.move(drivePos, dir);
 
+      path.push(new Position(drivePos.x, drivePos.y));
+      visited[drivePos.x + ',' + drivePos.y] = true;
       dirLast = dir.oppositeDirection();
       if (Policy.isHighway(drivePos.x, drivePos.y))
         dist -= 2 / 3;
@@ -137,15 +142,20 @@ Traffic.prototype.tryDrive = function(startPos, destFn) {
       if (steps & 1)
         this._stack.push(new Position(drivePos.x, drivePos.y));
 
-      if (this.driveDone(drivePos, destFn))
+      if (this.driveDone(drivePos, destFn)) {
+        // Count traffic only on the successful route, not on abandoned branches.
+        this._stack = path.filter(function(p, index) { return index > 0 && (index & 1); });
         return true;
-    } else {
-      if (this._stack.length > 0) {
-        this._stack.pop();
-        dist += 3;
-      } else {
-        return false;
       }
+    } else {
+      // Backtrack to the preceding road junction. Density bookkeeping
+      // (_stack) is not a route history and must not drive navigation.
+      path.pop();
+      if (path.length === 0)
+        return false;
+      drivePos = new Position(path[path.length - 1].x, path[path.length - 1].y);
+      dirLast = null;
+      dist += 3;
     }
   }
 
@@ -153,14 +163,16 @@ Traffic.prototype.tryDrive = function(startPos, destFn) {
 };
 
 
-Traffic.prototype.tryGo = function(pos, dirLast) {
+Traffic.prototype.tryGo = function(pos, dirLast, visited) {
   var directions = [];
 
   // Find connections from current position.
   var count = 0;
 
   forEachCardinalDirection(dir => {
-    if (dir != dirLast && TileUtils.isDriveable(this._map.getTileFromMapOrDefault(pos, dir, DIRT))) {
+    var next = Position.move(pos, dir);
+    if (dir != dirLast && (!visited || !visited[next.x + ',' + next.y]) &&
+        TileUtils.isDriveable(this._map.getTileFromMapOrDefault(pos, dir, DIRT))) {
       directions.push(dir);
       count++;
     }

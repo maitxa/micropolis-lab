@@ -17,6 +17,7 @@ import { Commercial } from './commercial.js';
 import { Industrial } from './industrial.js';
 import { MiscUtils } from './miscUtils.js';
 import { Policy } from './policy.js';
+import { Education } from './education.js';
 import { Random } from './random.ts';
 import { Residential } from './residential.js';
 import * as TileValues from "./tileValues.ts";
@@ -392,7 +393,9 @@ var crimeScan = function(census, blockMaps, budget) {
 
   var totalCrime = 0;
   var crimeZoneCount = 0;
-  var partTotals = {poverty: 0, density: 0, police: 0, social: 0, parks: 0};
+  var partTotals = {poverty: 0, density: 0, police: 0, social: 0, parks: 0, education: 0};
+  // v30: schooling and college education lower crime everywhere a little
+  var educationPart = Education.crimeReduction();
 
   // Scan the map, looking for developed land, as it can attract crime.
   // POLICY LAB BUG FIX: the original micropolisJS used crimeRateMap.mapWidth / mapHeight here, which don't exist
@@ -439,6 +442,8 @@ var crimeScan = function(census, blockMaps, budget) {
         }
         value -= parkPart;
         partTotals.parks += parkPart;
+        value -= educationPart;
+        partTotals.education += educationPart;
 
         // POLICY LAB: keep running totals of each factor, for the Evaluation report
         partTotals.poverty += povertyPart;
@@ -460,7 +465,7 @@ var crimeScan = function(census, blockMaps, budget) {
   }
 
   // POLICY LAB: average contribution of each factor per neighbourhood (before the 0-250 limits are applied)
-  census.crimeParts = {poverty: 0, density: 0, police: 0, social: 0, parks: 0};
+  census.crimeParts = {poverty: 0, density: 0, police: 0, social: 0, parks: 0, education: 0};
   if (crimeZoneCount > 0) {
     Object.keys(partTotals).forEach(function(k) {
       census.crimeParts[k] = Math.round(partTotals[k] / crimeZoneCount);

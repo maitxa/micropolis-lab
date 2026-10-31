@@ -14,6 +14,7 @@ import { MiscUtils } from './miscUtils.js';
 import { Policy } from './policy.js';
 import { Text } from './text.js';
 import { Utilities } from './utilities.js';
+import { Education } from './education.js';
 
 var fmt = MiscUtils.formatNumber;
 var money = MiscUtils.formatMoney;
@@ -170,7 +171,7 @@ var cityData = function(sim) {
                      yesNo(c.stadiumPop), yesNo(c.seaportPop), yesNo(c.airportPop)) + '</li>';
   html += '<li>' + P('Road tiles: {0} &middot; Rail tiles: {1} &middot; Train depots: {2}',
                      'Casillas de calle: {0} &middot; Casillas de vía férrea: {1} &middot; Estaciones de tren: {2}',
-                     fmt(c.roadTotal), fmt(c.railTotal), fmt(c.depotPop || 0)) +
+                     fmt(c.roadTiles !== undefined ? c.roadTiles : c.roadTotal), fmt(c.railTotal), fmt(c.depotPop || 0)) +
           (c.depotUnconnected ? ' ' + P('({0} not touching rail)', '({0} sin tocar la vía)', fmt(c.depotUnconnected)) : '') +
           (c.depotUnlinked ? ' ' + P('({0} with a line that goes nowhere)', '({0} con una vía que no lleva a ninguna parte)', fmt(c.depotUnlinked)) : '') +
           '</li>';
@@ -179,6 +180,11 @@ var cityData = function(sim) {
           (c.waterPlantUnpowered ? ' ' + P('({0} without power)', '({0} sin electricidad)', fmt(c.waterPlantUnpowered)) : '') +
           ' &middot; ' + P('zones with treated sewage: <b>{0} of {1}</b>', 'zonas con aguas residuales tratadas: <b>{0} de {1}</b>',
                            fmt(treated), fmt(treated + untreated)) + '</li>';
+  // v30
+  var es = Education.state();
+  html += '<li>' + P('Schools: {0} &middot; Colleges: {1} &middot; schooling {2}%, college education {3}%',
+                     'Escuelas: {0} &middot; Universidades: {1} &middot; escolarización {2}%, estudios universitarios {3}%',
+                     fmt(c.schoolPop || 0), fmt(c.collegePop || 0), Math.round(es.school * 100), Math.round(es.college * 100)) + '</li>';
   html += '</ul>';
 
   // Money
@@ -232,6 +238,8 @@ var policyReport = function(sim) {
     parts.push(P('police remove {0}', 'la policía resta {0}', fmt(p.police)));
     parts.push(P('social services remove {0}', 'los servicios sociales restan {0}', fmt(p.social)));
     parts.push(P('parks remove {0}', 'los parques restan {0}', fmt(p.parks || 0)));
+    if (p.education)
+      parts.push(P('schools and colleges remove {0}', 'las escuelas y universidades restan {0}', fmt(p.education)));
     crimeText += esc(parts.join(', ')) + ' ' + P('points.', 'puntos.');
     if (live.crimeAverage < 64) {
       crimeText += ' ' + P('Crime is not a problem yet.', 'La delincuencia todavía no es un problema.');

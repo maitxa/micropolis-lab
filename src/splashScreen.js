@@ -217,6 +217,7 @@ var play = function(e) {
   Policy.bigParks = {};
   Policy.cityId = CityStore.newId();
   Policy.history = {months: [], years: []};
+  Policy.education = {school: 0, college: 0};
 
   // Launch a new game
   var g = new Game(this.map, this.tileSet, this.snowTileSet, this.spriteSheet, difficulty, name);

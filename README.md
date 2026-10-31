@@ -231,6 +231,36 @@ saved before v25 keep the 1989 answers for those questions.
   removed, home zones covered, funding, capacity in use) and whether it is working (no power, no rail link).
 - Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
 
+### v30: easier to read, more to build, and cars that turn back
+
+Built on v29.3, merged with a side version of the Policy Lab made in October 2026 (its ideas are credited in the code).
+
+- **Traffic (new rule):** a car never drives the same tile twice, and at a dead end or an open drawbridge it turns back
+  to the last junction and tries another way. Backing up uses the trip four times as fast as driving forward (the 1989
+  penalty), so long dead ends and many side stubs still make trips run out. In 1989 a car that hit a dead end gave up.
+  Traffic is counted only on the route that reached its destination. All texts (Query, advice, report, map layers,
+  "How the world works") say this now.
+- **Ships** pass under highway bridges, rail bridges and power lines across the shipping channel, and stop or turn
+  back where the way is blocked, instead of being wrecked there. (A ship is still wrecked if something is built on the
+  water it is on, or a plane crashes into it.)
+- **Undo and Redo:** undo works for roads, power lines and rail even after traffic or power changed their look; Redo
+  (Ctrl+Y / Cmd+Shift+Z) builds again what was undone, if the tiles are still as the undo left them.
+- **To do is bubbles only**, with new **Roads**, **Water**, **Schools** and (with disasters on) **Fire** bubbles.
+  Clicking a bubble shows its map; Close hides it.
+- **Zoning need:** each bar shows how many zones of its kind are in use, and how many are filling or stuck. Clicking a
+  bar shows where that kind would grow and steps through the stuck zones, each with its reason on the map. Underneath:
+  road per zone, jammed roads, rail and highway per 1,000 people.
+- **Placement preview:** while placing a police or fire station the map shades the 8x8 squares its effect reaches (as
+  the game spreads it); hospitals, water treatment plants, train depots, schools, colleges and big parks show their
+  radius.
+- **Schools ($1,500) and colleges ($5,000):** 3x3 buildings that need power. They serve homes within 16 and 32 tiles;
+  over a few years schooling lowers crime (up to 20 points) and college brings more business (up to 13%). This is a
+  game simplification, not a research estimate.
+- **Bulldozer sizes** 1x1, 3x3 and 5x5 (one undo step).
+- **City box:** power capacity in use, the city size with an icon and its population, and the next size up.
+- **History charts:** approval on the population chart, and charts of road, highway and rail tiles.
+- **Disasters:** a banner with what happened and a "Show me" button, and a large red frame on the map.
+
 ### v29.3: gentler traffic, and road that leads nowhere
 
 - A road counts (and is drawn) as **heavy traffic** only from a traffic density of 224, not 192 as in 1989. Heavy

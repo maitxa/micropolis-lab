@@ -26,6 +26,7 @@ import { Residential } from './residential.js';
 import { Text } from './text.js';
 import { TileUtils } from './tileUtils.js';
 import { Utilities } from './utilities.js';
+import { Education } from './education.js';
 import * as TileValues from './tileValues.ts';
 
 var P = I18n.p;
@@ -126,6 +127,10 @@ var crimeParts = function(sim, x, y) {
     if (park)
       rows.push({label: park === 2 ? P('A big park nearby', 'Un parque grande cerca') : P('A park right here', 'Un parque justo aquí'), value: park === 2 ? -40 : -15});
   }
+  // v30
+  var edu = Education.crimeReduction();
+  if (edu >= 0.5)
+    rows.push({label: P('Schools and colleges (whole city)', 'Escuelas y universidades (toda la ciudad)'), value: -edu});
   return rows;
 };
 
@@ -345,6 +350,18 @@ var building = function(game, x, y) {
     lines.push(P('Untreated sewage pollutes the river and its banks.', 'Las aguas residuales sin tratar contaminan el río y sus orillas.'));
     if (!powered) lines.push(P('It has no power, so it treats nothing.', 'No tiene electricidad, así que no trata nada.'));
     circle(24, P('Treated here', 'Tratadas aquí'));
+  } else if (found && (v === TileValues.SCHOOL || v === TileValues.COLLEGE)) {
+    // v30
+    var isSchool = v === TileValues.SCHOOL, er = isSchool ? Education.SCHOOL_RADIUS : Education.COLLEGE_RADIUS;
+    var es = Education.state();
+    title = isSchool ? P('School', 'Escuela') : P('College', 'Universidad');
+    lines.push(P('Serves homes within {0} tiles: {1} home zones.', 'Atiende a las viviendas a menos de {0} casillas: {1} zonas residenciales.', er, homesWithin(map, cx, cy, er)));
+    lines.push(isSchool ?
+      P('City schooling: {0}%. It lowers crime everywhere, a little more each year.', 'Escolarización de la ciudad: {0}%. Baja la delincuencia en toda la ciudad, un poco más cada año.', Math.round(es.school * 100)) :
+      P('City college education: {0}%. Shops and factories expect more business, a little more each year.', 'Estudios universitarios de la ciudad: {0}%. Tiendas y fábricas esperan más negocio, un poco más cada año.', Math.round(es.college * 100)));
+    lines.push(P('Running cost: {0} a year.', 'Costo de funcionamiento: {0} al año.', MiscUtils.formatMoney(isSchool ? Education.SCHOOL_MAINTENANCE : Education.COLLEGE_MAINTENANCE)));
+    if (!powered) lines.push(P('It has no power, so it is closed.', 'No tiene electricidad, así que está cerrada.'));
+    circle(er, P('Serves homes here', 'Atiende a las viviendas de aquí'));
   } else if (found && (v === TileValues.POWERPLANT || v === TileValues.NUCLEAR)) {
     var coal = v === TileValues.POWERPLANT;
     title = coal ? P('Coal power plant', 'Planta de carbón') : P('Nuclear power plant', 'Planta nuclear');

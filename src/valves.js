@@ -15,6 +15,7 @@ import { EventEmitter } from './eventEmitter.js';
 import { VALVES_UPDATED } from './messages.ts';
 import { MiscUtils } from './miscUtils.js';
 import { Policy } from './policy.js';
+import { Education } from './education.js';
 
 var Valves = EventEmitter(function () {
   this.resValve = 0;
@@ -95,8 +96,9 @@ Valves.prototype.setValves = function(gameLevel, census, budget) {
   // Project future industry and commercial needs, taking into account available labour, and competition from
   // other global cities
   var internalMarket = (normalizedResPop + census.comPop + census.indPop) / internalMarketDenom;
-  var projectedComPop = internalMarket * labourBase;
-  var projectedIndPop = census.indPop * labourBase * extMarketParamTable[gameLevel];
+  // v30: an educated city plans for a little more business (Education.demandFactor: 1 to 1.13)
+  var projectedComPop = internalMarket * labourBase * Education.demandFactor();
+  var projectedIndPop = census.indPop * labourBase * extMarketParamTable[gameLevel] * Education.demandFactor();
   projectedIndPop = Math.max(projectedIndPop, projectedIndPopMin);
 
   // Calculate the expected percentage changes in each population type

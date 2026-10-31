@@ -36,6 +36,7 @@ import { Traffic } from './traffic.js';
 import { Transport } from './transport.js';
 import { Valves } from './valves.js';
 import { Utilities } from './utilities.js';
+import { Education } from './education.js';
 
 var Simulation = EventEmitter(function (gameMap, gameLevel, speed, savedGame) {
   this._map = gameMap;
@@ -323,6 +324,7 @@ Simulation.prototype.init = function() {
   Transport.registerHandlers(this._mapScanner, this._repairManager);
   // POLICY LAB: train depot and water treatment plant
   Utilities.registerHandlers(this._mapScanner, this._repairManager);
+  Education.registerHandlers(this._mapScanner, this._repairManager);
 
   var simData = this._constructSimData();
   this._mapScanner.mapScan(0, this._map.width, simData);
@@ -395,6 +397,8 @@ var simulate = function(simData) {
         // POLICY LAB: the budget needs to know the year, to decide whether this is an election year
         this.budget.currentYear = Math.floor(this._cityTime / 48) + this._startingYear;
         this.budget.collectTax(this._gameLevel, this._census);
+        // v30: schooling and college education move towards the share of homes that are served
+        Education.yearlyUpdate(this._map, this.lastCensus);
         this.evaluation.cityEvaluation(simData);
       }
 

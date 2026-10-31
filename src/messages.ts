@@ -87,6 +87,7 @@ export const TAX_TOO_HIGH = "Tax too high";
 export const TOOL_CLICKED = "Tool clicked";
 // POLICY LAB
 export const TOOL_LINE = "Tool line (shift+click)";
+export const REDO_REQUESTED = "Redo requested";
 export const UNDO_REQUESTED = "Undo requested";
 export const KEYS_HELP_REQUESTED = "Keyboard help requested";
 export const CITY_DATA_REQUESTED = "City data requested";

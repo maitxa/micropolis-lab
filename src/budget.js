@@ -16,6 +16,7 @@ import * as Messages from './messages.ts';
 import { MiscUtils } from './miscUtils.js';
 import { Policy } from './policy.js';
 import { Utilities } from './utilities.js';
+import { Education } from './education.js';
 
 // POLICY LAB: cost of fully funding social services, per unit of city population (census.totalPop)
 var socialMaintenanceCostPerPop = 1;
@@ -330,7 +331,7 @@ Budget.prototype.estimateYear = function(gameLevel, census) {
     social: Math.round(Math.floor(census.totalPop * socialMaintenanceCostPerPop) * (this.socialPercent || 0)),
     housing: Math.round(Math.floor(census.totalPop * housingMaintenanceCostPerPop) * (this.housingPercent || 0)),
     utilities: census.depotPop * Utilities.DEPOT_MAINTENANCE + census.waterPlantPop * Utilities.WATER_PLANT_MAINTENANCE +
-               (census.builtHospitalPop || 0) * Utilities.HOSPITAL_MAINTENANCE
+               (census.builtHospitalPop || 0) * Utilities.HOSPITAL_MAINTENANCE + Education.maintenance(census)
   };
   var total = costs.road + costs.police + costs.fire + costs.social + costs.housing + costs.utilities;
   return {taxes: taxes, costs: costs, totalCosts: total, balance: taxes - total};
@@ -349,7 +350,7 @@ Budget.prototype.collectTax = function(gameLevel, census) {
   // POLICY LAB: fixed yearly running costs of train depots and water treatment plants (always paid first)
   this.utilityCost = census.depotPop * Utilities.DEPOT_MAINTENANCE +
                      census.waterPlantPop * Utilities.WATER_PLANT_MAINTENANCE +
-                     (census.builtHospitalPop || 0) * Utilities.HOSPITAL_MAINTENANCE;
+                     (census.builtHospitalPop || 0) * Utilities.HOSPITAL_MAINTENANCE + Education.maintenance(census);
 
   // POLICY LAB: maintenance costs depend on the transportation priority law (original: road 1, rail 2)
   var roadCost = census.roadTotal * Policy.transportCosts().roadMaintenance;

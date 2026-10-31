@@ -249,6 +249,24 @@ var render = function(container, history) {
     b3.appendChild(k3);
   }
 
+  // v30: how much local road, highway and rail the city has (tiles on the map, not traffic)
+  var tr = months.filter(function(q) { return q.road !== undefined; });
+  if (tr.length >= 2) {
+    [['road', P('Local road tiles', 'Tramos de calle')], ['hwy', P('Highway tiles', 'Tramos de autopista')],
+     ['rail', P('Rail tiles', 'Tramos de vía férrea')]].forEach(function(spec) {
+      var pts = tr.map(function(q) { return {y: q.y, m: q.m, v: q[spec[0]] || 0}; });
+      var bx = block(container, spec[1]);
+      var tx = P('Now: {0}', 'Ahora: {0}', MiscUtils.formatNumber(pts[pts.length - 1].v));
+      setReadout(bx, tx);
+      bx.appendChild(lineChart(bx, pts, function(v) { return String(Math.round(v)); }, tx));
+    });
+    var note = document.createElement('p');
+    note.className = 'hcKeyNote';
+    note.textContent = P('Tiles on the map, from the last census. How busy they are shows in the Traffic bubble.',
+                         'Tramos en el mapa, según el último censo. Lo transitados que están se ve en la burbuja de Tráfico.');
+    container.appendChild(note);
+  }
+
   var b4 = block(container, P('Tax rate', 'Tasa de impuestos'));
   var t4 = P('Now: {0}%', 'Ahora: {0}%', last.tax);
   setReadout(b4, t4);

@@ -3094,3 +3094,18 @@ nav li {
 #powerLine.pw-warn { color: #a86400; }
 #powerLine.pw-bad, #powerLine.pw-none { color: #b3362b; }
 #powerLine.pw-ok { color: #1a7a35; }
+
+/* v30: bulldozer size */
+#controls .dozeSize { display: flex; align-items: center; gap: 3px; margin: 3px 0 0 0; font-family: var(--pl-ui); font-size: 11px; }
+#controls .dozeSizeLabel { color: var(--pl-ink); margin-right: 2px; }
+#controls .dozeSize button { font: inherit; padding: 1px 5px; border: 1px solid var(--group); border-radius: 4px; background: var(--pl-paper); color: var(--pl-ink); cursor: pointer; }
+#controls .dozeSize button[aria-pressed="true"] { background: var(--group); color: #fff; }
+#layerOverlay .lyPrevText { stroke: #0d3f7a; }
+
+/* v30: city size line in the city box */
+#infobar .classLine { display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+#infobar #cclassIcon { margin-right: 4px; }
+#infobar #cclassIcon svg { display: block; color: var(--pl-ink, #1d3b36); }
+#infobar #cclass { display: inline-block; text-transform: lowercase; }
+#infobar #cclass::first-letter { text-transform: uppercase; }
+#infobar .infoTiny { font-size: 12px; line-height: 1.25; color: #4d5f5b; }

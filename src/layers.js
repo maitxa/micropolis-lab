@@ -6,8 +6,8 @@
  * Map layers: colour the whole map to answer one question at a time.
  *  - Pollution: where the air is bad (the game's own pollution map, in its four levels: none, moderate, heavy, very
  *    heavy - the same words the Query tool uses).
- *  - Dead ends: every road or rail tile a car can only enter from one side (and drawbridges, which cut the road while
- *    open).
+ *  - Roads (v30): dead ends (where a car has to turn back), road that leads to no zone, and drawbridges, which cut the
+ *    road while open.
  *  - Where to zone (v29): open land and home zones coloured by how well a home would grow there (the game's own rule:
  *    land value minus pollution), and shops framed by whether their trips succeed. Factories grow anywhere with a road
  *    and power, so they are not coloured.
@@ -16,6 +16,7 @@
  */
 
 import { Advisor } from './advisor.js';
+import { Education } from './education.js';
 import { I18n } from './i18n.js';
 import { Influence } from './influence.js';
 import { MiscUtils } from './miscUtils.js';
@@ -78,7 +79,7 @@ var roads = function(sim) {
       ? [{swatch: 'channel', text: P('Shipping channel (dashed water): a road bridge across it is a drawbridge; ships pass under highway and rail bridges and power lines',
                                      'Canal de navegación (agua con guiones): un puente de calle que lo cruce es levadizo; los barcos pasan bajo los puentes de autopista y de tren y bajo los cables')}]
       : []),
-    note: P('A car that drives into a dead end gives up its trip. Only shops need their trips to succeed, so a dead end beside homes or factories is fine; a dead end no zone touches only costs upkeep.', 'Un carro que entra en una calle sin salida abandona su viaje. Solo las tiendas necesitan que sus viajes tengan éxito, así que una calle sin salida junto a viviendas o fábricas está bien; una que no toca ninguna zona solo cuesta mantenimiento.')
+    note: P('A car that drives into a dead end turns back and tries another way, but backing up uses up part of its trip. Short dead ends beside zones are fine; a dead end no zone touches only costs upkeep.', 'Un carro que entra en una calle sin salida da la vuelta y prueba otro camino, pero retroceder gasta parte de su viaje. Las calles sin salida cortas junto a zonas están bien; una que no toca ninguna zona solo cuesta mantenimiento.')
   };
 };
 
@@ -196,8 +197,8 @@ var zoningCom = function(sim, game) {
       {swatch: 'wz3', text: P('Far from the centre', 'Lejos del centro')},
       stuckLegend(stuckList.length)
     ],
-    note: P('Shops grow with the city\'s demand for shops, a little better near the centre, and only if their car can reach a home, shop or factory along the roads (no dead end in the way).',
-            'Las tiendas crecen con la demanda de tiendas, algo mejor cerca del centro, y solo si su carro llega a una vivienda, tienda o fábrica por las calles (sin calle sin salida en el camino).')
+    note: P('Shops grow with the city\'s demand for shops, a little better near the centre, and only if their car can reach a home, shop or factory along the roads before its trip runs out.',
+            'Las tiendas crecen con la demanda de tiendas, algo mejor cerca del centro, y solo si su carro llega a una vivienda, tienda o fábrica por las calles antes de que se le acabe el viaje.')
   };
 };
 
@@ -263,6 +264,29 @@ var water = function(sim) {
     note: P('Zones within {0} tiles of water send their sewage into it unless a powered water treatment plant within {1} tiles serves them. {2} zones are too far from water to matter.',
             'Las zonas a menos de {0} casillas del agua echan en ella sus aguas residuales, salvo que una planta de tratamiento con electricidad a menos de {1} casillas las atienda. {2} zonas están demasiado lejos del agua para importar.',
             Utilities.SEWAGE_SEARCH_RADIUS, Utilities.WATER_RADIUS, fmt(away))
+  };
+};
+
+// v30: Education: what each school and college reaches, and the lived-in homes no school serves
+var education = function(sim) {
+  var c = sim.lastCensus || sim._census.snapshot();
+  var cov = Education.coverage(sim._map, c);
+  var shapes = [];
+  (c.collegeList || []).forEach(function(p) { shapes.push({kind: 'pcircle', x: p.x, y: p.y, r: Education.COLLEGE_RADIUS, cls: 'pcCollege', label: P('College', 'Universidad')}); });
+  (c.schoolList || []).forEach(function(p) { shapes.push({kind: 'pcircle', x: p.x, y: p.y, r: Education.SCHOOL_RADIUS, cls: 'pcSchool', label: P('School', 'Escuela')}); });
+  (c.educationUnpoweredList || []).forEach(function(p) { shapes.push({kind: 'zone', x: p.x, y: p.y, tone: 'bad', label: P('No power', 'Sin electricidad')}); });
+  cov.unserved.forEach(function(p) { shapes.push({kind: 'zone', x: p.x, y: p.y, tone: 'bad', label: ''}); });
+  var e = Education.state();
+  return {
+    shapes: shapes,
+    legend: [
+      {swatch: 'good', text: P('Homes a school serves: {0} of {1}', 'Viviendas que atiende una escuela: {0} de {1}', fmt(cov.school), fmt(cov.homes))},
+      {swatch: 'bad', text: P('Homes with no school: {0}', 'Viviendas sin escuela: {0}', fmt(cov.homes - cov.school))},
+      {swatch: 'good', text: P('City schooling {0}%, college education {1}%', 'Escolarización {0}%, estudios universitarios {1}%', Math.round(e.school * 100), Math.round(e.college * 100))}
+    ],
+    note: P('A powered school serves homes within {0} tiles, a college within {1}. Each year schooling moves a quarter of the way towards the share of homes served (college education more slowly). Schooling lowers crime; college education brings shops and factories more business.',
+            'Una escuela con electricidad atiende a las viviendas a menos de {0} casillas, una universidad a menos de {1}. Cada año la escolarización avanza una cuarta parte del camino hacia la proporción de viviendas atendidas (los estudios universitarios, más despacio). La escolarización baja la delincuencia; los estudios universitarios traen más negocio a tiendas y fábricas.',
+            Education.SCHOOL_RADIUS, Education.COLLEGE_RADIUS)
   };
 };
 
@@ -362,6 +386,15 @@ var power = function(sim) {
 
 
 var Layers = {
+  // v30: the empty zones of one kind that are stuck, each with its reason (for stepping through them one by one)
+  stuckList: function(sim, game, type) {
+    var list = stuckZones(sim, type);
+    if (type === 'com')
+      list = list.concat(((game && game._stuckShops) || []).map(function(q) {
+        return {kind: 'zone', x: q.x, y: q.y, tone: 'bad', label: P('Trips fail', 'Viajes fallan')};
+      }));
+    return list;
+  },
   pollution: pollution,
   roads: roads,
   dead: roads,
@@ -370,6 +403,7 @@ var Layers = {
   zoning_ind: zoningInd,
   zoning: zoningRes,
   water: water,
+  education: education,
   fire: fire,
   crime: crime,
   traffic: traffic,

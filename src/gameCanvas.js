@@ -476,10 +476,11 @@ GameCanvas.prototype._processMouse = (function() {
     var mouseHeight = mouse.height;
     var options = {colour: mouse.colour, outline: true};
 
+    // (v30: the 5x5 bulldozer is centred on the mouse, two tiles each side)
     if (mouseWidth > 2)
-      mouseX -= 1;
+      mouseX -= mouseWidth === 5 ? 2 : 1;
     if (mouseHeight > 2)
-      mouseY -= 1;
+      mouseY -= mouseHeight === 5 ? 2 : 1;
 
     var offMap = (this._originX + mouseX < 0 && this._originX + mouseX + mouseWidth <= 0) ||
                  (this._originY + mouseY < 0 && this._originY + mouseY + mouseHeight <= 0) ||
@@ -1000,8 +1001,11 @@ GameCanvas.prototype._paintLayer = function() {
       parts.push('<circle cx="' + ((s.x - ox) * tw + tw / 2) + '" cy="' + ((s.y - oy) * tw + tw / 2) + '" r="' + (s.r * tw) +
                  '" stroke-width="' + line + '" stroke-dasharray="' + (2 * line) + ' ' + line + '" class="lyPrev ' + (s.cls || '') + '"/>');
       if (s.label)
-        parts.push('<text x="' + ((s.x - ox) * tw + tw / 2) + '" y="' + ((s.y - s.r - oy) * tw - line) + '" text-anchor="middle" font-size="' +
+        parts.push('<text x="' + ((s.x - ox) * tw + tw / 2) + '" y="' + ((s.y - 2 - oy) * tw) + '" text-anchor="middle" font-size="' +
                    Math.max(10, Math.round(tw * 0.7)) + '" class="lyLabel">' + escapeSVG(s.label) + '</text>');
+    } else if (s.kind === 'ptext') {
+      parts.push('<text x="' + ((s.x - ox) * tw + tw / 2) + '" y="' + ((s.y - oy) * tw) + '" text-anchor="middle" font-size="' +
+                 Math.max(10, Math.round(tw * 0.7)) + '" class="lyLabel lyPrevText">' + escapeSVG(s.label) + '</text>');
     } else if (s.kind === 'pdelta') {
       // the change a building would make to a map layer: one shaded 2x2 block per cell, with its change in points
       s.cells.forEach(function(c) {

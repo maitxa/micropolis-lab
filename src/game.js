@@ -43,6 +43,7 @@ import { MiscUtils } from './miscUtils.js';
 import * as TileValues from './tileValues.ts';
 import { CityDataWindow } from './cityDataWindow.js';
 import { I18n } from './i18n.js';
+import { Preview } from './preview.js';
 import { Advisor } from './advisor.js';
 import { Panels } from './panels.js';
 import { Reach } from './reach.js';
@@ -246,6 +247,7 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   // POLICY LAB: straight lines, undo and keyboard help
   this.inputStatus.addEventListener(Messages.TOOL_LINE, this.handleToolLine.bind(this));
   this.inputStatus.addEventListener(Messages.UNDO_REQUESTED, this.handleUndo.bind(this));
+  this.inputStatus.addEventListener(Messages.REDO_REQUESTED, this.handleRedo.bind(this));
   this.inputStatus.addEventListener(Messages.KEYS_HELP_REQUESTED, this.toggleKeysHelp.bind(this));
   this.inputStatus._tileWidthFn = function() { return this.gameCanvas._tileSet.tileWidth; }.bind(this);
   this.inputStatus.addEventListener(Messages.ZOOM_REQUESTED, function(step) {
@@ -259,6 +261,17 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
   }.bind(this));
   $('#keysHelpClose').click(function(e) { e.preventDefault(); $('#keysHelp').hide(); });
   $('#undoRequest').prop('disabled', true);
+  $('#redoRequest').prop('disabled', true);
+  // v30: bulldozer size (1x1, 3x3 or 5x5, centred on the tile clicked; one undo step)
+  this._dozeSize = 1;
+  var gameSelf = this;
+  $('#dozeSize button').on('click', function() {
+    gameSelf._dozeSize = +$(this).attr('data-doze') || 1;
+    $('#dozeSize button').attr('aria-pressed', 'false');
+    $(this).attr('aria-pressed', 'true');
+    if (gameSelf.inputStatus.toolName !== 'bulldozer')
+      $('#bulldozerButton').trigger('click');
+  });
 
   // And pauses
   this.inputStatus.addEventListener(Messages.SPEED_CHANGE, this.handlePause.bind(this));
@@ -277,6 +290,10 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     name: this.name
   };
   this.infoBar(this.simulation, initialValues);
+  // v30: the city size icon and the next size up
+  this.updateClassLine(initialValues.population);
+  this.simulation.addEventListener(Messages.POPULATION_UPDATED, this.updateClassLine.bind(this));
+  I18n.onChange((function() { this.updateClassLine(this.simulation.evaluation.cityPop); }).bind(this));
 
   // POLICY LAB: apply the laws to the interface
   this.applyPolicyToInterface();
@@ -673,7 +690,18 @@ Game.prototype.runAdvisor = function(newMonth) {
   var gauge = {roads: gm.roads, heavy: gm.heavy, zones: gm.zones, rail: lc.railTotal || 0,
                highway: Object.keys(Policy.highways || {}).length, people: this.simulation.evaluation.cityPop || 0};
   var self2 = this;
-  NeedChart.onPick = function(t) { self2.setLayer(t ? 'zoning_' + t : null); };
+  NeedChart.onPick = function(t) {
+    self2.setLayer(t ? 'zoning_' + t : null);
+    // v30: and step through the stuck ones, one at a time, each with its reason (Previous / Next)
+    var list = t ? Layers.stuckList(self2.simulation, self2, t) : [];
+    if (list.length) {
+      var noun = {res: I18n.p('home', 'vivienda'), com: I18n.p('shop', 'tienda'), ind: I18n.p('factory', 'fábrica')}[t];
+      self2.showHint({id: 'stuck_' + t, targets: list,
+                      text: I18n.p('Stuck {0} zones: {1}. Each one says why on the map.', 'Zonas de {0} atascadas: {1}. Cada una dice por qué en el mapa.', noun, list.length)});
+    } else if (self2._hint && /^stuck_/.test(self2._hint.item.id)) {
+      self2.hideHint();
+    }
+  };
   NeedChart.render(document.getElementById('needChart'), result.need, gauge);
   this.updatePowerLine();
 
@@ -1061,7 +1089,9 @@ Game.prototype.recordHistory = function(date) {
   var c = sim.lastCensus || sim._census.snapshot();
   h.months.push({y: date.year, m: date.month, funds: b.totalFunds,
                  pop: (c.resPop + (c.comPop + c.indPop) * 8) * 20, tax: b.cityTax,
-                 appr: c.resPop > 0 ? sim.evaluation.cityYes : null});   // v30: approval, % (the yearly poll)
+                 appr: c.resPop > 0 ? sim.evaluation.cityYes : null,   // v30: approval, % (the yearly poll)
+                 // v30: tiles of local road, highway and rail
+                 road: Math.max(0, (c.roadTiles || 0) - (c.highwayTotal || 0)), hwy: c.highwayTotal || 0, rail: c.railTotal || 0});
   if (h.months.length > 1200)
     h.months.shift();
   // In January, the tax year that just ended: taxes collected minus what was spent on upkeep
@@ -1289,10 +1319,29 @@ Game.prototype.handleTool = function(data) {
 
 // POLICY LAB: apply the current tool to one tile, recording the change so it can be undone.
 // (This was the second half of handleTool.)
-Game.prototype.applyToolAt = function(tileX, tileY) {
+Game.prototype.applyToolAt = function(tileX, tileY, single) {
   var tool = this.inputStatus.currentTool;
   if (tool === null)
     return;
+  // v30: a bigger bulldozer clears every tile of the square, all in the same stroke (so one Undo brings it all back)
+  var dz = this._dozeSize || 1;
+  if (!single && dz > 1 && this.inputStatus.toolName === 'bulldozer') {
+    var h = (dz - 1) / 2, map = this.simulation._map;
+    for (var dy = -h; dy <= h; dy++) {
+      for (var dx = -h; dx <= h; dx++) {
+        if (!map.testBounds(tileX + dx, tileY + dy))
+          continue;
+        var v = map.getTileValue(tileX + dx, tileY + dy);
+        // leave bare land and water alone (nothing to clear, and bulldozing water does nothing)
+        if (v === TileValues.DIRT || (v >= TileValues.RIVER && v <= TileValues.LASTRIVEDGE))
+          continue;
+        this.applyToolAt(tileX + dx, tileY + dy, true);
+        if (tool.result === tool.TOOLRESULT_NO_MONEY)
+          return;
+      }
+    }
+    return;
+  }
 
   var budget = this.simulation.budget;
 
@@ -1304,9 +1353,13 @@ Game.prototype.applyToolAt = function(tileX, tileY) {
   // POLICY LAB: remember hospitals the player built, so the simulation never removes them
   if (built && this.inputStatus.toolName === 'hospital')
     Policy.builtHospitals[tileX + ',' + tileY] = true;
+  if (built && this.inputStatus.toolName === 'hospital' && tool.lastUndo)
+    tool.lastUndo.hospitalsAdded = [tileX + ',' + tileY];
   // POLICY LAB v25: remember big parks (their fountain is in the middle), for their effect on air and crime
   if (built && this.inputStatus.toolName === 'bigpark')
     Policy.bigParks[tileX + ',' + tileY] = true;
+  if (built && this.inputStatus.toolName === 'bigpark' && tool.lastUndo)
+    tool.lastUndo.bigParksAdded = [tileX + ',' + tileY];
   // POLICY LAB v26: highway tiles become highway once paid for; bulldozing a highway tile removes it from the list.
   // Either is remembered with the undo entry.
   if (tool.pendingHighways) {
@@ -1431,23 +1484,29 @@ var MAX_UNDO = 30;
 
 Game.prototype.recordUndo = function(change, strokeId) {
   this._undoStack = this._undoStack || [];
+  // v30: building something new forgets what could be redone
+  this._redoStack = [];
+  $('#redoRequest').prop('disabled', true);
   var top = this._undoStack[this._undoStack.length - 1];
+  var LISTS = ['highwaysAdded', 'highwaysRemoved', 'hospitalsAdded', 'bigParksAdded'];
 
   if (top && top.strokeId === strokeId) {
     // Same drag: merge, keeping each tile's ORIGINAL value from before the stroke began
     change.tiles.forEach(function(t) {
       var existing = top.tiles.find(function(u) { return u.x === t.x && u.y === t.y; });
-      if (existing)
+      if (existing) {
         existing.newValue = t.newValue;
-      else
+        existing.newFlags = t.newFlags;
+      } else {
         top.tiles.push(t);
+      }
     });
     top.cost += change.cost;
-    top.highwaysAdded = (top.highwaysAdded || []).concat(change.highwaysAdded || []);
-    top.highwaysRemoved = (top.highwaysRemoved || []).concat(change.highwaysRemoved || []);
+    LISTS.forEach(function(k) { top[k] = (top[k] || []).concat(change[k] || []); });
   } else {
-    this._undoStack.push({strokeId: strokeId, tiles: change.tiles.slice(), cost: change.cost,
-                          highwaysAdded: (change.highwaysAdded || []).slice(), highwaysRemoved: (change.highwaysRemoved || []).slice()});
+    var entry = {strokeId: strokeId, tiles: change.tiles.slice(), cost: change.cost};
+    LISTS.forEach(function(k) { entry[k] = (change[k] || []).slice(); });
+    this._undoStack.push(entry);
     if (this._undoStack.length > MAX_UNDO)
       this._undoStack.shift();
   }
@@ -1461,6 +1520,24 @@ var isExplosion = function(v) {
          (v >= TileValues.RUBBLE && v <= TileValues.LASTRUBBLE) || v === TileValues.DIRT;
 };
 
+// v30: roads, power lines and rail change their picture by themselves soon after they are built (traffic, joining up
+// with neighbours, a wire crossing), so for those only the kind of tile has to match
+var tileKind = function(v) {
+  if (v >= TileValues.ROADBASE && v <= TileValues.LASTROAD) return 'road';
+  if (v >= TileValues.POWERBASE && v <= TileValues.LASTPOWER) return 'power';
+  if (v >= TileValues.RAILBASE && v <= TileValues.LASTRAIL) return 'rail';
+  return v;
+};
+
+// Applies the lists that go with an undo entry (highways, hospitals, big parks) forwards or backwards
+Game.prototype._applyUndoLists = function(entry, forwards) {
+  var xy = function(k) { var p = k.split(','); return {x: +p[0], y: +p[1]}; };
+  (entry.highwaysAdded || []).forEach(function(k) { var p = xy(k); Policy.setHighway(p.x, p.y, forwards); });
+  (entry.highwaysRemoved || []).forEach(function(k) { var p = xy(k); Policy.setHighway(p.x, p.y, !forwards); });
+  (entry.hospitalsAdded || []).forEach(function(k) { if (forwards) Policy.builtHospitals[k] = true; else delete Policy.builtHospitals[k]; });
+  (entry.bigParksAdded || []).forEach(function(k) { if (forwards) Policy.bigParks[k] = true; else delete Policy.bigParks[k]; });
+};
+
 Game.prototype.handleUndo = function() {
   if (this.dialogOpen)
     return;
@@ -1468,46 +1545,81 @@ Game.prototype.handleUndo = function() {
   var stack = this._undoStack || [];
   var entry = stack[stack.length - 1];
   if (!entry) {
-    $('#toolOutput').text('Nothing to undo');
+    $('#toolOutput').text(I18n.t('Nothing to undo'));
     return;
   }
 
   // Only undo if the city hasn't changed those tiles since (e.g. a zone that has already started to grow)
   var map = this.simulation._map;
-  // v30: roads, power lines and rail change their picture by themselves soon after they are built (traffic, joining up
-  // with neighbours, a wire crossing), so for those only the kind of tile has to match
-  var kind = function(v) {
-    if (v >= TileValues.ROADBASE && v <= TileValues.LASTROAD) return 'road';
-    if (v >= TileValues.POWERBASE && v <= TileValues.LASTPOWER) return 'power';
-    if (v >= TileValues.RAILBASE && v <= TileValues.LASTRAIL) return 'rail';
-    return v;
-  };
   var unchanged = entry.tiles.every(function(t) {
     var now = map.getTileValue(t.x, t.y);
-    if (now === t.newValue || kind(now) === kind(t.newValue))
+    if (now === t.newValue || tileKind(now) === tileKind(t.newValue))
       return true;
     // Bulldozing leaves an explosion that turns into rubble or clear land: that still counts as unchanged
     return t.newValue >= TileValues.TINYEXP && t.newValue <= TileValues.TINYEXPLAST && isExplosion(now);
   });
 
-  stack.pop();
-  $('#undoRequest').prop('disabled', stack.length === 0);
-
+  // v30: a refused undo keeps the entry, so nothing is lost
   if (!unchanged) {
-    $('#toolOutput').text("Can't undo: the city has already changed there");
+    $('#toolOutput').text(I18n.t("Can't undo: the city has already changed there"));
     return;
   }
 
+  stack.pop();
   for (var i = entry.tiles.length - 1; i >= 0; i--) {
     var t = entry.tiles[i];
     map.setTile(t.x, t.y, t.oldValue, t.oldFlags);
   }
-  // POLICY LAB v26: highways built (or bulldozed) by this action
-  (entry.highwaysAdded || []).forEach(function(k) { var p = k.split(','); Policy.setHighway(+p[0], +p[1], false); });
-  (entry.highwaysRemoved || []).forEach(function(k) { var p = k.split(','); Policy.setHighway(+p[0], +p[1], true); });
-
+  this._applyUndoLists(entry, false);
   this.simulation.budget.spend(-entry.cost);
+
+  this._redoStack = this._redoStack || [];
+  this._redoStack.push(entry);
+  $('#undoRequest').prop('disabled', stack.length === 0);
+  $('#redoRequest').prop('disabled', false);
   $('#toolOutput').text(entry.cost > 0 ? I18n.t('Undone: {0} refunded', MiscUtils.formatMoney(entry.cost)) : I18n.t('Undone'));
+};
+
+
+// v30: redo what was just undone, if those tiles are still as the undo left them and there is money for it
+Game.prototype.handleRedo = function() {
+  if (this.dialogOpen)
+    return;
+
+  var stack = this._redoStack || [];
+  var entry = stack[stack.length - 1];
+  if (!entry) {
+    $('#toolOutput').text(I18n.t('Nothing to redo'));
+    return;
+  }
+
+  var map = this.simulation._map;
+  var unchanged = entry.tiles.every(function(t) {
+    var now = map.getTileValue(t.x, t.y);
+    return now === t.oldValue || tileKind(now) === tileKind(t.oldValue);
+  });
+  if (!unchanged) {
+    $('#toolOutput').text(I18n.t("Can't redo: the city has changed there"));
+    return;
+  }
+  if (entry.cost > this.simulation.budget.totalFunds) {
+    $('#toolOutput').text(I18n.t("Can't redo: not enough money"));
+    return;
+  }
+
+  stack.pop();
+  for (var i = 0; i < entry.tiles.length; i++) {
+    var t = entry.tiles[i];
+    map.setTile(t.x, t.y, t.newValue, t.newFlags !== undefined ? t.newFlags : t.oldFlags);
+  }
+  this._applyUndoLists(entry, true);
+  this.simulation.budget.spend(entry.cost);
+
+  this._undoStack = this._undoStack || [];
+  this._undoStack.push(entry);
+  $('#undoRequest').prop('disabled', false);
+  $('#redoRequest').prop('disabled', stack.length === 0);
+  $('#toolOutput').text(I18n.t('Redone'));
 };
 
 
@@ -1681,6 +1793,41 @@ Game.prototype.processFrontEndMessage = function(message) {
 
 
 // POLICY LAB v30: power capacity in use, under the funds
+// POLICY LAB v30: city sizes (the 1989 thresholds: a city becomes a town above 2,000 people, and so on)
+var CITY_SIZES = [
+  {min: 0, en: 'Village', es: 'Aldea',
+   icon: '<path d="M3 13 V8.5 L6.5 5.5 L10 8.5 V13 Z"/><path d="M5.5 13 V10.5 H7.5 V13"/><path d="M1.5 13 H14.5"/>'},
+  {min: 2001, en: 'Town', es: 'Pueblo',
+   icon: '<path d="M1.5 13 V8 L4.5 5.5 L7.5 8 V13 Z"/><path d="M8.5 13 V7 L11.5 4.5 L14.5 7 V13 Z"/><path d="M1 13 H15"/>'},
+  {min: 10001, en: 'City', es: 'Ciudad',
+   icon: '<path d="M2 13 V7 H6 V13"/><path d="M6 13 V3 H10.5 V13"/><path d="M10.5 13 V8.5 H14 V13"/><path d="M1 13 H15"/><path d="M7.5 5.5 H9 M7.5 8 H9 M7.5 10.5 H9"/>'},
+  {min: 50001, en: 'Capital', es: 'Capital',
+   icon: '<path d="M3 8 A5 4 0 0 1 13 8 Z"/><path d="M8 4 V2"/><path d="M3.5 8 V12.5 M6.5 8 V12.5 M9.5 8 V12.5 M12.5 8 V12.5"/><path d="M2 13 H14"/>'},
+  {min: 100001, en: 'Metropolis', es: 'Metrópolis',
+   icon: '<path d="M1.5 13 V6 H4.5 V13"/><path d="M4.5 13 V2 H8 V13"/><path d="M8 13 V4.5 H11 V13"/><path d="M11 13 V7.5 H14.5 V13"/><path d="M1 13 H15"/>'},
+  {min: 500001, en: 'Megalopolis', es: 'Megalópolis',
+   icon: '<path d="M1 13 V4 H3.5 V13"/><path d="M3.5 13 V1.5 H6.5 V13"/><path d="M6.5 13 V5 H9 V13"/><path d="M9 13 V2.5 H12 V13"/><path d="M12 13 V6 H15 V13"/><path d="M0.5 13 H15.5"/>'}
+];
+
+Game.prototype.updateClassLine = function(population) {
+  population = population || 0;
+  var i = 0;
+  while (i + 1 < CITY_SIZES.length && population >= CITY_SIZES[i + 1].min)
+    i++;
+  var size = CITY_SIZES[i], next = CITY_SIZES[i + 1];
+  if (this._classIconIndex !== i) {
+    this._classIconIndex = i;
+    $('#cclassIcon').html('<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4" ' +
+                          'stroke-linecap="round" stroke-linejoin="round">' + size.icon + '</svg>');
+  }
+  var nextName = next ? (I18n.lang() === 'es' ? next.es : next.en) : '';
+  $('#nextClass').text(next ? I18n.p('Next: {0}, {1}', 'Luego: {0}, {1}', nextName, MiscUtils.formatNumber(next.min))
+                            : I18n.p('Biggest size', 'Tamaño máximo'))
+    .attr('title', next ? I18n.p('The city becomes a {0} when it reaches {1} people', 'La ciudad pasa a ser {0} cuando llega a {1} habitantes',
+                                 nextName.toLowerCase(), MiscUtils.formatNumber(next.min)) : '');
+};
+
+// POLICY LAB v30: power plant capacity in use, kept to one line (the details are in the tooltip)
 Game.prototype.updatePowerLine = function() {
   var use = this.simulation._powerManager && this.simulation._powerManager.lastUse;
   var el = $('#powerLine');
@@ -1689,8 +1836,10 @@ Game.prototype.updatePowerLine = function() {
     return;
   }
   var pctUsed = Math.round(100 * use.used / use.max);
-  el.text(I18n.p('Power: {0}% used ({1} of {2})', 'Electricidad: {0}% en uso ({1} de {2})', Math.min(pctUsed, 999),
-                 MiscUtils.formatNumber(use.used), MiscUtils.formatNumber(use.max)))
+  el.text(I18n.p('Power: {0}/{1}', 'Energía: {0}/{1}', MiscUtils.formatNumber(use.used), MiscUtils.formatNumber(use.max)))
+    .attr('title', I18n.p('Power plant capacity in use: {0}% ({1} of {2} units; zones and wires each take one unit)',
+                          'Capacidad de las plantas en uso: {0}% ({1} de {2} unidades; cada zona y cable usa una)', Math.min(pctUsed, 999),
+                          MiscUtils.formatNumber(use.used), MiscUtils.formatNumber(use.max)))
     .attr('class', 'infoSmall ' + (use.used >= use.max ? 'pw-bad' : pctUsed >= 80 ? 'pw-warn' : 'pw-ok'));
 };
 
@@ -1743,6 +1892,8 @@ Game.prototype.calculateMouseForPaint = function() {
       // Coerce back to numbers.
       mouse.width = this.inputStatus.toolWidth - 0;
       mouse.height = this.inputStatus.toolWidth - 0;
+      if (this.inputStatus.toolName === 'bulldozer' && (this._dozeSize || 1) > 1)
+        mouse.width = mouse.height = this._dozeSize;
       mouse.colour = this.inputStatus.toolColour || 'yellow';
     }
   }
@@ -1806,6 +1957,21 @@ var commonAnimate = function() {
   else if (toolKey.indexOf('highway|') === 0 && this._toolOutputEl && this._toolOutputEl.textContent === 'Tools')
     this.highwayToolHint();
   this._toolOutputEl = this._toolOutputEl || document.getElementById('toolOutput');
+
+  // v30: placement preview: what the service building would reach from the spot under the mouse
+  var prevName = this.inputStatus.currentTool ? this.inputStatus.toolName : null;
+  if (this.mouse && prevName && Preview.has(prevName)) {
+    var porigin = this.gameCanvas.getTileOrigin();
+    var px = porigin.x + this.mouse.x, py = porigin.y + this.mouse.y;
+    var pkey = prevName + ':' + px + ',' + py + ':' + I18n.lang();
+    if (pkey !== this._previewKey) {
+      this._previewKey = pkey;
+      this.gameCanvas.setPreview(Preview.shapesFor(prevName, this.simulation._map, px, py), pkey);
+    }
+  } else if (this._previewKey !== 'none') {
+    this._previewKey = 'none';
+    this.gameCanvas.setPreview(null, 'none');
+  }
 
   var sprites = this.calculateSpritesForPaint(this.gameCanvas);
   this.gameCanvas.paint(this.mouse, sprites, this.isPaused);

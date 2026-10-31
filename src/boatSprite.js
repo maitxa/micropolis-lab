@@ -17,7 +17,6 @@ import { MiscUtils } from './miscUtils.js';
 import { Policy } from './policy.js';
 import { Random } from './random.ts';
 import { SPRITE_SHIP } from './spriteConstants.ts';
-import { SpriteConstants } from './spriteConstants.ts';
 import { SpriteUtils } from './spriteUtils.js';
 import { TileUtils } from './tileUtils.js';
 import * as TileValues from "./tileValues.ts";
@@ -100,6 +99,24 @@ var tileWhiteList = [TileValues.RIVER, TileValues.CHANNEL, TileValues.POWERBASE,
 
 var CANTMOVE = 10;
 
+// These tiles are open water or crossings through which the ship sprite can
+// safely pass. The existing routing rules further restrict its choices.
+// POLICY LAB v30: ships also pass under high crossings (rail, power lines, highway bridges across the channel)
+var isShipWater = function(map, x, y) {
+  var tile = map.getTileValue(x, y);
+  return tileWhiteList.indexOf(tile) !== -1 || highCrossing(map, x, y, tile);
+};
+
+var isDirectionNavigable = function(map, x, y, oldDir, frame) {
+  var nextX = x + tileDeltaX[frame];
+  var nextY = y + tileDeltaY[frame];
+  if (!map.testBounds(nextX, nextY))
+    return false;
+  var next = map.getTileValue(nextX, nextY);
+  return next === TileValues.CHANNEL || next === TileValues.BRWH ||
+         next === TileValues.BRWV || highCrossing(map, nextX, nextY, next) || oppositeAndUnderwater(next, oldDir, frame);
+};
+
 BoatSprite.prototype.move = function(spriteCycle, disasterManager, blockMaps) {
   var tile = TileValues.RIVER;
   var frame, x, y;
@@ -142,18 +159,17 @@ BoatSprite.prototype.move = function(spriteCycle, disasterManager, blockMaps) {
       if (frame === this.dir)
         continue;
 
+      // Prevent diagonal corner-cutting across land or other obstacles.
       x = this.worldX + tileDeltaX[frame];
       y = this.worldY + tileDeltaY[frame];
+      var diagonal = tileDeltaX[frame] !== 0 && tileDeltaY[frame] !== 0;
+      var clearCorner = !diagonal ||
+        (this.map.testBounds(x, this.worldY) &&
+         this.map.testBounds(this.worldX, y) &&
+         isShipWater(this.map, x, this.worldY) &&
+         isShipWater(this.map, this.worldX, y));
 
-      if (this.map.testBounds(x, y)) {
-        tile = this.map.getTileValue(x, y);
-
-        // Test for a suitable water tile
-        // POLICY LAB v30: ships also pass under highway bridges, rail bridges and power lines (high crossings)
-        if (tile === TileValues.CHANNEL || tile === TileValues.BRWH ||
-            tile === TileValues.BRWV || highCrossing(this.map, x, y, tile) || oppositeAndUnderwater(tile, this.dir, frame)) {
-          if (highCrossing(this.map, x, y, tile))
-            tile = TileValues.CHANNEL;   // safe for the wreck test below
+      if (clearCorner && isDirectionNavigable(this.map, this.worldX, this.worldY, this.dir, frame)) {
           this.newDir = frame;
           this.frame = SpriteUtils.turnTo(this.frame, this.newDir);
           this.dir = frame + 4;
@@ -161,20 +177,47 @@ BoatSprite.prototype.move = function(spriteCycle, disasterManager, blockMaps) {
           if (this.dir > 8)
             this.dir -= 8;
           break;
-        }
       }
     }
 
     if (dir === (startDir + 8)) {
-      this.dir = CANTMOVE;
-      this.newDir = (Random.getRandom16() & 7) + 1;
+      // At a dead end, turn around if the return channel is usable.
+      // 'dir' is the direction we arrived from, normally skipped above.
+      var reverse = this.dir;
+      if (reverse >= 1 && reverse <= 8 &&
+          isDirectionNavigable(this.map, this.worldX, this.worldY, CANTMOVE, reverse)) {
+        this.newDir = reverse;
+        this.frame = SpriteUtils.turnTo(this.frame, reverse);
+        this.dir = reverse + 4;
+        if (this.dir > 8) this.dir -= 8;
+      } else {
+        this.dir = CANTMOVE;
+        // Keep the ship stationary rather than assigning a random landward bearing.
+        this.newDir = this.frame;
+      }
     }
   } else {
     frame = this.frame;
 
     if (frame === this.newDir)  {
-      this.x += xDelta[frame];
-      this.y += yDelta[frame];
+      var nextPixX = this.x + xDelta[frame];
+      var nextPixY = this.y + yDelta[frame];
+      var nextTileX = nextPixX >> 4;
+      var nextTileY = nextPixY >> 4;
+      if (!this.map.testBounds(nextTileX, nextTileY)) {
+        this.frame = 0; // Ship has sailed off the map.
+        return;
+      }
+      if (!isShipWater(this.map, nextTileX, nextTileY)) {
+        // A bridge may have closed or the channel may have changed since
+        // the last course decision. Never sail through that obstruction.
+        this.count = 1;
+        this.dir = CANTMOVE;
+        this.newDir = this.frame;
+      } else {
+        this.x = nextPixX;
+        this.y = nextPixY;
+      }
     }
   }
 
@@ -183,17 +226,16 @@ BoatSprite.prototype.move = function(spriteCycle, disasterManager, blockMaps) {
     return;
   }
 
-  // If we didn't find a new direction, we might explode
-  // depending on the last tile we looked at.
-  for (var i = 0; i < 8; i++) {
-    if (tile === tileWhiteList[i]) {
-      break;
-    }
-
-    if (i === 7) {
-      this.explodeSprite();
-      SpriteUtils.destroyMapTile(this.spriteManager, this.map, blockMaps, this.x, this.y);
-    }
+  // Validate the tile the ship actually occupies, not the last neighbour
+  // inspected during its random direction search. The old code could wreck
+  // a ship on a valid channel when its final examined neighbour was land.
+  var shipX = this.worldX;
+  var shipY = this.worldY;
+  if (!this.map.testBounds(shipX, shipY))
+    return;
+  if (!isShipWater(this.map, shipX, shipY)) {
+    this.explodeSprite();
+    SpriteUtils.destroyMapTile(this.spriteManager, this.map, blockMaps, this.x, this.y);
   }
 };
 

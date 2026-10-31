@@ -17,6 +17,7 @@
  * Only READS the simulation.
  */
 
+import { Education } from './education.js';
 import { I18n } from './i18n.js';
 import { MiscUtils } from './miscUtils.js';
 import { Reach } from './reach.js';
@@ -276,6 +277,26 @@ var compute = function(sim, history) {
                  'Los incendios se extienden sin control donde no llega ninguna estación de bomberos. Empiezan por desastres, accidentes, naufragios y fusiones nucleares.'),
           fixes: [P('Build a fire station (key 9) among the homes and fund it fully.', 'Construye una estación de bomberos (tecla 9) entre las viviendas y dale todos los fondos.')],
           layer: 'fire'});
+  }
+
+  // ---- Education (v30): once the city has 2,000 people or a school
+  if (m.people > 2000 || (c.schoolPop || 0) + (c.collegePop || 0) > 0) {
+    var ecov = Education.coverage(sim._map, c), est = Education.state();
+    var served = ecov.homes ? ecov.school / ecov.homes : 0;
+    push({id: 'education', name: P('Schools', 'Escuelas'),
+          level: level(m.people > 20000 && served < 0.3, served < 0.7),
+          value: ecov.homes ? pct(served) : '',
+          summary: (c.schoolPop || 0) ? P('{0} of homes have a school nearby', 'El {0} de las viviendas tiene una escuela cerca', pct(served))
+                                      : P('No school yet.', 'Todavía no hay escuelas.'),
+          lines: [P('Homes a school serves: {0} of {1}', 'Viviendas que atiende una escuela: {0} de {1}', fmt(ecov.school), fmt(ecov.homes)),
+                  P('Homes a college serves: {0}', 'Viviendas que atiende una universidad: {0}', fmt(ecov.college)),
+                  P('City schooling {0}%, college education {1}% (they change slowly)', 'Escolarización {0}%, estudios universitarios {1}% (cambian despacio)', Math.round(est.school * 100), Math.round(est.college * 100)),
+                  (c.educationUnpoweredList || []).length ? P('Without power (closed): {0}', 'Sin electricidad (cerradas): {0}', fmt(c.educationUnpoweredList.length)) : ''],
+          why: P('Schooling lowers crime in every neighbourhood (up to {0} points); college education brings shops and factories more business. Both build up over a few years.',
+                 'La escolarización baja la delincuencia en todos los barrios (hasta {0} puntos); los estudios universitarios traen más negocio a tiendas y fábricas. Ambos crecen a lo largo de unos años.', Education.CRIME_MAX),
+          fixes: [P('Build a school (key L) among the homes with no school, touching a power line.', 'Construye una escuela (tecla L) entre las viviendas sin escuela, tocando un cable.'),
+                  P('A college (key O) serves a wide area: one in the middle of the city.', 'Una universidad (tecla O) atiende una zona amplia: una en el centro de la ciudad.')],
+          layer: 'education'});
   }
 
   // ---- Taxes

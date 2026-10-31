@@ -4,9 +4,10 @@
  * Modified version: NOT the original micropolisJS / Micropolis.
  *
  * "Reach" of a zone: which roads its trip car can get to within the trip limit (30 road tiles in 1989; see Policy.TRIP_LIMIT), which destinations it could find
- * there, and which dead ends could stop it. This is the BEST case: the game's car turns at random at every junction
- * and gives up at a dead end (as in 1989), so a destination that is far away or behind many junctions will still be
- * missed some of the time.
+ * there, and which dead ends could slow it. This is the BEST case: the game's car turns at random at every junction,
+ * never drives the same tile twice, and at a dead end turns back to try another way, but every tile it backs up uses
+ * as much of its trip as four tiles forward (v30; in 1989 it gave up). A destination that is far away or behind many junctions or long
+ * dead ends will still be missed some of the time.
  *
  * Only READS the map.
  */
@@ -286,14 +287,14 @@ var verdict = function(r) {
   var open = (r.bridges || []).filter(function(b) { return b.open; }).length;
   var closed = (r.bridges || []).length - open;
   if (open)
-    text += ' ' + P('A drawbridge on its routes is open right now: cars stop there until it closes.',
-                    'Un puente levadizo en sus rutas está abierto ahora: los carros se detienen allí hasta que se cierre.');
+    text += ' ' + P('A drawbridge on its routes is open right now: cars turn back there until it closes.',
+                    'Un puente levadizo en sus rutas está abierto ahora: los carros dan la vuelta allí hasta que se cierre.');
   else if (closed)
     text += ' ' + P('A drawbridge on its routes opens for ships (and sometimes at random), cutting the road while open.',
                     'Un puente levadizo en sus rutas se abre para los barcos (y a veces al azar), y corta la calle mientras está abierto.');
   if (r.dead.length)
-    text += ' ' + (r.dead.length === 1 ? P('1 dead end nearby can stop the car.', '1 calle sin salida cercana puede detener el carro.')
-                                       : P('{0} dead ends nearby can stop the car.', '{0} calles sin salida cercanas pueden detener el carro.',
+    text += ' ' + (r.dead.length === 1 ? P('1 dead end nearby: the car turns back there, which uses up part of its trip.', '1 calle sin salida cercana: el carro da la vuelta allí, y eso gasta parte de su viaje.')
+                                       : P('{0} dead ends nearby: the car turns back at them, which uses up part of its trip.', '{0} calles sin salida cercanas: el carro da la vuelta en ellas, y eso gasta parte de su viaje.',
                                            fmt(r.dead.length)));
   return text;
 };
@@ -326,10 +327,10 @@ var bridgeLines = function(r, lines) {
     lines.push({mark: 'warn', text: P('A drawbridge on these roads opens for ships (and sometimes at random).',
                                       'Un puente levadizo en estas calles se abre para los barcos (y a veces al azar).')});
   if (r.dead.length)
-    lines.push({mark: 'warn', text: r.dead.length === 1 ? P('1 dead end within reach: a car that gets there gives up.',
-                                                            '1 calle sin salida a su alcance: el carro que llega allí se rinde.')
-                                                        : P('{0} dead ends within reach: a car that gets there gives up.',
-                                                            '{0} calles sin salida a su alcance: el carro que llega allí se rinde.', fmt(r.dead.length))});
+    lines.push({mark: 'warn', text: r.dead.length === 1 ? P('1 dead end within reach: a car that gets there turns back, which uses up part of its trip.',
+                                                            '1 calle sin salida a su alcance: el carro que llega allí da la vuelta, y eso gasta parte de su viaje.')
+                                                        : P('{0} dead ends within reach: a car that gets there turns back, which uses up part of its trip.',
+                                                            '{0} calles sin salida a su alcance: el carro que llega allí da la vuelta, y eso gasta parte de su viaje.', fmt(r.dead.length))});
 };
 
 // A residential, commercial or industrial zone
@@ -374,8 +375,8 @@ var zoneReport = function(map, zone, longReach) {
     verdict = {mark: 'no', text: P('Not connected to what it needs: put {0} along the shaded roads.',
                                    'No está conectada a lo que necesita: pon {0} junto a las calles sombreadas.', what(r.type))};
   else if (closest > NEAR || r.dead.length || r.bridges.length)
-    verdict = {mark: 'warn', text: P('Connected, but trips will sometimes fail (far away, dead ends or a drawbridge).',
-                                     'Conectada, pero a veces los viajes fallarán (lejos, calles sin salida o un puente levadizo).')};
+    verdict = {mark: 'warn', text: P('Connected, but some trips may run out of road (far away, dead ends to turn back from, or a drawbridge).',
+                                     'Conectada, pero algunos viajes pueden quedarse cortos (lejos, calles sin salida de las que dar la vuelta, o un puente levadizo).')};
   else
     verdict = {mark: 'ok', text: P('Connected: this {0} has what it needs to grow.', 'Conectada: esta {0} tiene lo que necesita para crecer.', noun(r.type))};
   return {reach: r, lines: lines, verdict: verdict,
@@ -428,7 +429,7 @@ var roadReport = function(map, x, y) {
   else if (countLinks(map, x, y) <= 1)
     lines.push({mark: 'warn', text: nextToOpenBridge(map, x, y)
                   ? P('The drawbridge here is open: the road is cut until it closes.', 'El puente levadizo aquí está abierto: la calle está cortada hasta que se cierre.')
-                  : P('This tile is a dead end: a car that gets here gives up.', 'Esta casilla es una calle sin salida: el carro que llega aquí se rinde.')});
+                  : P('This tile is a dead end: a car that gets here turns back and tries another way, but backing up uses up part of its trip.', 'Esta casilla es una calle sin salida: el carro que llega aquí da la vuelta y prueba otro camino, pero retroceder gasta parte de su viaje.')});
   lines.push({mark: 'info', text: P('Within {4} road tiles: homes {0}, shops {1}, factories {2}{3}.',
                                     'A menos de {4} casillas de calle: viviendas {0}, tiendas {1}, fábricas {2}{3}.',
                                     fmt(counts.res), fmt(counts.com), fmt(counts.ind),

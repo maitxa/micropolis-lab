@@ -303,6 +303,11 @@ export const DEPOTBASE      = 956; // Train depot (3x3), tiles 956--964
 export const DEPOT          = 960; // 'Centre' tile of the train depot
 export const WATERPLANTBASE = 965; // Water treatment plant (3x3), tiles 965--973
 export const WATERPLANT     = 969; // 'Centre' tile of the water treatment plant
+// v30: school and college (the next two unused church slots)
+export const SCHOOLBASE     = 974; // School (3x3), tiles 974--982
+export const SCHOOL         = 978;
+export const COLLEGEBASE    = 983; // College (3x3), tiles 983--991
+export const COLLEGE        = 987;
 
 // Extended zones: 956-1019
 export const CHURCH1BASE    = 956;

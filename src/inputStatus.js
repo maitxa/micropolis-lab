@@ -77,6 +77,7 @@ var InputStatus = EventEmitter(function(map, tileWidth) {
   $('#debugRequest').click(debugHandler.bind(this));
   // POLICY LAB
   $('#undoRequest').click(makeHandler('UNDO_REQUESTED').bind(this));
+  $('#redoRequest').click(makeHandler('REDO_REQUESTED').bind(this));
   $('#keysRequest').click(makeHandler('KEYS_HELP_REQUESTED').bind(this));
   $('#cityDataRequest').click(makeHandler('CITY_DATA_REQUESTED').bind(this));
   $('#zoomIn').click(function(e) { e.preventDefault(); this._emitEvent(Messages.ZOOM_REQUESTED, 1); }.bind(this));
@@ -97,7 +98,9 @@ var toolKeys = {
   85: 'waterButton',      // U (water treatment plant)
   77: 'hospitalButton',   // M (medical)
   71: 'bigParkButton',    // G (green): big park
-  69: 'highwayButton'     // E (expressway)
+  69: 'highwayButton',    // E (expressway)
+  76: 'schoolButton',     // L (learning)
+  79: 'collegeButton'     // O
 };
 // Numeric keypad
 for (var k = 0; k <= 9; k++)
@@ -115,6 +118,12 @@ var keyDownHandler = function(e) {
     // Undo: Ctrl+Z (Windows) or Cmd+Z (Mac)
     if ((e.ctrlKey || e.metaKey) && e.keyCode === 90 && !e.shiftKey) {
       this._emitEvent(Messages.UNDO_REQUESTED);
+      e.preventDefault();
+      return;
+    }
+    // v30: Redo: Ctrl+Y, Ctrl+Shift+Z (Windows) or Cmd+Shift+Z (Mac)
+    if ((e.ctrlKey || e.metaKey) && ((e.keyCode === 90 && e.shiftKey) || e.keyCode === 89)) {
+      this._emitEvent(Messages.REDO_REQUESTED);
       e.preventDefault();
       return;
     }

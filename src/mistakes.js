@@ -167,10 +167,10 @@ var report = function(game) {
   if (stuck.length)
     add('stuckShops', 75 + stuck.length,
         P('{0} shops can\'t reach customers, so they can\'t grow', '{0} tiendas no llegan a sus clientes, así que no pueden crecer', fmt(stuck.length)),
-        P('A shop sends a car along the roads now and then; if it reaches no home, shop or factory within {0} road tiles, the shop can\'t grow (1989 rule). Dead ends and drawbridges stop the car.',
-          'Una tienda envía de vez en cuando un carro por las calles; si no llega a ninguna vivienda, tienda o fábrica a menos de {0} casillas, la tienda no puede crecer (regla de 1989). Las calles sin salida y los puentes levadizos detienen el carro.', Reach.maxDist()),
-        P('Connect their roads to the rest of the city, remove dead ends, or use a highway (trips go three times as far on it).',
-          'Conecta sus calles con el resto de la ciudad, quita las calles sin salida, o usa una autopista (los viajes llegan tres veces más lejos).'),
+        P('A shop sends a car along the roads now and then; if it reaches no home, shop or factory within {0} road tiles, the shop can\'t grow (1989 rule). At dead ends and open drawbridges the car turns back, which uses up part of its trip.',
+          'Una tienda envía de vez en cuando un carro por las calles; si no llega a ninguna vivienda, tienda o fábrica a menos de {0} casillas, la tienda no puede crecer (regla de 1989). En las calles sin salida y los puentes levadizos abiertos el carro da la vuelta, y eso gasta parte de su viaje.', Reach.maxDist()),
+        P('Connect their roads to the rest of the city, connect long dead ends to another road, or use a highway (trips go three times as far on it).',
+          'Conecta sus calles con el resto de la ciudad, une las calles sin salida largas con otra calle, o usa una autopista (los viajes llegan tres veces más lejos).'),
         frames(stuck, P('Can\'t reach customers', 'No llega a sus clientes')));
 
   // ---- Road that serves nothing (v29: replaces "N dead-end roads"). A dead end beside zones is fine: those zones

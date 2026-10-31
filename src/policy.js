@@ -78,6 +78,8 @@ Policy.presetName = '1989 baseline';
 // The city's history for the charts under Funds: monthly funds, population and tax rate, and each year's surplus or
 // deficit (saved with the city)
 Policy.history = {months: [], years: []};
+// v30: how schooled the city is (0-1): {school, college}; see education.js
+Policy.education = {school: 0, college: 0};
 
 Policy.DEFAULTS = DEFAULTS;
 
@@ -109,6 +111,7 @@ Policy.save = function(saveData) {
   copy.cityId = Policy.cityId;
   copy.presetName = Policy.presetName;
   copy.history = Policy.history;
+  copy.education = Policy.education;
   saveData.policyLab = copy;
 };
 
@@ -124,6 +127,7 @@ Policy.load = function(saveData) {
   Policy.cityId = extra.cityId || null;
   Policy.presetName = extra.presetName || '1989 baseline';
   Policy.history = extra.history && extra.history.months ? extra.history : {months: [], years: []};
+  Policy.education = extra.education || {school: 0, college: 0};
 };
 
 Policy.industrialPollutionFactor = function() {

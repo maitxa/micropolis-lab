@@ -133,6 +133,7 @@ var densityTable = [TileValues.ROADBASE, TileValues.LTRFBASE, TileValues.HTRFBAS
 
 var roadFound = function(map, x, y, simData) {
   simData.census.roadTotal += 1;
+  simData.census.roadTiles = (simData.census.roadTiles || 0) + 1;
   // POLICY LAB v26: a highway tile costs as much upkeep as three road tiles
   if (Policy.isHighway(x, y)) {
     simData.census.roadTotal += 2;

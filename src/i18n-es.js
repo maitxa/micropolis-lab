@@ -65,8 +65,8 @@ var ES = {
   'Balanced (original)': 'Equilibrado (original)',
   'Roads first: cheap roads, pricey rail': 'Primero las calles: calles baratas, tren caro',
   'How the world works in this game': 'Cómo funciona el mundo en este juego',
-  'The same for every preset. Crime rises on cheap land and in crowded places, and falls near police, funded social services and parks. Taxes above 7% slow growth and lower ones speed it up. Environmental rules change both industrial pollution and industrial growth; business incentives attract shops and factories. Jobs (driven by industry) bring residents. People pay more to live near clean water, near shops they can walk to and near a hospital. Untreated sewage pollutes rivers (water treatment plants prevent it). Each neighbourhood pays tax on its own land value. Trips can go 90 road tiles (more on highways and by train).':
-    'Igual para todos los perfiles. La delincuencia sube en suelo barato y en lugares abarrotados, y baja cerca de la policía, de los servicios sociales con fondos y de los parques. Los impuestos por encima del 7% frenan el crecimiento y los más bajos lo aceleran. Las normas ambientales cambian tanto la contaminación industrial como el crecimiento industrial; los incentivos a las empresas atraen tiendas y fábricas. Los empleos (impulsados por la industria) traen residentes. La gente paga más por vivir cerca de agua limpia, de tiendas a las que puede ir a pie y de un hospital. Las aguas residuales sin tratar contaminan los ríos (las plantas de tratamiento lo evitan). Cada barrio paga impuestos según el valor de su propio suelo. Los viajes pueden recorrer 90 casillas de calle (más por autopista y en tren).',
+  'The same for every preset. Crime rises on cheap land and in crowded places, and falls near police, funded social services and parks. Taxes above 7% slow growth and lower ones speed it up. Environmental rules change both industrial pollution and industrial growth; business incentives attract shops and factories. Jobs (driven by industry) bring residents. People pay more to live near clean water, near shops they can walk to and near a hospital. Untreated sewage pollutes rivers (water treatment plants prevent it). Each neighbourhood pays tax on its own land value. Trips can go 90 road tiles (more on highways and by train); at a dead end a car turns back and tries another way, which uses up part of its trip.':
+    'Igual para todos los perfiles. La delincuencia sube en suelo barato y en lugares abarrotados, y baja cerca de la policía, de los servicios sociales con fondos y de los parques. Los impuestos por encima del 7% frenan el crecimiento y los más bajos lo aceleran. Las normas ambientales cambian tanto la contaminación industrial como el crecimiento industrial; los incentivos a las empresas atraen tiendas y fábricas. Los empleos (impulsados por la industria) traen residentes. La gente paga más por vivir cerca de agua limpia, de tiendas a las que puede ir a pie y de un hospital. Las aguas residuales sin tratar contaminan los ríos (las plantas de tratamiento lo evitan). Cada barrio paga impuestos según el valor de su propio suelo. Los viajes pueden recorrer 90 casillas de calle (más por autopista y en tren); en una calle sin salida el carro da la vuelta y prueba otro camino, lo que gasta parte de su viaje.',
   // ---- Policy setup ----
   'Policy Lab.': 'Laboratorio de Políticas.',
   'Original 1989 rules': 'Reglas originales de 1989',
@@ -101,6 +101,7 @@ var ES = {
   'Funds $': 'Fondos $',
   'Score:': 'Puntuación:',
   'Population:': 'Población:',
+  'City size and population': 'Tamaño de la ciudad y población',
   'Budget': 'Presupuesto',
   'Evaluation': 'Evaluación',
   'Disasters': 'Desastres',
@@ -171,6 +172,15 @@ var ES = {
   "Can't undo: the city has already changed there": 'No se puede deshacer: la ciudad ya cambió ese lugar',
   'Undone: {0} refunded': 'Deshecho: se te devolvieron {0}',
   'Undone': 'Deshecho',
+  'Nothing to redo': 'No hay nada que rehacer',
+  "Can't redo: the city has changed there": 'No se puede rehacer: la ciudad cambió ese lugar',
+  "Can't redo: not enough money": 'No se puede rehacer: no hay dinero suficiente',
+  'Redone': 'Rehecho',
+  'Bulldozer size': 'Tamaño de la excavadora',
+  'School: needs power; serves homes within 16 tiles; slowly lowers crime (key L)': 'Escuela: necesita electricidad; atiende a las viviendas a menos de 16 casillas; baja la delincuencia poco a poco (tecla L)',
+  'College: needs power; serves homes within 32 tiles; slowly brings more business (key O)': 'Universidad: necesita electricidad; atiende a las viviendas a menos de 32 casillas; atrae más negocio poco a poco (tecla O)',
+  'Redo': 'Rehacer',
+  'Redo what you just undid (Ctrl+Y / Cmd+Shift+Z)': 'Rehacer lo que acabas de deshacer (Ctrl+Y / Cmd+Mayús+Z)',
 
   // ---- Keyboard help ----
   'Keyboard shortcuts': 'Atajos de teclado',
@@ -375,7 +385,7 @@ var ES = {
   '30 road tiles': '30 casillas de calle',
   '30 road tiles (original)': '30 casillas de calle (original)',
   '90 road tiles': '90 casillas de calle',
-  'Go back in time': 'Volver atrás en el tiempo',
+  'Go back in time': 'Volver atrás',
   'Go back to an earlier year of this city': 'Volver a un año anterior de esta ciudad',
   'Big park': 'Parque grande',
   'Big park: cleans the air and (in the default world model) lowers crime within 8 tiles (key G)': 'Parque grande: limpia el aire y (en el modelo del mundo predeterminado) reduce la delincuencia a menos de 8 casillas (tecla G)',

@@ -75,7 +75,8 @@ WorldEffects.prototype.snapshot = function() {
     tiles.push({x: coords.x, y: coords.y,
                 oldValue: this._map.getTileValue(coords.x, coords.y),
                 oldFlags: this._map.getTileFlags(coords.x, coords.y),
-                newValue: this._data[keys[i]].getValue()});
+                newValue: this._data[keys[i]].getValue(),
+                newFlags: this._data[keys[i]].getFlags()});
   }
   return tiles;
 };
