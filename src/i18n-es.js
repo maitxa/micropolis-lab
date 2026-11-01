@@ -344,6 +344,8 @@ var ES = {
   'Funds': 'Fondos',
   'a year': 'al año',
   'Next year:': 'Próximo año:',
+  'Costs:': 'Gastos:',
+  ' a year': ' al año',
   'Save picture (PNG)': 'Guardar imagen (PNG)',
   'Export to a file': 'Exportar a un archivo',
   'Saving again under the same name replaces that save. Saved in this browser; use Load game on the start screen to open it. Export to a file saves it too, and gives you a .json file to import on another computer.': 'Guardar de nuevo con el mismo nombre reemplaza esa partida. Se guarda en este navegador; usa Cargar partida en la pantalla de inicio para abrirla. Exportar a un archivo también la guarda y te da un archivo .json para importarlo en otra computadora.',

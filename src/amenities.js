@@ -95,6 +95,28 @@ var scan = function(map, blockMaps) {
   big.forEach(function(p) { markCircle(parks, p[0], p[1], BIG_PARK_RADIUS, 2); });
 };
 
+// v35: every built zone with its weight in the tax count and its land value (for the Taxes map): [{x, y, w, lv}]
+var taxZones = function(map, blockMaps) {
+  var lv = blockMaps.landValueMap, out = [];
+  for (var x = 0; x < map.width; x++) {
+    for (var y = 0; y < map.height; y++) {
+      var tile = map.getTile(x, y);
+      if (!tile.isZone())
+        continue;
+      var v = tile.getValue(), w = 0;
+      if (TileUtils.isResidential(v) && v !== TileValues.HOSPITAL)
+        w = Residential.getZonePopulation(map, x, y, v) / 8;
+      else if (TileUtils.isCommercial(v))
+        w = Commercial.getZonePopulation(map, x, y, v);
+      else if (TileUtils.isIndustrial(v))
+        w = Industrial.getZonePopulation(map, x, y, v);
+      if (w > 0)
+        out.push({x: x, y: y, w: w, lv: lv.worldGet(x, y), kind: TileUtils.isResidential(v) ? 'res' : TileUtils.isCommercial(v) ? 'com' : 'ind'});
+    }
+  }
+  return out;
+};
+
 // The land value the city taxes (see the note at the top)
 var taxLandValue = function(map, blockMaps, fallback) {
   var lv = blockMaps.landValueMap;
@@ -130,7 +152,8 @@ var Amenities = {
   SMALL_PARK_CRIME: 15,
   BIG_PARK_AIR: 0.6,
   scan: scan,
-  taxLandValue: taxLandValue
+  taxLandValue: taxLandValue,
+  taxZones: taxZones
 };
 
 

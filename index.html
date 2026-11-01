@@ -127,6 +127,13 @@
               <div id="balanceLine" title="Next year: forecast of a full year's taxes minus running costs at today's rates (building not counted)"><span class="perYear">Next year:</span> <span id="balance">$0</span></div>
               <div id="lastYearLine" title="Last year: what the city really collected in taxes minus what it paid in running costs (building not counted)"><span class="perYear">Last year:</span> <span id="lastYear">&ndash;</span></div>
             </div>
+            <!-- v35: running costs a year (a bar coloured by where the money goes; hover for the breakdown) and how long
+                 the money lasts at this rate -->
+            <div id="costBlock" tabindex="0" role="button" aria-controls="costPopup">
+              <div id="costLine"><span class="perYear">Costs:</span> <span id="costTotal">$0</span><span class="perYear"> a year</span></div>
+              <div id="costBar" aria-hidden="true"></div>
+              <div id="lastsLine"></div>
+            </div>
             <!-- POLICY LAB v30: how much of the power plants' capacity is in use -->
             <div id="powerLine" class="infoSmall" title="Power plant capacity in use (zones and wires each take one unit)"></div>
             <!-- POLICY LAB v31: the city's grade (click for the rating and graduation progress) -->
@@ -180,6 +187,8 @@
           <div class="historyHead"><span id="gradeTitle">City rating</span><button type="button" id="gradeClose" aria-label="Close">&times;</button></div>
           <div id="gradeBody"></div>
         </div>
+        <!-- v35: where the money goes (from the costs line in the city box) -->
+        <div id="costPopup" style="display:none" role="tooltip"></div>
         <div id="historyPopup" style="display:none" role="dialog" aria-label="City history">
           <div class="historyHead"><span>City history</span><button type="button" id="historyClose" aria-label="Close">&times;</button></div>
           <div id="historyCharts"></div>

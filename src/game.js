@@ -46,6 +46,8 @@ import { I18n } from './i18n.js';
 import { Preview } from './preview.js';
 import { ToolInfo } from './toolInfo.js';
 import { Rating } from './rating.js';
+import { Education } from './education.js';
+import { Utilities } from './utilities.js';
 import { Advisor } from './advisor.js';
 import { Panels } from './panels.js';
 import { Reach } from './reach.js';
@@ -419,6 +421,9 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     card.hide();
     if ($(this).attr('data-title')) $(this).attr('title', $(this).attr('data-title')).removeAttr('data-title');
   });
+  // v35: where the money goes, while hovering over (or focused on) the costs in the city box
+  $('#costBlock').on('mouseenter focus', function() { game.showCosts(); }).on('mouseleave blur', function() { $('#costPopup').hide(); })
+                 .on('click', function() { if ($('#costPopup').is(':visible')) $('#costPopup').hide(); else game.showCosts(); });
   // v31: the city rating and graduation progress, from the grade in the city box
   $('#gradeLine').on('click', function(e) {
     e.preventDefault();
@@ -511,19 +516,24 @@ Game.prototype.saveCurrent = function(name) {
   });
 };
 
-// POLICY LAB v34: Undo's "go back in time": keep the city as it is now under Saved cities, then reopen the copy from
-// just before the build (the page reloads into it)
-Game.prototype.goBackToSnap = function(snap) {
-  var P = I18n.p, months = Text.L('months');
-  var when = months[snap.date.month] + ' ' + snap.date.year;
-  var name = this.name || 'City';
-  var self = this;
-  return this.saveCurrent(P('{0} (before undo, {1})', '{0} (antes de deshacer, {1})', name, this.currentYear())).then(function() {
-    var info = {cityId: Policy.cityId, cityName: self.name, name: P('{0} (back to {1})', '{0} (vuelta a {1})', name, when), year: snap.date.year};
-    return CityStore.saveCity(info, snap.data);
-  }).then(function(rec) {
-    CityStore.resume('cities', rec.id);
-  });
+// POLICY LAB v35: put the whole city back as it was in a copy (Undo and Redo), without reloading the page
+Game.prototype.restoreState = function(text) {
+  var speed = this.simulation._speed;
+  try {
+    this.load(Storage.parse(text));
+  } catch (e) {
+    console.warn('Restore failed', e);
+    return false;
+  }
+  this.simulation.setSpeed(speed);
+  var d = this.simulation.getDate(), ev = this.simulation.evaluation;
+  $('#date').text([Text.L('months')[d.month], d.year].join(' '));
+  $('#population').text(MiscUtils.formatNumber(ev.cityPop || 0));
+  $('#funds').text(MiscUtils.formatNumber(this.simulation.budget.totalFunds));
+  Policy.highwaysVersion++;
+  this.updateClassLine(ev.cityPop || 0);
+  this.runAdvisor(false);
+  return true;
 };
 
 // POLICY LAB v34: save the city and offer it as a .json file (the same file Export makes under Saved cities)
@@ -796,6 +806,9 @@ Game.prototype.runAdvisor = function(newMonth) {
   var bal = result.estimate.balance;
   $('#balance').text((bal > 0 ? '+' : bal < 0 ? '\u2212' : '') + MiscUtils.formatMoney(Math.abs(bal)))
                .toggleClass('neg', bal < 0).toggleClass('pos', bal > 0);
+  // v35: running costs a year, where they go, and how long the money lasts
+  this.updateCosts();
+  this.layoutLeft();
   // v33: last year's real result (recorded every January)
   var ys = (Policy.history && Policy.history.years) || [], lyr = ys.length ? ys[ys.length - 1].v : null;
   $('#lastYear').text(lyr === null ? '\u2013' : (lyr > 0 ? '+' : lyr < 0 ? '\u2212' : '') + MiscUtils.formatMoney(Math.abs(lyr)))
@@ -1137,7 +1150,12 @@ Game.prototype.refreshHint = function(items) {
 // POLICY LAB: put the "To do" card just under the tool panel, and keep it clear of the zoom buttons
 // POLICY LAB v26: the Zoning need box sits just under the button panel (which grew), unless the player moved it
 Game.prototype.layoutLeft = function() {
-  var misc = $('#miscButtons');
+  var misc = $('#miscButtons'), info = $('#infobar');
+  // v35: the menu goes just under the city box (which grew a few lines), unless the player has moved it
+  if (misc.length && misc.is(':visible') && info.is(':visible') && !Panels.isPlaced('miscButtons')) {
+    var iscale = parseFloat(info.attr('data-scale')) || 1;
+    misc.css({top: (info.position().top + info.outerHeight() * iscale + 12) + 'px'});
+  }
   if (!misc.length || !misc.is(':visible') || Panels.isPlaced('RCIContainer'))
     return;
   var scale = parseFloat(misc.attr('data-scale')) || 1;
@@ -1625,9 +1643,11 @@ Game.prototype.handleToolLine = function(data) {
 
 
 // POLICY LAB: undo history. One entry per click or drag ("stroke"), newest last.
-var MAX_UNDO = 30;
-// v34: how many of them keep a copy of the whole city (for going back in time)
-var MAX_SNAPS = 20;
+// v35: Undo goes back up to 10 builds, each with a copy of the whole city from just before it (date and money too)
+var MAX_UNDO = 10;
+var MAX_SNAPS = 10;
+// ...but only for builds of the last 2 game years (older ones: Go back in time)
+var UNDO_YEARS = 2;
 // a game month in the simulation's own time units (48 a year)
 var CITY_MONTH = 4;
 
@@ -1715,13 +1735,29 @@ Game.prototype.handleUndo = function() {
     return t.newValue >= TileValues.TINYEXP && t.newValue <= TileValues.TINYEXPLAST && isExplosion(now);
   });
 
-  // v34: if time has passed since this was built, offer to take the whole city back to that moment (date, money and
-  // everything that happened since), or just to remove what was built
-  if (entry.snap && this.simulation._cityTime - entry.snap.cityTime >= CITY_MONTH) {
-    var game = this;
-    this.openPanel(function(done) {
-      CityPanels.openUndoChoice(game, entry, unchanged, function() { game._plainUndo(entry); }, done);
-    });
+  // v35: Undo takes the city back to just before the last build: the build, its cost and the time since (and so
+  // everything that happened in that time). Only for builds of the last 2 game years.
+  if (entry.snap) {
+    if (this.simulation._cityTime - entry.snap.cityTime > UNDO_YEARS * 12 * CITY_MONTH) {
+      $('#toolOutput').text(I18n.p('Can\'t undo: that was built more than {0} years ago (use Go back in time)',
+                                   'No se puede deshacer: se construyó hace más de {0} años (usa Volver atrás)', UNDO_YEARS));
+      return;
+    }
+    var months = Text.L('months'), when = months[entry.snap.date.month] + ' ' + entry.snap.date.year;
+    var after;
+    try { after = Storage.serialize(this.saveData()); } catch (e) { after = null; }
+    if (!this.restoreState(entry.snap.data)) {
+      $('#toolOutput').text(I18n.p('Couldn\'t undo', 'No se pudo deshacer'));
+      return;
+    }
+    stack.pop();
+    entry.after = after;
+    this._redoStack = this._redoStack || [];
+    this._redoStack.push(entry);
+    $('#undoRequest').prop('disabled', stack.length === 0);
+    $('#redoRequest').prop('disabled', !after);
+    $('#toolOutput').text(entry.cost > 0 ? I18n.p('Undone: back to {0} ({1} refunded)', 'Deshecho: de vuelta a {0} (se devolvieron {1})', when, MiscUtils.formatMoney(entry.cost))
+                                         : I18n.p('Undone: back to {0}', 'Deshecho: de vuelta a {0}', when));
     return;
   }
 
@@ -1763,6 +1799,21 @@ Game.prototype.handleRedo = function() {
   var entry = stack[stack.length - 1];
   if (!entry) {
     $('#toolOutput').text(I18n.t('Nothing to redo'));
+    return;
+  }
+  // v35: an undo that went back in time: redo returns to the moment the undo was pressed
+  if (entry.after) {
+    if (!this.restoreState(entry.after)) {
+      $('#toolOutput').text(I18n.p('Couldn\'t redo', 'No se pudo rehacer'));
+      return;
+    }
+    stack.pop();
+    delete entry.after;
+    this._undoStack = this._undoStack || [];
+    this._undoStack.push(entry);
+    $('#undoRequest').prop('disabled', false);
+    $('#redoRequest').prop('disabled', stack.length === 0);
+    $('#toolOutput').text(I18n.t('Redone'));
     return;
   }
 
@@ -2089,6 +2140,89 @@ Game.prototype.gameOver = function(reason, data) {
 Game.prototype.showGraduation = function() {
   var game = this;
   this.openPanel(function(done) { CityPanels.openGraduation(game, done); });
+};
+
+// POLICY LAB v35: the city's running costs for a year, by what they pay for (at today's funding levels and laws; the
+// same formulas as the January budget). Returns {parts: [{id, name, amount, colour}], total, taxes, balance}.
+var COST_COLOURS = {road: '#6f7375', highway: '#d08a1c', rail: '#7a4e2d', police: '#2c5aa0', fire: '#c0392b',
+                    social: '#8e44ad', housing: '#c06cb5', depot: '#9c7a3c', water: '#2a9db5', hospital: '#e0708f',
+                    school: '#d4a017', college: '#e67e22'};
+Game.prototype.costBreakdown = function() {
+  var P = I18n.p, sim = this.simulation, b = sim.budget, c = sim.lastCensus || sim._census, est = this._estimate || {};
+  var rl = [0.7, 0.9, 1.2][sim._gameLevel || 0] || 0.7, tc = Policy.transportCosts();
+  var hwUnits = 3 * (c.highwayTotal || 0), roadUnits = Math.max(0, (c.roadTotal || 0) - hwUnits);
+  var pct = b.roadPercent;
+  var costs = est.costs || {};
+  var parts = [
+    ['road', P('Roads', 'Calles'), roadUnits * tc.roadMaintenance * rl * pct],
+    ['highway', P('Highways', 'Autopistas'), hwUnits * tc.roadMaintenance * rl * pct],
+    ['rail', P('Rail', 'Vías de tren'), (c.railTotal || 0) * tc.railMaintenance * rl * pct],
+    ['police', P('Police', 'Policía'), costs.police || 0],
+    ['fire', P('Fire', 'Bomberos'), costs.fire || 0],
+    ['social', P('Social services', 'Servicios sociales'), costs.social || 0],
+    ['housing', P('Social housing', 'Vivienda social'), costs.housing || 0],
+    ['depot', P('Train depots', 'Estaciones de tren'), (c.depotPop || 0) * Utilities.DEPOT_MAINTENANCE],
+    ['water', P('Water treatment', 'Tratamiento de agua'), (c.waterPlantPop || 0) * Utilities.WATER_PLANT_MAINTENANCE],
+    ['hospital', P('Hospitals', 'Hospitales'), (c.builtHospitalPop || 0) * Utilities.HOSPITAL_MAINTENANCE],
+    ['school', P('Schools', 'Escuelas'), (c.schoolPop || 0) * Education.SCHOOL_MAINTENANCE],
+    ['college', P('Colleges', 'Universidades'), (c.collegePop || 0) * Education.COLLEGE_MAINTENANCE]
+  ].map(function(p) { return {id: p[0], name: p[1], amount: Math.round(p[2]), colour: COST_COLOURS[p[0]]}; })
+   .filter(function(p) { return p.amount > 0; });
+  var total = parts.reduce(function(a, p) { return a + p.amount; }, 0);
+  // the January budget rounds roads, rail and highways together: put the rounding difference in roads, so the total
+  // is exactly the forecast's
+  if (est.totalCosts !== undefined && total !== est.totalCosts) {
+    var roadPart = parts.find(function(p) { return p.id === 'road'; });
+    if (roadPart && roadPart.amount + est.totalCosts - total >= 0) {
+      roadPart.amount += est.totalCosts - total;
+      total = est.totalCosts;
+    }
+  }
+  return {parts: parts, total: total, taxes: est.taxes || 0, balance: (est.taxes || 0) - total};
+};
+
+Game.prototype.updateCosts = function() {
+  var P = I18n.p, cb = this.costBreakdown(), funds = this.simulation.budget.totalFunds;
+  $('#costTotal').text(MiscUtils.formatMoney(cb.total));
+  var bar = $('#costBar').empty();
+  cb.parts.forEach(function(p) {
+    bar.append($('<span></span>').css({background: p.colour, flexGrow: p.amount}));
+  });
+  var lasts;
+  if (cb.balance >= 0)
+    lasts = $('<span class="ok"></span>').text(P('Taxes cover them', 'Los impuestos los cubren'));
+  else {
+    var years = funds / -cb.balance;
+    lasts = $('<span></span>').addClass(years < 3 ? 'bad' : years < 10 ? 'warn' : 'ok')
+      .text(years < 1 ? P('Money lasts: under a year', 'El dinero dura: menos de un año')
+                      : P('Money lasts: about {0} years', 'El dinero dura: unos {0} años', Math.floor(years)));
+  }
+  $('#lastsLine').empty().append(lasts);
+  if ($('#costPopup').is(':visible'))
+    this.showCosts();
+};
+
+Game.prototype.showCosts = function() {
+  var P = I18n.p, cb = this.costBreakdown(), pop = $('#costPopup').empty();
+  pop.append($('<div class="cpTitle"></div>').text(P('Where the money goes, a year', 'A dónde va el dinero, al año')));
+  var tb = $('<table></table>');
+  cb.parts.slice().sort(function(a, b) { return b.amount - a.amount; }).forEach(function(p) {
+    var tr = $('<tr></tr>');
+    tr.append($('<td></td>').append($('<span class="cpSw"></span>').css('background', p.colour), document.createTextNode(p.name)));
+    tr.append($('<td class="n"></td>').text(MiscUtils.formatMoney(p.amount)));
+    tr.append($('<td class="n pc"></td>').text(cb.total ? Math.round(100 * p.amount / cb.total) + '%' : ''));
+    tb.append(tr);
+  });
+  tb.append($('<tr class="sum"></tr>').append($('<td></td>').text(P('Running costs', 'Gastos de mantenimiento')), $('<td class="n"></td>').text(MiscUtils.formatMoney(cb.total)), $('<td></td>')));
+  tb.append($('<tr></tr>').append($('<td></td>').text(P('Taxes coming in', 'Impuestos que entran')), $('<td class="n"></td>').text(MiscUtils.formatMoney(cb.taxes)), $('<td></td>')));
+  tb.append($('<tr class="sum"></tr>').append($('<td></td>').text(P('Next year', 'Próximo año')),
+    $('<td class="n"></td>').addClass(cb.balance < 0 ? 'neg' : 'pos').text((cb.balance < 0 ? '−' : '+') + MiscUtils.formatMoney(Math.abs(cb.balance))), $('<td></td>')));
+  pop.append(tb);
+  pop.append($('<p class="cpNote"></p>').text(P('At today\'s funding levels and laws, not counting what you build. Roads include rail and highways in the January budget; here they are shown apart. A jammed road counts twice and a bridge five times.',
+                                                'Con los fondos y leyes de hoy, sin contar lo que construyas. En el presupuesto de enero las calles incluyen las vías y las autopistas; aquí se muestran aparte. Una calle atascada cuenta doble y un puente cinco veces.')));
+  var box = document.getElementById('infobar').getBoundingClientRect(), host = document.getElementById('canvasContainer').getBoundingClientRect();
+  var cl = document.getElementById('costBlock').getBoundingClientRect();
+  pop.css({left: (box.right - host.left + 10) + 'px', top: Math.max(4, cl.top - host.top - 20) + 'px'}).show();
 };
 
 // POLICY LAB v30: city sizes (the 1989 thresholds: a city becomes a town above 2,000 people, and so on)

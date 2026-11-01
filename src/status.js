@@ -362,7 +362,7 @@ var compute = function(sim, history) {
         why: P('Higher taxes slow growth of every kind; above 12% the original game warns that residents are upset.',
                'Los impuestos altos frenan todo tipo de crecimiento; por encima del 12% el juego original avisa de que los residentes están molestos.'),
         fixes: m.tax >= 10 ? [P('Lower it in the Budget window and cut costs instead.', 'Bájala en la ventana de Presupuesto y recorta gastos en su lugar.')] : [],
-        layer: null});
+        layer: 'taxes'});   // v35: the map of who pays the taxes
 
   out.forEach(function(s) {
     s.lines = (s.lines || []).filter(function(l) { return !!l; });

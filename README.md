@@ -231,6 +231,19 @@ saved before v25 keep the 1989 answers for those questions.
   removed, home zones covered, funding, capacity in use) and whether it is working (no power, no rail link).
 - Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
 
+### v35: where the money goes, who pays the taxes, and a simpler Undo
+
+- **City box:** "Costs: $X a year", a bar coloured by where the money goes, and how long the money lasts at this rate
+  ("Taxes cover them" when they do). Hovering shows the breakdown in the same colours (roads, highways, rail, police,
+  fire, social services, social housing, depots, water treatment, hospitals, schools, colleges), taxes coming in and
+  next year's balance. The menu under the box is slimmer, and is placed under the box unless the player moved it.
+- **Taxes bubble** opens a map of who pays the taxes: each zone pays in proportion to its people (homes count 1/8, as in
+  the game's tax formula) times its land value; the 5 biggest payers are labelled, with the shares of homes, shops and
+  factories.
+- **Undo** now simply takes back the last build: the build, its cost and the time since (and so everything that
+  happened in that time), with no question, up to 10 builds and only for builds of the last 2 game years. Redo returns
+  to the moment Undo was pressed. Both work without reloading the page. (Replaces the v34 choice window.)
+
 ### v34: what things cost, Undo that goes back in time, pictures and export that work
 
 - **Hover over a tool** for a card with its price, its running cost per year (at the city's laws and difficulty), its

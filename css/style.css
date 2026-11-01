@@ -3184,3 +3184,32 @@ nav li {
 #toolInfoCard .tiGood li { color: #1a6b30; }
 #toolInfoCard .tiBad li { color: #8a3b30; }
 #toolInfoCard .tiPoll { color: #4d5f5b; margin-top: 3px; }
+
+/* v35: Taxes map (who pays the most) */
+#layerOverlay .tx1, .lg-tx1 { fill: rgba(40, 130, 90, 0.18); background: rgba(40, 130, 90, 0.18); }
+#layerOverlay .tx2, .lg-tx2 { fill: rgba(40, 130, 90, 0.42); background: rgba(40, 130, 90, 0.42); }
+#layerOverlay .tx3, .lg-tx3 { fill: rgba(15, 95, 60, 0.7); background: rgba(15, 95, 60, 0.7); }
+
+/* v35: running costs in the city box, and where the money goes */
+#costBlock { margin: 1px 0 3px 0; font-size: 12px; font-weight: 600; color: var(--pl-ink-soft); cursor: pointer; border-radius: 4px; font-variant-numeric: tabular-nums; }
+#costBlock:hover, #costBlock:focus-visible { background: rgba(30, 52, 54, 0.06); outline: none; }
+#costLine .perYear { font-weight: 400; }
+#costBar { display: flex; height: 6px; margin: 2px 6px; border-radius: 3px; overflow: hidden; background: #e4e8e7; }
+#costBar span { display: block; min-width: 2px; }
+#lastsLine .ok { color: #1e7a3a; } #lastsLine .warn { color: #a86400; } #lastsLine .bad { color: #b3362b; }
+#costPopup { position: absolute; z-index: 6; width: 300px; padding: 8px 10px; font-family: var(--pl-ui); font-size: 12.5px; color: var(--pl-ink);
+  background: #fcfcfb; border: 1px solid var(--pl-line); border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); }
+#costPopup .cpTitle { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+#costPopup table { width: 100%; border-collapse: collapse; }
+#costPopup td { padding: 2px 3px; }
+#costPopup td.n { text-align: right; font-variant-numeric: tabular-nums; }
+#costPopup td.pc { color: #4d5f5b; width: 3em; }
+#costPopup tr.sum td { border-top: 1px solid var(--pl-line); font-weight: 700; }
+#costPopup .neg { color: #b3362b; } #costPopup .pos { color: #1e7a3a; }
+#costPopup .cpSw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+#costPopup .cpNote { margin: 6px 0 0 0; font-size: 11.5px; color: #4d5f5b; }
+
+/* v35: a slimmer menu, so the city box (now with running costs) and the Zoning need panel still fit */
+#miscButtons button { display: block; width: 100%; height: auto; min-height: 0; padding: 0 4px; line-height: 1.2; font-size: 13px; margin: 0 0 1px 0; }
+#miscButtons.padding10 { padding-top: 7px; padding-bottom: 7px; }
+#miscButtons .inner > div { margin: 0; }

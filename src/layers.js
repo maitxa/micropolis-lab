@@ -16,6 +16,7 @@
  */
 
 import { Advisor } from './advisor.js';
+import { Amenities } from './amenities.js';
 import { Education } from './education.js';
 import { I18n } from './i18n.js';
 import { Influence } from './influence.js';
@@ -267,6 +268,39 @@ var water = function(sim) {
   };
 };
 
+// v35 Taxes: who pays them. Each built zone pays in proportion to its people (homes count 1/8, as in the game's own
+// tax formula) times the land value under it; the darker the frame, the more it pays.
+var taxes = function(sim, game) {
+  var zones = Amenities.taxZones(sim._map, sim.blockMaps);
+  var total = zones.reduce(function(a, z) { return a + z.w * z.lv; }, 0);
+  var yearTaxes = game && game._estimate ? game._estimate.taxes : 0;
+  zones.forEach(function(z) { z.pay = total > 0 ? yearTaxes * z.w * z.lv / total : 0; });
+  var sorted = zones.slice().sort(function(a, b) { return b.pay - a.pay; });
+  var q = function(f) { return sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * f))].pay : 0; };
+  var t1 = q(0.2), t2 = q(0.5);
+  var cells = zones.map(function(z) { return [z.x - 1, z.y - 1, z.pay >= t1 ? 3 : z.pay >= t2 ? 2 : 1]; });
+  var shapes = [{kind: 'blocks', size: 3, cls: 'tx', cells: cells}];
+  sorted.slice(0, 5).forEach(function(z) { shapes.push({kind: 'zone', x: z.x, y: z.y, tone: 'good', label: MiscUtils.formatMoney(Math.round(z.pay))}); });
+  var share = function(kind) {
+    var s = zones.filter(function(z) { return z.kind === kind; }).reduce(function(a, z) { return a + z.pay; }, 0);
+    return yearTaxes ? Math.round(100 * s / yearTaxes) + '%' : '-';
+  };
+  var top5 = sorted.slice(0, 5).reduce(function(a, z) { return a + z.pay; }, 0);
+  return {
+    shapes: shapes,
+    legend: [
+      {swatch: 'tx3', text: P('Pays the most (top fifth of zones): {0} or more a year each', 'Pagan más (la quinta parte superior): {0} o más al año cada una', MiscUtils.formatMoney(Math.round(t1)))},
+      {swatch: 'tx2', text: P('Middle', 'Intermedias')},
+      {swatch: 'tx1', text: P('Pays the least', 'Pagan menos')},
+      {swatch: 'good', text: P('The 5 biggest payers (labelled) bring in {0} of {1} a year', 'Las 5 que más pagan (con etiqueta) aportan {0} de {1} al año', MiscUtils.formatMoney(Math.round(top5)), MiscUtils.formatMoney(yearTaxes))},
+      {swatch: 'tx2', text: P('Share of taxes: homes {0}, shops {1}, factories {2}', 'Parte de los impuestos: viviendas {0}, tiendas {1}, fábricas {2}', share('res'), share('com'), share('ind'))}
+    ],
+    note: P('Each neighbourhood pays tax on its own land value, in proportion to how many people live or work there. Land value rises near the centre, parks, shops within walking distance, clean water and hospitals, and falls with pollution and crime. Average land value of the taxed zones: {0} of 250.',
+            'Cada barrio paga impuestos según el valor de su propio suelo, en proporción a la gente que vive o trabaja allí. El valor del suelo sube cerca del centro, de parques, de tiendas a poca distancia, de agua limpia y de hospitales, y baja con la contaminación y la delincuencia. Valor medio del suelo de las zonas que pagan: {0} de 250.',
+            fmt(total && zones.length ? Math.round(zones.reduce(function(a, z) { return a + z.w * z.lv; }, 0) / zones.reduce(function(a, z) { return a + z.w; }, 0)) : 0))
+  };
+};
+
 // v33 Rail: what each working depot reaches, depots that don't work, and the homes no depot covers
 var rail = function(sim) {
   var c = sim.lastCensus || sim._census.snapshot(), map = sim._map, bm = sim.blockMaps, shapes = [];
@@ -461,6 +495,7 @@ var Layers = {
   water: water,
   education: education,
   rail: rail,
+  taxes: taxes,
   highways: highways,
   fire: fire,
   crime: crime,
