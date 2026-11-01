@@ -3160,3 +3160,27 @@ nav li {
 #infobar { height: auto; min-height: 150px; }
 /* v33: the power line stays on one line (in Spanish it wrapped and pushed the city box into the menu below) */
 #infobar #powerLine { white-space: nowrap; font-size: 13px; }
+
+/* v34: Take Picture shows the picture, with Save and Print */
+#screenshotPreview { display: block; margin: 0 auto; max-width: 100%; max-height: 50vh; border: 1px solid var(--pl-line, #c9d3d3); }
+.screenshotActions { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.screenshotActions button { width: auto; height: auto; padding: 4px 12px; }
+#printArea { display: none; }
+@media print {
+  body.plPrinting > *:not(#printArea) { display: none !important; }
+  body.plPrinting #printArea { display: block !important; }
+  body.plPrinting #printArea img { max-width: 100%; }
+}
+
+/* v34: what a building costs and does (hover over a tool) */
+#toolInfoCard {
+  position: absolute; z-index: 70; width: 300px; padding: 9px 11px; pointer-events: none;
+  font-family: var(--pl-ui); font-size: 12.5px; line-height: 1.35; color: var(--pl-ink);
+  background: #fcfcfb; border: 1px solid var(--pl-line); border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+#toolInfoCard .tiTitle { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+#toolInfoCard .tiCosts { font-weight: 600; font-variant-numeric: tabular-nums; margin-bottom: 4px; }
+#toolInfoCard ul { list-style: none; margin: 0 0 3px 0; padding: 0; }
+#toolInfoCard .tiGood li { color: #1a6b30; }
+#toolInfoCard .tiBad li { color: #8a3b30; }
+#toolInfoCard .tiPoll { color: #4d5f5b; margin-top: 3px; }

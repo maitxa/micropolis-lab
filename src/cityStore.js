@@ -174,7 +174,7 @@ var download = function(filename, text, mime) {
     if (dl)
       return dl.save({filename: filename, data: text});
     var a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([text], {type: mime || 'application/json'}));
+    a.href = URL.createObjectURL(text instanceof Blob ? text : new Blob([text], {type: mime || 'application/json'}));
     a.download = filename;
     document.body.appendChild(a);
     a.click();
@@ -225,6 +225,8 @@ var CityStore = {
   exportCity: exportCity,
   // v29: any text file (e.g. the "What I did wrong" report, for students to hand in)
   downloadText: function(filename, text) { return download(filename, text, 'text/plain;charset=utf-8'); },
+  // v34: a file that is not text (a PNG picture)
+  downloadBlob: function(filename, blob) { return download(filename, blob, blob.type); },
   importCity: importCity
 };
 

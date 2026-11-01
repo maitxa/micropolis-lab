@@ -44,6 +44,7 @@ import * as TileValues from './tileValues.ts';
 import { CityDataWindow } from './cityDataWindow.js';
 import { I18n } from './i18n.js';
 import { Preview } from './preview.js';
+import { ToolInfo } from './toolInfo.js';
 import { Rating } from './rating.js';
 import { Advisor } from './advisor.js';
 import { Panels } from './panels.js';
@@ -396,6 +397,28 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     e.preventDefault();
     $('#historyPopup').removeClass('pinned').hide();
   });
+  // v34: what a building costs and does, while the mouse is over (or the keyboard is on) its button
+  var card = $('<div id="toolInfoCard" role="tooltip"></div>').hide().appendTo('body');
+  var showCard = function() {
+    var btn = $(this), tool = btn.attr('data-tool');
+    if (!ToolInfo.render(card[0], tool, btn.find('.label').text() || tool, game.simulation)) { card.hide(); return; }
+    var r = this.getBoundingClientRect(), panel = document.getElementById('controls').getBoundingClientRect();
+    card.show();
+    var h = card.outerHeight(), w = card.outerWidth();
+    var left = panel.left - w - 10;
+    if (left < 8) left = Math.min(window.innerWidth - w - 8, panel.right + 10);
+    var top = Math.max(8, Math.min(window.innerHeight - h - 8, r.top + r.height / 2 - h / 2));
+    card.css({left: left + window.scrollX + 'px', top: top + window.scrollY + 'px'});
+  };
+  $('#controls .toolButton').on('mouseenter focus', function() {
+    // the browser's own tooltip would cover the card: park the title while the card shows
+    var t = $(this).attr('title');
+    if (t && ToolInfo.info($(this).attr('data-tool'), game.simulation)) $(this).attr('data-title', t).removeAttr('title');
+    showCard.call(this);
+  }).on('mouseleave blur', function() {
+    card.hide();
+    if ($(this).attr('data-title')) $(this).attr('title', $(this).attr('data-title')).removeAttr('data-title');
+  });
   // v31: the city rating and graduation progress, from the grade in the city box
   $('#gradeLine').on('click', function(e) {
     e.preventDefault();
@@ -485,6 +508,40 @@ Game.prototype.saveCurrent = function(name) {
   }, function() {
     return Promise.reject(I18n.p('Could not save: this browser isn\'t letting the game store data (for example in a private window).',
                                  'No se pudo guardar: este navegador no deja que el juego guarde datos (por ejemplo, en una ventana privada).'));
+  });
+};
+
+// POLICY LAB v34: Undo's "go back in time": keep the city as it is now under Saved cities, then reopen the copy from
+// just before the build (the page reloads into it)
+Game.prototype.goBackToSnap = function(snap) {
+  var P = I18n.p, months = Text.L('months');
+  var when = months[snap.date.month] + ' ' + snap.date.year;
+  var name = this.name || 'City';
+  var self = this;
+  return this.saveCurrent(P('{0} (before undo, {1})', '{0} (antes de deshacer, {1})', name, this.currentYear())).then(function() {
+    var info = {cityId: Policy.cityId, cityName: self.name, name: P('{0} (back to {1})', '{0} (vuelta a {1})', name, when), year: snap.date.year};
+    return CityStore.saveCity(info, snap.data);
+  }).then(function(rec) {
+    CityStore.resume('cities', rec.id);
+  });
+};
+
+// POLICY LAB v34: save the city and offer it as a .json file (the same file Export makes under Saved cities)
+Game.prototype.exportCurrent = function(name) {
+  var info = Object.assign(this.cityInfo(), {name: name});
+  var data = Storage.serialize(this.saveData());
+  var file = JSON.stringify({policyLabCity: 1, name: name, cityName: info.cityName, year: info.year, pop: info.pop, score: info.score, data: data});
+  var safe = (name || 'city').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'city';
+  var saved = CityStore.saveCity(info, data).then(function() { return true; }, function() { return false; });
+  return saved.then(function(ok) {
+    return CityStore.downloadText(safe + '.json', file).then(function(res) {
+      if (res && res.status !== 'saved')
+        return '';
+      return ok ? I18n.p('Saved as "{0}" and exported to {1}.json.', 'Guardada como "{0}" y exportada a {1}.json.', name, safe)
+                : I18n.p('Exported to {0}.json (this browser could not keep a copy).', 'Exportada a {0}.json (este navegador no pudo guardar una copia).', safe);
+    }, function(err) {
+      return Promise.reject(err && err.code === 'declined' ? '' : I18n.p('Could not export the file here.', 'No se pudo exportar el archivo aquí.'));
+    });
   });
 };
 
@@ -695,7 +752,8 @@ Game.prototype.handleScreenshotWindowClosure = function(action) {
 
   this.dialogOpen = true;
   this._openWindow = 'screenshotLinkWindow';
-  this.screenshotLinkWindow.open(dataURI);
+  var safe = (String(this.name || 'city') + '-' + this.simulation.getDate().year).replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'city';
+  this.screenshotLinkWindow.open(dataURI, safe + '.png');
 };
 
 
@@ -1398,6 +1456,18 @@ Game.prototype.applyToolAt = function(tileX, tileY, single) {
   var tool = this.inputStatus.currentTool;
   if (tool === null)
     return;
+  // v34: at the start of each click or drag, a copy of the whole city, so Undo can go back to it later (date and
+  // money included)
+  var sid = this.inputStatus.strokeId;
+  if (!single && sid !== this._snapStroke && this.inputStatus.toolName !== 'query') {
+    this._snapStroke = sid;
+    try {
+      this._pendingSnap = {strokeId: sid, cityTime: this.simulation._cityTime, date: this.simulation.getDate(),
+                           data: Storage.serialize(this.saveData())};
+    } catch (e) {
+      this._pendingSnap = null;
+    }
+  }
   // v30: a bigger bulldozer clears every tile of the square, all in the same stroke (so one Undo brings it all back)
   var dz = this._dozeSize || 1;
   if (!single && dz > 1 && this.inputStatus.toolName === 'bulldozer') {
@@ -1556,6 +1626,10 @@ Game.prototype.handleToolLine = function(data) {
 
 // POLICY LAB: undo history. One entry per click or drag ("stroke"), newest last.
 var MAX_UNDO = 30;
+// v34: how many of them keep a copy of the whole city (for going back in time)
+var MAX_SNAPS = 20;
+// a game month in the simulation's own time units (48 a year)
+var CITY_MONTH = 4;
 
 Game.prototype.recordUndo = function(change, strokeId) {
   this._undoStack = this._undoStack || [];
@@ -1581,9 +1655,16 @@ Game.prototype.recordUndo = function(change, strokeId) {
   } else {
     var entry = {strokeId: strokeId, tiles: change.tiles.slice(), cost: change.cost};
     LISTS.forEach(function(k) { entry[k] = (change[k] || []).slice(); });
+    // v34: the copy of the city from just before this click or drag
+    if (this._pendingSnap && this._pendingSnap.strokeId === strokeId)
+      entry.snap = this._pendingSnap;
+    this._pendingSnap = null;
     this._undoStack.push(entry);
     if (this._undoStack.length > MAX_UNDO)
       this._undoStack.shift();
+    // keep the city copies of the last MAX_SNAPS builds only (each is a whole city)
+    for (var si = 0; si < this._undoStack.length - MAX_SNAPS; si++)
+      delete this._undoStack[si].snap;
   }
 
   $('#undoRequest').prop('disabled', false);
@@ -1634,12 +1715,29 @@ Game.prototype.handleUndo = function() {
     return t.newValue >= TileValues.TINYEXP && t.newValue <= TileValues.TINYEXPLAST && isExplosion(now);
   });
 
+  // v34: if time has passed since this was built, offer to take the whole city back to that moment (date, money and
+  // everything that happened since), or just to remove what was built
+  if (entry.snap && this.simulation._cityTime - entry.snap.cityTime >= CITY_MONTH) {
+    var game = this;
+    this.openPanel(function(done) {
+      CityPanels.openUndoChoice(game, entry, unchanged, function() { game._plainUndo(entry); }, done);
+    });
+    return;
+  }
+
   // v30: a refused undo keeps the entry, so nothing is lost
   if (!unchanged) {
     $('#toolOutput').text(I18n.t("Can't undo: the city has already changed there"));
     return;
   }
+  this._plainUndo(entry);
+};
 
+// Takes the last build off the map and refunds its price (the undo of v13-v33)
+Game.prototype._plainUndo = function(entry) {
+  var stack = this._undoStack || [], map = this.simulation._map;
+  if (stack[stack.length - 1] !== entry)
+    return;
   stack.pop();
   for (var i = entry.tiles.length - 1; i >= 0; i--) {
     var t = entry.tiles[i];
@@ -1707,7 +1805,7 @@ Game.prototype.toggleKeysHelp = function() {
 Game.prototype.handleSave = function() {
   this.dialogOpen = true;
   this._openWindow = 'saveWindow';
-  this.saveWindow.open(this.name, this.saveCurrent.bind(this));
+  this.saveWindow.open(this.name, this.saveCurrent.bind(this), this.exportCurrent.bind(this));
 };
 
 

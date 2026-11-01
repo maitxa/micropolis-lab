@@ -15,6 +15,7 @@ import { Mistakes } from './mistakes.js';
 import { Policy } from './policy.js';
 import { Rating } from './rating.js';
 import { Report } from './report.js';
+import { Text } from './text.js';
 
 var P = I18n.p;
 var fmt = MiscUtils.formatNumber;
@@ -383,7 +384,44 @@ var openGameOver = function(game, reason, data, onClose) {
                                                  'Volver atrás guarda primero esta ciudad, en Ciudades guardadas. La pantalla de inicio no: pulsa Seguir jugando y luego Guardar si quieres conservarla.')));
 };
 
+// v34: Undo after time has passed. entry: the undo entry (with .snap, the city just before the build); unchanged: the
+// built tiles are still as built (so they can simply be removed); onPlainUndo: remove them and refund the price.
+var openUndoChoice = function(game, entry, unchanged, onPlainUndo, onClose) {
+  var months = Text.L('months'), snap = entry.snap, now = game.simulation.getDate();
+  var when = months[snap.date.month] + ' ' + snap.date.year;
+  var monthsPassed = (now.year - snap.date.year) * 12 + (now.month - snap.date.month);
+  var o = overlay(P('Undo: go back to {0}?', 'Deshacer: ¿volver a {0}?', when), onClose);
+  var body = o.body.addClass('plGameOver');
+  body.append($('<p class="plGradLead"></p>').text(P('You built this in {0}, {1} months ago.', 'Construiste esto en {0}, hace {1} meses.', when, monthsPassed)));
+  var actions = $('<div class="plGameOverActions"></div>');
+  var back = $('<button type="button" class="plPrimary"></button>').text(P('Go back to {0}', 'Volver a {0}', when));
+  back.on('click', function(e) {
+    e.preventDefault();
+    back.prop('disabled', true).text(P('Saving your city first…', 'Guardando primero tu ciudad…'));
+    game.goBackToSnap(snap).catch(function() {
+      back.prop('disabled', false).text(P('Couldn\'t go back: try again', 'No se pudo volver: inténtalo de nuevo'));
+    });
+  });
+  actions.append(back);
+  if (unchanged) {
+    var plain = $('<button type="button"></button>').text(entry.cost > 0 ? P('Just remove it (refund {0}, keep the date)', 'Solo quitarlo (devolver {0}, mantener la fecha)', MiscUtils.formatMoney(entry.cost))
+                                                                        : P('Just remove it (keep the date)', 'Solo quitarlo (mantener la fecha)'));
+    plain.on('click', function(e) { e.preventDefault(); o.close(); onPlainUndo(); });
+    actions.append(plain);
+  }
+  var cancel = $('<button type="button"></button>').text(P('Cancel', 'Cancelar'));
+  cancel.on('click', function(e) { e.preventDefault(); o.close(); });
+  actions.append(cancel);
+  body.append($('<p></p>').text(P('Going back restores the whole city as it was just before you built this: the date, the money, and everything that happened since ({0} months of growth, taxes and running costs) is undone. Your city as it is now is saved first, under Saved cities.',
+                                  'Volver restaura toda la ciudad como estaba justo antes de construir esto: la fecha, el dinero y todo lo que pasó desde entonces ({0} meses de crecimiento, impuestos y mantenimiento) se deshace. Tu ciudad tal como está ahora se guarda primero, en Ciudades guardadas.', monthsPassed)));
+  body.append(actions);
+  if (!unchanged)
+    body.append($('<p class="plNote"></p>').text(P('It can\'t simply be removed any more: the city has changed there since.', 'Ya no se puede simplemente quitar: la ciudad ha cambiado ahí desde entonces.')));
+  body.append($('<p class="plNote"></p>').text(P('The game keeps these copies for your last 20 builds while the page is open.', 'El juego guarda estas copias de tus últimas 20 construcciones mientras la página está abierta.')));
+};
+
 var CityPanels = {
+  openUndoChoice: openUndoChoice,
   openGameOver: openGameOver,
   openGraduation: openGraduation,
   openMistakes: openMistakes,

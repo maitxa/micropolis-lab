@@ -231,6 +231,18 @@ saved before v25 keep the 1989 answers for those questions.
   removed, home zones covered, funding, capacity in use) and whether it is working (no power, no rail link).
 - Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
 
+### v34: what things cost, Undo that goes back in time, pictures and export that work
+
+- **Hover over a tool** for a card with its price, its running cost per year (at the city's laws and difficulty), its
+  effects as the game calculates them (crime, pollution, land value, traffic, jobs) and which complaints in the yearly
+  poll (where approval comes from) it eases or adds to. The game has no single "happiness" figure.
+- **Undo after time has passed:** the game keeps a copy of the whole city from just before each of the last 20 builds
+  (while the page is open). Undoing one built more than a month ago offers to go back to that moment (date, money and
+  everything since; the city as it is now is saved first under Saved cities), or just to remove it with a refund.
+- **Take Picture** shows the picture with Save picture (PNG) and Print (the old link opened a new tab, which the
+  published page can't do). Print uses the browser's print dialog, if the page is allowed to open it.
+- **Save** window: Export to a file (saves the city and offers a .json file to import elsewhere).
+
 ### v33: money you can read, automatic budgeting that copes, Rail and Highways bubbles
 
 - **Under Funds:** "Next year" (the forecast: a full year's taxes minus running costs at today's rates) and "Last year"

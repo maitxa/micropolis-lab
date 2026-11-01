@@ -606,20 +606,30 @@
           <form id="saveForm" class="alignCenter margin10">
             <label for="saveName" class="saveNameLabel">Save this city as:</label>
             <input type="text" id="saveName" class="notranslate" maxlength="60" autocomplete="off">
-            <p class="saveHint">Saving again under the same name replaces that save. Saved in this browser; use Load game on the start screen to open it, or to export it to a file.</p>
+            <p class="saveHint">Saving again under the same name replaces that save. Saved in this browser; use Load game on the start screen to open it. Export to a file saves it too, and gives you a .json file to import on another computer.</p>
             <p id="saveStatus" aria-live="polite"></p>
             <button type="button" id="saveDo" class="dialogOK">Save</button>
+            <button type="button" id="saveExport" class="dialogOK">Export to a file</button>
             <input type="submit" id="saveOK" class="dialogOK" value="Close">
           </form>
         </div>
       </div>
+      <!-- v34: what gets printed (only this shows on paper) -->
+      <div id="printArea" aria-hidden="true"></div>
       <div class="hidden modal shadow" id="screenshotLinkWindow">
         <header id="screenshotLinkHeader" class="screenshotHeader padding10 chunk alignCenter">
            Take Picture
         </header>
         <div id="screenshotLinkContainer" class="padding10 open">
+          <!-- v34: the picture itself, saved as a PNG file or printed (the old link opened a new tab, which the
+               published page can't do) -->
           <div id="screenshotLinkMessage" class="alignCenter">
-            Click <a id="screenshotLink" target="_blank">here</a> to view your picture (right-click to save)
+            <img id="screenshotPreview" alt="Your picture of the city">
+          </div>
+          <div class="alignCenter screenshotActions">
+            <button type="button" id="screenshotSave">Save picture (PNG)</button>
+            <button type="button" id="screenshotPrint">Print</button>
+            <span id="screenshotStatus" aria-live="polite"></span>
           </div>
           <form id="screenshotLinkForm" class="alignCenter margin10">
             <input type="submit" id="screenshotLinkOK" class="dialogOK" value="OK">

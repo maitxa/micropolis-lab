@@ -38,7 +38,8 @@ SaveWindow.prototype.close = function() {
 
 
 // POLICY LAB v25: save under a name. onSave(name) returns a Promise that resolves with a status text.
-SaveWindow.prototype.open = function(defaultName, onSave) {
+// v34: onExport(name), the same but it also offers the city as a .json file
+SaveWindow.prototype.open = function(defaultName, onSave, onExport) {
   this._toggleDisplay();
   $('#saveName').val(defaultName || '');
   $('#saveStatus').text('');
@@ -53,6 +54,18 @@ SaveWindow.prototype.open = function(defaultName, onSave) {
     }, function(text) {
       $('#saveStatus').addClass('err').text(text);
       $('#saveDo').prop('disabled', false);
+    });
+  });
+  $('#saveExport').toggle(!!onExport).prop('disabled', false).off('click').on('click', function(e) {
+    e.preventDefault();
+    var name = $.trim($('#saveName').val()) || defaultName;
+    $('#saveExport').prop('disabled', true);
+    onExport(name).then(function(text) {
+      $('#saveStatus').removeClass('err').text(text);
+      $('#saveExport').prop('disabled', false);
+    }, function(text) {
+      $('#saveStatus').addClass('err').text(text);
+      $('#saveExport').prop('disabled', false);
     });
   });
   $('#saveName').off('keydown.save').on('keydown.save', function(e) {
