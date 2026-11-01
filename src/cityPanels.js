@@ -348,9 +348,14 @@ var openGameOver = function(game, reason, data, onClose) {
                                         : P('Game over: the mayor was voted out', 'Fin del juego: el alcalde perdió el cargo'), onClose);
   var body = o.body.addClass('plGameOver');
   if (reason === 'bankrupt') {
-    body.append($('<p class="plGradLead"></p>').text(P('In January the city owed {0} for its services and running costs, but had only {1} ({2} in the bank and {3} in taxes).',
-                                                       'En enero la ciudad debía {0} por sus servicios y gastos de funcionamiento, pero solo tenía {1} ({2} en el banco y {3} en impuestos).',
-                                                       money(data.need || 0), money(Math.max(0, data.have || 0)), money(data.funds || 0), money(data.taxes || 0))));
+    body.append($('<p class="plGradLead"></p>').text(P('In January the city owed {0} for its services and running costs, but had only {1} ({2} in the bank and {3} in taxes, at a tax of {4}%).',
+                                                       'En enero la ciudad debía {0} por sus servicios y gastos de funcionamiento, pero solo tenía {1} ({2} en el banco y {3} en impuestos, con un impuesto del {4}%).',
+                                                       money(data.need || 0), money(Math.max(0, data.have || 0)), money(data.funds || 0), money(data.taxes || 0),
+                                                       game.simulation.budget.cityTax)));
+    if (data.road !== undefined)
+      body.append($('<p></p>').text(P('That would have paid for only {0}% of the roads\' upkeep and {1}% of the police: below half, the city can no longer run.',
+                                      'Eso solo habría pagado el {0}% del mantenimiento de las calles y el {1}% de la policía: por debajo de la mitad, la ciudad ya no puede funcionar.',
+                                      Math.round(100 * data.road), Math.round(100 * (data.police === undefined ? 1 : data.police)))));
     body.append($('<p></p>').text(P('Common causes: more road and services than the taxes can pay for, a tax rate too low for the city\'s size, or many expensive buildings (hospitals, colleges, water plants) in a small city.',
                                     'Causas frecuentes: más calles y servicios de los que pagan los impuestos, una tasa demasiado baja para el tamaño de la ciudad, o muchos edificios caros (hospitales, universidades, plantas de agua) en una ciudad pequeña.')));
   } else {

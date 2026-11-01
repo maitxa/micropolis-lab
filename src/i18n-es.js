@@ -343,6 +343,10 @@ var ES = {
   // ---- City box and advisor ----
   'Funds': 'Fondos',
   'a year': 'al año',
+  'Next year:': 'Próximo año:',
+  'Last year:': 'Año pasado:',
+  "Next year: forecast of a full year's taxes minus running costs at today's rates (building not counted)": 'Próximo año: previsión de un año completo de impuestos menos gastos de mantenimiento con los valores de hoy (sin contar lo que construyas)',
+  'Last year: what the city really collected in taxes minus what it paid in running costs (building not counted)': 'Año pasado: lo que la ciudad recaudó de verdad en impuestos menos lo que pagó en mantenimiento (sin contar lo que construiste)',
   'Estimated taxes minus running costs over a year': 'Impuestos estimados menos gastos de mantenimiento en un año',
   'To do': 'Por hacer',
   'To do: {0}': 'Por hacer: {0}',

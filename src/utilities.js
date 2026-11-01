@@ -147,6 +147,7 @@ var depotFound = function(map, x, y, simData) {
   }
 
   markCoverage(simData.blockMaps.depotMapNext, x, y, DEPOT_RADIUS);
+  (simData.census.depotList = simData.census.depotList || []).push({x: x, y: y});
 };
 
 

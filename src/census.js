@@ -70,7 +70,7 @@ var snapshotProps = ['poweredZoneCount', 'unpoweredZoneCount', 'firePop', 'roadT
                      'depotPop', 'depotUnconnected', 'waterPlantPop', 'waterPlantUnpowered', 'mixedZones',
                      'housingSaves', 'healthCoveredZones', 'builtHospitalPop', 'tripFailRes', 'tripFailCom',
                      'tripFailInd', 'tripFailPos', 'tripFailList', 'depotUnconnectedList', 'waterPlantUnpoweredList',
-                     'depotUnlinked', 'depotUnlinkedList', 'schoolPop', 'collegePop', 'schoolList', 'collegeList',
+                     'depotUnlinked', 'depotUnlinkedList', 'depotList', 'schoolPop', 'collegePop', 'schoolList', 'collegeList',
                      'educationUnpoweredList'];
 
 Census.prototype.snapshot = function() {
@@ -121,6 +121,8 @@ Census.prototype.clearCensus = function() {
   this.depotUnconnectedList = [];
   this.depotUnlinked = 0;
   this.depotUnlinkedList = [];
+  // v33: working depots (the Rail bubble and map)
+  this.depotList = [];
   this.waterPlantUnpoweredList = [];
   // v30
   this.schoolPop = 0;

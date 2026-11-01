@@ -267,6 +267,62 @@ var water = function(sim) {
   };
 };
 
+// v33 Rail: what each working depot reaches, depots that don't work, and the homes no depot covers
+var rail = function(sim) {
+  var c = sim.lastCensus || sim._census.snapshot(), map = sim._map, bm = sim.blockMaps, shapes = [];
+  (c.depotList || []).forEach(function(p) { shapes.push({kind: 'pcircle', x: p.x, y: p.y, r: Utilities.DEPOT_RADIUS, cls: 'strong', label: P('Depot', 'Estación')}); });
+  (c.depotUnconnectedList || []).forEach(function(p) { shapes.push({kind: 'zone', x: p.x, y: p.y, tone: 'bad', label: P('No rail touches it', 'Ninguna vía la toca')}); });
+  (c.depotUnlinkedList || []).forEach(function(p) { shapes.push({kind: 'zone', x: p.x, y: p.y, tone: 'bad', label: P('Line goes nowhere', 'La vía no lleva a ningún sitio')}); });
+  var homes = 0, covered = 0;
+  for (var x = 0; x < map.width; x++)
+    for (var y = 0; y < map.height; y++) {
+      var t = map.getTile(x, y);
+      var tv = t.getValue();
+      // home zones only (hospitals share the residential range of tile numbers)
+      if (!t.isZone() || !TileUtils.isResidential(tv) || (tv >= TileValues.HOSPITALBASE && tv < TileValues.COMBASE))
+        continue;
+      homes++;
+      if (bm.depotMap && bm.depotMap.worldGet(x, y) > 0) covered++;
+      else shapes.push({kind: 'zone', x: x, y: y, tone: 'warn', label: ''});
+    }
+  return {
+    shapes: shapes,
+    legend: [
+      {swatch: 'good', text: P('Working depots: {0} (circle: the 16 tiles they reach)', 'Estaciones que funcionan: {0} (círculo: las 16 casillas que alcanzan)', fmt((c.depotList || []).length))},
+      {swatch: 'warn', text: P('Home zones no depot covers: {0} of {1}', 'Zonas de vivienda sin estación: {0} de {1}', fmt(homes - covered), fmt(homes))},
+      {swatch: 'bad', text: P('Depots that don\'t work: {0}', 'Estaciones que no funcionan: {0}', fmt((c.depotUnconnectedList || []).length + (c.depotUnlinkedList || []).length))}
+    ],
+    note: P('A depot works when rail touches it and the line reaches another depot or loops back. Zones within {0} tiles of a working depot travel twice as far and put only half as much traffic on the roads.',
+            'Una estación funciona cuando una vía la toca y la línea llega a otra estación o vuelve sobre sí misma. Las zonas a menos de {0} casillas de una estación que funciona viajan el doble de lejos y ponen solo la mitad de tráfico en las calles.', Utilities.DEPOT_RADIUS)
+  };
+};
+
+// v33 Highways: highway tiles nobody drives on (they cost three times a road's upkeep), and road drawbridges that a
+// highway bridge would keep open
+var highways = function(sim) {
+  var map = sim._map, shapes = [], idle = 0, busy = 0, total = 0;
+  Object.keys(Policy.highways || {}).forEach(function(k) {
+    var xy = k.split(','), x = +xy[0], y = +xy[1];
+    if (!map.testBounds(x, y)) return;
+    var v = map.getTileValue(x, y);
+    if (!TileUtils.isRoad(v)) return;
+    total++;
+    if (v >= TileValues.HTRFBASE) busy++;
+    else if (v < TileValues.LTRFBASE) { idle++; shapes.push({kind: 'stub', x: x, y: y}); }
+  });
+  var rs = Reach.roadSurvey(map);
+  rs.drawbridges.forEach(function(q) { shapes.push({kind: 'bridge', x: q.x, y: q.y, open: false, label: ''}); });
+  return {
+    shapes: shapes,
+    legend: [
+      {swatch: 'stub', text: P('Highway with little or no traffic: {0} of {1} tiles', 'Autopista con poco o ningún tráfico: {0} de {1} casillas', fmt(idle), fmt(total))},
+      {swatch: 'bridge', text: P('Road drawbridges (a highway bridge would never open): {0}', 'Puentes levadizos de calle (uno de autopista nunca se abriría): {0}', fmt(rs.drawbridges.length))}
+    ],
+    note: P('A highway tile costs three times a road\'s upkeep. It pays where many trips pass (red or busy roads) and between districts that are far apart; a highway with no traffic only costs money. Highway tiles jammed now: {0}.',
+            'Una casilla de autopista cuesta tres veces el mantenimiento de una calle. Compensa donde pasan muchos viajes (calles rojas o concurridas) y entre barrios alejados; una autopista sin tráfico solo cuesta dinero. Casillas de autopista atascadas ahora: {0}.', fmt(busy))
+  };
+};
+
 // v30: Education: what each school and college reaches, and the lived-in homes no school serves
 var education = function(sim) {
   var c = sim.lastCensus || sim._census.snapshot();
@@ -404,6 +460,8 @@ var Layers = {
   zoning: zoningRes,
   water: water,
   education: education,
+  rail: rail,
+  highways: highways,
   fire: fire,
   crime: crime,
   traffic: traffic,

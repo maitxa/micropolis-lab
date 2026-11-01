@@ -332,10 +332,11 @@ var policyReport = function(sim) {
   // Transportation
   var tc = Policy.transportCosts();
   add(P('Transportation', 'Transporte'),
-      P('Law: {0} (road {1}, rail {2} per tile). You have {3} road and {4} rail tiles, costing {5} a year to maintain fully.',
-        'Ley: {0} (calle {1}, vía férrea {2} por casilla). Tienes {3} casillas de calle y {4} de vía férrea, que cuestan {5} al año para mantenerlas al 100%.',
-        esc(transportName(Policy.transport)), money(tc.road), money(tc.rail), fmt(c.roadTotal), fmt(c.railTotal),
-        money(b.roadMaintenanceBudget)));
+      // v33: tiles on the map, and separately the upkeep units (the 669 "road tiles" in a v32 report were upkeep units)
+      P('Law: {0} (road {1}, rail {2} per tile). You have {3} road tiles ({6} of them highway) and {4} rail tiles. For upkeep a highway tile counts as 3 road tiles, a jammed road as 2 and a bridge as 5: {7} road units in all, costing {5} a year with the rail to maintain fully.',
+        'Ley: {0} (calle {1}, vía férrea {2} por casilla). Tienes {3} casillas de calle ({6} de autopista) y {4} de vía férrea. Para el mantenimiento una casilla de autopista cuenta como 3 de calle, una calle atascada como 2 y un puente como 5: {7} unidades de calle en total, que cuestan {5} al año con la vía férrea para mantenerlas al 100%.',
+        esc(transportName(Policy.transport)), money(tc.road), money(tc.rail), fmt(c.roadTiles !== undefined ? c.roadTiles : c.roadTotal), fmt(c.railTotal),
+        money(b.roadMaintenanceBudget), fmt(c.highwayTotal || 0), fmt(c.roadTotal)));
 
   // Zoning and walkability
   if (Policy.zoning === 'mixed')

@@ -20,6 +20,7 @@
 import { Education } from './education.js';
 import { I18n } from './i18n.js';
 import { MiscUtils } from './miscUtils.js';
+import { Policy } from './policy.js';
 import { Reach } from './reach.js';
 import { Residential } from './residential.js';
 import { TileUtils } from './tileUtils.js';
@@ -203,6 +204,61 @@ var compute = function(sim, history) {
         fixes: [P('Bulldoze the red stretches on the map, or zone along them.', 'Demuele los tramos rojos del mapa, o zonifica a lo largo de ellos.'),
                 P('Build new road only where you are about to zone.', 'Construye calles nuevas solo donde vayas a zonificar.')],
         layer: 'roads'});
+
+  // ---- Rail (v33): working depots and the share of homes they cover
+  var depotsOk = (c.depotList || []).length, depotsBad = (c.depotUnconnectedList || []).length + (c.depotUnlinkedList || []).length;
+  var homesN = 0, homesRail = 0;
+  if (depotsOk) {
+    var mp = sim._map, dm = sim.blockMaps.depotMap;
+    for (var rx = 0; rx < mp.width; rx++)
+      for (var ry = 0; ry < mp.height; ry++) {
+        var rt = mp.getTile(rx, ry), rv = rt.getValue();
+        if (!rt.isZone() || !TileUtils.isResidential(rv) || (rv >= TileValues.HOSPITALBASE && rv < TileValues.COMBASE))
+          continue;
+        homesN++;
+        if (dm && dm.worldGet(rx, ry) > 0) homesRail++;
+      }
+  }
+  var railShare = homesN ? homesRail / homesN : 0;
+  var jammed = m.roads ? m.heavy >= 0.15 : false;
+  push({id: 'rail', name: P('Rail', 'Tren'), level: level(depotsBad > 0, depotsOk > 0 && jammed && railShare < 0.5),
+        value: depotsOk ? pct(railShare) : '',
+        summary: depotsOk ? P('{0} working depots cover {1} of home zones', '{0} estaciones que funcionan cubren el {1} de las zonas de vivienda', fmt(depotsOk), pct(railShare))
+                          : depotsBad ? P('No depot works yet', 'Todavía no funciona ninguna estación') : P('No train depots', 'Sin estaciones de tren'),
+        lines: [P('Rail tiles: {0}', 'Casillas de vía: {0}', fmt(c.railTotal || 0)),
+                P('Working depots: {0}; not working: {1}', 'Estaciones que funcionan: {0}; que no funcionan: {1}', fmt(depotsOk), fmt(depotsBad)),
+                depotsOk ? P('Home zones within reach of a depot: {0} of {1}', 'Zonas de vivienda al alcance de una estación: {0} de {1}', fmt(homesRail), fmt(homesN)) : null],
+        why: P('Zones near a working depot travel twice as far and put only half as much traffic on the roads. A depot works only when rail touches it and the line reaches another depot or loops back.',
+               'Las zonas cerca de una estación que funciona viajan el doble de lejos y ponen solo la mitad de tráfico en las calles. Una estación funciona solo si una vía la toca y la línea llega a otra estación o vuelve sobre sí misma.'),
+        fixes: depotsBad ? [P('Join the marked depots to the rail line, and run the line to another depot or round a loop.', 'Une las estaciones marcadas a la vía, y lleva la línea a otra estación o haz un circuito.')]
+                         : jammed ? [P('If roads are jammed, put a depot in the middle of the busiest homes (it reaches {0} tiles) and one near the jobs, joined by rail.', 'Si las calles están atascadas, pon una estación en medio de las viviendas más concurridas (alcanza {0} casillas) y otra cerca de los empleos, unidas por vía.', Utilities.DEPOT_RADIUS)] : [],
+        layer: 'rail'});
+
+  // ---- Highways (v33): highway tiles nobody drives on, and road drawbridges a highway would keep open
+  var hwTotal = 0, hwIdle = 0, mpH = sim._map;
+  Object.keys(Policy.highways || {}).forEach(function(k) {
+    var xy = k.split(','), hx = +xy[0], hy = +xy[1];
+    if (!mpH.testBounds(hx, hy)) return;
+    var hv = mpH.getTileValue(hx, hy);
+    if (!TileUtils.isRoad(hv)) return;
+    hwTotal++;
+    if (hv < TileValues.LTRFBASE) hwIdle++;
+  });
+  var idleShare = hwTotal ? hwIdle / hwTotal : 0;
+  var drawN = rs.drawbridges.length;
+  push({id: 'highways', name: P('Highways', 'Autopistas'), level: level(hwTotal >= 20 && idleShare >= 0.6, (hwTotal >= 10 && idleShare >= 0.4) || drawN > 0),
+        value: hwTotal ? fmt(hwTotal) : '',
+        summary: hwTotal ? P('{0} highway tiles; {1} carry little or no traffic', '{0} casillas de autopista; {1} con poco o ningún tráfico', fmt(hwTotal), pct(idleShare))
+                         : drawN ? P('No highways; {0} road drawbridges', 'Sin autopistas; {0} puentes levadizos de calle', fmt(drawN)) : P('No highways', 'Sin autopistas'),
+        lines: [P('Highway tiles: {0}; with little or no traffic: {1}', 'Casillas de autopista: {0}; con poco o ningún tráfico: {1}', fmt(hwTotal), fmt(hwIdle)),
+                P('Upkeep: each highway tile costs as much as 3 road tiles', 'Mantenimiento: cada casilla de autopista cuesta como 3 de calle'),
+                drawN ? P('Road drawbridges over the channel: {0} (they cut the road while open)', 'Puentes levadizos de calle sobre el canal: {0} (cortan la calle mientras están abiertos)', fmt(drawN)) : null],
+        why: P('A highway tile uses a third of a trip and builds up half the congestion, but costs three times a road\'s upkeep. It pays where many trips pass and between districts far apart; a highway nobody drives on only costs money.',
+               'Una casilla de autopista gasta un tercio del viaje y se congestiona la mitad, pero cuesta tres veces el mantenimiento de una calle. Compensa donde pasan muchos viajes y entre barrios alejados; una autopista por la que no pasa nadie solo cuesta dinero.'),
+        fixes: [hwIdle ? P('Bulldoze or downgrade the marked highway with little or no traffic (build ordinary road there instead).', 'Demuele la autopista marcada con poco o ningún tráfico (o pon calle normal en su lugar).') : null,
+                drawN ? P('Rebuild road bridges over the shipping channel as highway: they never open.', 'Reconstruye como autopista los puentes de calle sobre el canal: nunca se abren.') : null,
+                P('Put new highway where the roads are red (Traffic bubble), not around empty land.', 'Pon autopista nueva donde las calles están rojas (burbuja de Tráfico), no alrededor de terreno vacío.')].filter(function(f) { return !!f; }),
+        layer: 'highways'});
 
   // ---- Power
   var noPlant = m.zones > 0 && m.plants === 0;

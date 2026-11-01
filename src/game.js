@@ -296,6 +296,22 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     var self = this;
     window.setTimeout(function() { self.gameOver('bankrupt', d); }, 0);
   }).bind(this));
+  // v33: money was short in January and automatic budgeting dealt with it: say what it did
+  this.simulation.budget.addEventListener(Messages.BUDGET_AUTO_FIXED, (function(d) {
+    var P = I18n.p, parts = [];
+    if (d.taxTo !== d.taxFrom)
+      parts.push(P('raised the tax from {0}% to {1}%', 'subió el impuesto del {0}% al {1}%', d.taxFrom, d.taxTo));
+    var names = {road: P('roads', 'calles'), fire: P('fire', 'bomberos'), police: P('police', 'policía'),
+                 social: P('social services', 'servicios sociales'), housing: P('social housing', 'vivienda social')};
+    if (d.cuts.length)
+      parts.push(P('cut funding: {0}', 'recortó los fondos: {0}', d.cuts.map(function(c) {
+        return names[c.service] + ' ' + Math.round(100 * c.from) + '% \u2192 ' + Math.round(100 * c.to) + '%';
+      }).join(', ')));
+    var what = parts.length ? parts.join(P(', and ', ', y ')) : P('found the money', 'encontró el dinero');
+    this.showBanner(P('Money was short in January', 'Faltó dinero en enero'),
+                    P('To pay the city\'s bills, automatic budgeting {0}. Next January it will try your funding levels again. You can change the tax and funding in the Budget window.',
+                      'Para pagar las cuentas de la ciudad, el presupuesto automático {0}. El próximo enero volverá a intentar tus niveles de fondos. Puedes cambiar el impuesto y los fondos en la ventana de Presupuesto.', what));
+  }).bind(this));
   // v30: the city size icon and the next size up
   this.updateClassLine(initialValues.population);
   this.simulation.addEventListener(Messages.POPULATION_UPDATED, this.updateClassLine.bind(this));
@@ -487,6 +503,16 @@ Game.prototype.yearly = function(year) {
   var h = Policy.history = Policy.history || {months: [], years: []};
   if (Rating.yearly(this.simulation, this._status, h))
     this.showGraduation();
+  // v33: a run of deficit years: an alert like a disaster's, and fast speed drops to normal. How many years in a row
+  // depends on the speed: on fast the years fly by, so the alert comes sooner (fast 2, normal 3, slow 5); then again
+  // every 5 more deficit years.
+  var streak = 0;
+  for (var yi = h.years.length - 1; yi >= 0 && h.years[yi].v < 0; yi--)
+    streak++;
+  var spd = this.defaultSpeed;
+  var firstAt = spd === Simulation.SPEED_FAST ? 2 : spd === Simulation.SPEED_SLOW ? 5 : 3;
+  if (!h.gameOver && streak >= firstAt && (streak - firstAt) % 5 === 0)
+    this.deficitAlert(streak, h.years[h.years.length - 1].v);
   // v32: voted out after two yearly polls in a row below 20% (only once the city has 2,000 people)
   var ev = this.simulation.evaluation, lc = this.simulation.lastCensus || {};
   if (!h.gameOver && lc.resPop > 0 && (ev.cityPop || 0) >= 2000) {
@@ -712,6 +738,10 @@ Game.prototype.runAdvisor = function(newMonth) {
   var bal = result.estimate.balance;
   $('#balance').text((bal > 0 ? '+' : bal < 0 ? '\u2212' : '') + MiscUtils.formatMoney(Math.abs(bal)))
                .toggleClass('neg', bal < 0).toggleClass('pos', bal > 0);
+  // v33: last year's real result (recorded every January)
+  var ys = (Policy.history && Policy.history.years) || [], lyr = ys.length ? ys[ys.length - 1].v : null;
+  $('#lastYear').text(lyr === null ? '\u2013' : (lyr > 0 ? '+' : lyr < 0 ? '\u2212' : '') + MiscUtils.formatMoney(Math.abs(lyr)))
+                .toggleClass('neg', lyr !== null && lyr < 0).toggleClass('pos', lyr !== null && lyr > 0);
 
   // POLICY LAB v32: warn (once a game year) when, at this rate, January's bills can't be paid: that ends the game
   var funds = this.simulation.budget.totalFunds, lcw = this.simulation.lastCensus || {};
@@ -719,8 +749,8 @@ Game.prototype.runAdvisor = function(newMonth) {
   if (newMonth && bal < 0 && funds + bal < 0 && lcw.resPop > 0 && !(Policy.history && Policy.history.gameOver) && this._moneyWarnYear !== yearNow) {
     this._moneyWarnYear = yearNow;
     this.showBanner(I18n.p('Money will run out: the city can\'t pay its bills next January', 'Se acabará el dinero: la ciudad no podrá pagar sus cuentas el próximo enero'),
-                    I18n.p('At this rate the city spends {0} a year more than it collects, and has only {1} left. If it can\'t pay its services in January, the game ends. Raise taxes, lower funding in the Budget window, or bulldoze road nobody uses.',
-                           'A este ritmo la ciudad gasta {0} al año más de lo que recauda y solo le quedan {1}. Si en enero no puede pagar sus servicios, se acaba el juego. Sube los impuestos, baja los fondos en la ventana de Presupuesto o demuele calles que nadie usa.',
+                    I18n.p('At this rate the city spends {0} a year more than it collects, and has only {1} left. In January automatic budgeting will raise the tax a point and cut services to pay the bills; if roads or police would get less than half their funding, the game ends. Cut costs now: bulldoze road nobody uses, or lower funding in the Budget window.',
+                           'A este ritmo la ciudad gasta {0} al año más de lo que recauda y solo le quedan {1}. En enero el presupuesto automático subirá el impuesto un punto y recortará servicios para pagar las cuentas; si las calles o la policía recibieran menos de la mitad de sus fondos, se acaba el juego. Recorta gastos ya: demuele calles que nadie usa o baja los fondos en la ventana de Presupuesto.',
                            MiscUtils.formatMoney(-bal), MiscUtils.formatMoney(funds)));
   }
 
@@ -1179,6 +1209,9 @@ Game.prototype.handleBudgetWindowClosure = function(data) {
     this.simulation.budget.socialPercent = data.socialPercent / 100;
     this.simulation.budget.housingPercent = data.housingPercent / 100;
     this.simulation.budget.setTax(data.taxPercent - 0);
+    // v33: the funding levels the player chose (automatic budgeting returns to them after a shortage)
+    this.simulation.budget.chosenPercent = {road: data.roadPercent / 100, fire: data.firePercent / 100, police: data.policePercent / 100,
+                                            social: data.socialPercent / 100, housing: data.housingPercent / 100};
     if (this.simNeededBudget) {
       this.simulation.budget.doBudgetWindow();
       this.simNeededBudget = false;
@@ -1902,6 +1935,26 @@ Game.prototype._placeGradePopup = function() {
   var box = document.getElementById('infobar').getBoundingClientRect();
   var host = document.getElementById('canvasContainer').getBoundingClientRect();
   popup.css({left: (box.right - host.left + 10) + 'px', top: Math.max(4, box.top - host.top) + 'px'}).show();
+};
+
+// POLICY LAB v33: the deficit alert
+Game.prototype.deficitAlert = function(streak, lastYear) {
+  var P = I18n.p, slowed = false;
+  if (this.defaultSpeed === Simulation.SPEED_FAST) {
+    this.defaultSpeed = Simulation.SPEED_MED;
+    if (!this.simulation.isPaused())
+      this.simulation.setSpeed(this.defaultSpeed);
+    slowed = true;
+  }
+  var funds = this.simulation.budget.totalFunds, est = this._estimate ? this._estimate.balance : lastYear;
+  var lasts = est < 0 ? Math.floor(funds / -est) : null;
+  var why = P('Last year the city spent {0} more than it collected.', 'El año pasado la ciudad gastó {0} más de lo que recaudó.', MiscUtils.formatMoney(-lastYear)) + ' ' +
+            (lasts === null ? P('At today\'s rates next year looks better, but check the forecast under Funds.', 'Con los valores de hoy el próximo año pinta mejor, pero mira la previsión bajo Fondos.')
+                            : P('At this rate the savings ({0}) last about {1} more years.', 'A este ritmo los ahorros ({0}) duran unos {1} años más.', MiscUtils.formatMoney(funds), lasts)) + ' ' +
+            P('Upkeep grows with every road, highway and building; taxes grow with people and land value. Bulldoze road nobody uses (Roads bubble), and build only what the city needs now.',
+              'El mantenimiento crece con cada calle, autopista y edificio; los impuestos, con la población y el valor del suelo. Demuele calles que nadie usa (burbuja de Calles) y construye solo lo que la ciudad necesita ahora.') +
+            (slowed ? ' ' + P('The game is now at normal speed, to give you time.', 'El juego va ahora a velocidad normal, para darte tiempo.') : '');
+  this.showBanner(P('Deficit {0} years in a row', 'Déficit {0} años seguidos', streak), why);
 };
 
 // POLICY LAB v32: a warning banner (the disaster banner's place and look)

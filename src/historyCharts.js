@@ -209,6 +209,16 @@ var render = function(container, history) {
     return;
   }
   var last = months[months.length - 1];
+  // v33: only the last 50 years (a city can run for centuries, and then the bars get too thin to read)
+  var fromYear = last.y - 49;
+  months = months.filter(function(q) { return q.y >= fromYear; });
+  years = years.filter(function(q) { return q.y >= fromYear; });
+  if (history.months.length && history.months[0].y < fromYear) {
+    var span = document.createElement('p');
+    span.className = 'hcKeyNote';
+    span.textContent = P('The last 50 years ({0}-{1}).', 'Los últimos 50 años ({0}-{1}).', fromYear, last.y);
+    container.appendChild(span);
+  }
 
   var b1 = block(container, P('Funds', 'Fondos'));
   var t1 = P('Now: {0}', 'Ahora: {0}', money(last.funds));
@@ -252,8 +262,8 @@ var render = function(container, history) {
   // v30: how much local road, highway and rail the city has (tiles on the map, not traffic)
   var tr = months.filter(function(q) { return q.road !== undefined; });
   if (tr.length >= 2) {
-    [['road', P('Local road tiles', 'Tramos de calle')], ['hwy', P('Highway tiles', 'Tramos de autopista')],
-     ['rail', P('Rail tiles', 'Tramos de vía férrea')]].forEach(function(spec) {
+    // v33: only the road chart (highways and rail have their own bubbles)
+    [['road', P('Local road tiles', 'Tramos de calle')]].forEach(function(spec) {
       var pts = tr.map(function(q) { return {y: q.y, m: q.m, v: q[spec[0]] || 0}; });
       var bx = block(container, spec[1]);
       var tx = P('Now: {0}', 'Ahora: {0}', MiscUtils.formatNumber(pts[pts.length - 1].v));

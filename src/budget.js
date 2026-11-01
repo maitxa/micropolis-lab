@@ -82,14 +82,16 @@ var Budget = EventEmitter(function() {
 
   this.awaitingValues = false;
   this.autoBudget = true;
+  // POLICY LAB v33: the funding levels the player last set in the Budget window (null until then)
+  this.chosenPercent = null;
 });
 
 
 var saveProps = ['autoBudget', 'totalFunds', 'policePercent', 'roadPercent', 'firePercent', 'roadSpend',
                  'policeSpend', 'fireSpend', 'roadMaintenanceBudget', 'policeMaintenanceBudget',
                  'fireMaintenanceBudget', 'cityTax', 'roadEffect', 'policeEffect', 'fireEffect',
-                 // POLICY LAB
-                 'socialPercent', 'socialSpend', 'socialMaintenanceBudget', 'socialEffect', 'currentYear',
+                 // POLICY LAB (v33: chosenPercent, the funding levels the player last set)
+                 'chosenPercent', 'socialPercent', 'socialSpend', 'socialMaintenanceBudget', 'socialEffect', 'currentYear',
                  'utilityCost', 'housingPercent', 'housingSpend', 'housingMaintenanceBudget', 'housingEffect'];
 
 Budget.prototype.save = function(saveData) {
@@ -104,6 +106,10 @@ Budget.prototype.load = function(saveData) {
     if (saveData[saveProps[i]] !== undefined)
       this[saveProps[i]] = saveData[saveProps[i]];
   }
+  // POLICY LAB v33: before v33 a shortage of money switched automatic budgeting off for good; cities saved then get it
+  // back on (from v33 the game handles shortages itself and only the player switches it off)
+  if (saveData.chosenPercent === undefined)
+    this.autoBudget = true;
 
   this._emitEvent(Messages.AUTOBUDGET_CHANGED, this.autoBudget);
   this._emitEvent(Messages.FUNDS_CHANGED, this.totalFunds);
@@ -115,6 +121,9 @@ Budget.prototype.setAutoBudget = function(value) {
   this._emitEvent(Messages.AUTOBUDGET_CHANGED, this.autoBudget);
 };
 
+
+// POLICY LAB v33: automatic budgeting raises the tax at most to this rate when money is short
+var AUTO_TAX_MAX = 10;
 
 var RLevels = [0.7, 0.9, 1.2];
 var FLevels = [1.4, 1.2, 0.8];
@@ -239,8 +248,8 @@ Budget.prototype.doBudgetNow = function(fromWindow) {
   var totalCost = roadCost + policeCost + fireCost + socialCost + housingCost + (this.utilityCost || 0);
   var cashRemaining = this.totalFunds + this.taxFund - totalCost;
 
-  // Autobudget
-  if ((cashRemaining > 0 && (this.autoBudget || locked)) || fromWindow) {
+  // Autobudget (v33: also when the money only just covers what could be paid: the shortfall was handled in collectTax)
+  if ((cashRemaining >= 0 && (this.autoBudget || locked)) || fromWindow) {
     // Either we were able to fully fund services, or we have just normalised user input. Go ahead and spend.
     this.awaitingValues = false;
     this.doBudgetSpend(roadCost, fireCost, policeCost, socialCost, housingCost);
@@ -357,22 +366,65 @@ Budget.prototype.collectTax = function(gameLevel, census) {
   var railCost = census.railTotal * Policy.transportCosts().railMaintenance;
   this.roadMaintenanceBudget = Math.floor((roadCost + railCost) * RLevels[gameLevel]);
 
-  this.taxFund = Math.floor(Math.floor(census.totalPop * taxedLandValue(census) / 120) * this.cityTax * FLevels[gameLevel]);
-  // POLICY LAB: business incentives (tax breaks) reduce the share of taxes the city collects (original: all of it)
-  var fullTaxFund = this.taxFund;
-  this.taxFund = Math.floor(this.taxFund * Policy.taxShare());
-  // POLICY LAB: how much tax revenue the business incentives cost this year
-  this.taxBreakCost = fullTaxFund - this.taxFund;
+  var self = this;
+  var collect = function() {
+    self.taxFund = Math.floor(Math.floor(census.totalPop * taxedLandValue(census) / 120) * self.cityTax * FLevels[gameLevel]);
+    // POLICY LAB: business incentives (tax breaks) reduce the share of taxes the city collects (original: all of it)
+    var fullTaxFund = self.taxFund;
+    self.taxFund = Math.floor(self.taxFund * Policy.taxShare());
+    // POLICY LAB: how much tax revenue the business incentives cost this year
+    self.taxBreakCost = fullTaxFund - self.taxFund;
+  };
+
+  // POLICY LAB v33: with automatic budgeting on, go back to the funding levels the player last chose (an earlier
+  // shortage may have cut them)
+  if (this.autoBudget && this.chosenPercent) {
+    var cp = this.chosenPercent;
+    this.roadPercent = cp.road; this.firePercent = cp.fire; this.policePercent = cp.police;
+    this.socialPercent = cp.social; this.housingPercent = cp.housing;
+  }
+  collect();
 
   if (census.totalPop > 0) {
-    // POLICY LAB v32: bankruptcy. The city can't pay its running costs at the funding levels set in the budget, even
-    // with this year's taxes: the game is over (the original game quietly cut services instead).
-    var need = Math.round(this.roadMaintenanceBudget * this.roadPercent) + Math.round(this.fireMaintenanceBudget * this.firePercent) +
-               Math.round(this.policeMaintenanceBudget * this.policePercent) + Math.round(this.socialMaintenanceBudget * this.socialPercent) +
-               Math.round(this.housingMaintenanceBudget * this.housingPercent) + (this.utilityCost || 0);
+    var needNow = function() {
+      return Math.round(self.roadMaintenanceBudget * self.roadPercent) + Math.round(self.fireMaintenanceBudget * self.firePercent) +
+             Math.round(self.policeMaintenanceBudget * self.policePercent) + Math.round(self.socialMaintenanceBudget * self.socialPercent) +
+             Math.round(self.housingMaintenanceBudget * self.housingPercent) + (self.utilityCost || 0);
+    };
+    var need = needNow(), taxFrom = this.cityTax;
+    var wanted = {road: this.roadPercent, fire: this.firePercent, police: this.policePercent, social: this.socialPercent,
+                  housing: this.housingPercent};
+    // POLICY LAB v33: not enough money this January. With automatic budgeting the game deals with it itself (no Budget
+    // window): first the tax goes up one point (up to 10%), then services are funded as far as the money goes.
+    var shortBefore = this.totalFunds + this.taxFund < need;
+    if (shortBefore && this.autoBudget && this.cityTax < AUTO_TAX_MAX) {
+      this.setTax(this.cityTax + 1);
+      collect();
+    }
     var have = this.totalFunds + this.taxFund;
-    if (have < need)
-      this._emitEvent(Messages.CITY_BANKRUPT, {need: need, have: have, funds: this.totalFunds, taxes: this.taxFund});
+    // What the money can pay for, in the game's order of priority (roads, fire, police, social services, housing)
+    var left = have - (this.utilityCost || 0), afford = {};
+    [['road', 'roadMaintenanceBudget'], ['fire', 'fireMaintenanceBudget'], ['police', 'policeMaintenanceBudget'],
+     ['social', 'socialMaintenanceBudget'], ['housing', 'housingMaintenanceBudget']].forEach(function(k) {
+      var full = self[k[1]] || 0, want = Math.round(full * wanted[k[0]]);
+      var pay = Math.max(0, Math.min(want, left));
+      left -= pay;
+      afford[k[0]] = full > 0 ? pay / full : wanted[k[0]];
+    });
+    // POLICY LAB v32/v33: bankruptcy, when even then roads or police would get less than half their funding
+    var broke = (this.roadMaintenanceBudget > 0 && wanted.road >= 0.5 && afford.road < 0.5) ||
+                (this.policeMaintenanceBudget > 0 && wanted.police >= 0.5 && afford.police < 0.5);
+    if (broke)
+      this._emitEvent(Messages.CITY_BANKRUPT, {need: need, have: have, funds: this.totalFunds, taxes: this.taxFund,
+                                               road: afford.road, police: afford.police});
+    else if (shortBefore && this.autoBudget) {
+      var cuts = [];
+      ['road', 'fire', 'police', 'social', 'housing'].forEach(function(k) {
+        if (afford[k] < wanted[k] - 0.005)
+          cuts.push({service: k, from: wanted[k], to: afford[k]});
+      });
+      this._emitEvent(Messages.BUDGET_AUTO_FIXED, {taxFrom: taxFrom, taxTo: this.cityTax, cuts: cuts});
+    }
     this.cashFlow = this.taxFund - (this.policeMaintenanceBudget + this.fireMaintenanceBudget + this.roadMaintenanceBudget +
                                     Math.round(this.socialMaintenanceBudget * this.socialPercent) +
                                     Math.round(this.housingMaintenanceBudget * this.housingPercent) + this.utilityCost);

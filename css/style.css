@@ -3152,3 +3152,11 @@ nav li {
 #disasterBanner button { width: auto; height: auto; line-height: 1.2; margin: 0; }
 .plGameOver p { margin: 0 0 10px 0; }
 .plGraduation p { margin: 0 0 10px 0; }
+
+/* v33: next year's forecast and last year's result under Funds */
+#lastYearLine { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--pl-ink-soft); }
+#lastYear.pos { color: #1e7a3a; }
+#lastYear.neg { color: #b3362b; }
+#infobar { height: auto; min-height: 150px; }
+/* v33: the power line stays on one line (in Spanish it wrapped and pushed the city box into the menu below) */
+#infobar #powerLine { white-space: nowrap; font-size: 13px; }

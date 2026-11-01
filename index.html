@@ -123,7 +123,9 @@
             <!-- POLICY LAB: funds shown large, with the estimated balance for a year -->
             <div id="fundsBlock" title="Funds: hover or click for charts over the years" tabindex="0" role="button" aria-controls="historyPopup">
               <div id="fundsBig">$<span id="funds">20,000</span></div>
-              <div id="balanceLine" title="Estimated taxes minus running costs over a year"><span id="balance">$0</span> <span class="perYear">a year</span></div>
+              <!-- v33: last year's real result and next year's forecast (both: taxes minus running costs, not counting building) -->
+              <div id="balanceLine" title="Next year: forecast of a full year's taxes minus running costs at today's rates (building not counted)"><span class="perYear">Next year:</span> <span id="balance">$0</span></div>
+              <div id="lastYearLine" title="Last year: what the city really collected in taxes minus what it paid in running costs (building not counted)"><span class="perYear">Last year:</span> <span id="lastYear">&ndash;</span></div>
             </div>
             <!-- POLICY LAB v30: how much of the power plants' capacity is in use -->
             <div id="powerLine" class="infoSmall" title="Power plant capacity in use (zones and wires each take one unit)"></div>

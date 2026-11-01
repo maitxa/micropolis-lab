@@ -199,7 +199,9 @@ var advise = function(sim, newMonth) {
   var est = b.estimateYear(sim._gameLevel, {
     totalPop: live.totalPop || 0, landValueAverage: live.landValueAverage || 0, taxLandValue: live.taxLandValue, roadTotal: c.roadTotal,
     railTotal: c.railTotal, policeStationPop: c.policeStationPop, fireStationPop: c.fireStationPop,
-    depotPop: c.depotPop || 0, waterPlantPop: c.waterPlantPop || 0, builtHospitalPop: c.builtHospitalPop || 0});
+    depotPop: c.depotPop || 0, waterPlantPop: c.waterPlantPop || 0, builtHospitalPop: c.builtHospitalPop || 0,
+    // v33 BUG FIX: schools and colleges have running costs too (the forecast left them out)
+    schoolPop: c.schoolPop || 0, collegePop: c.collegePop || 0});
   var moneyWhy = P('In a year the city collects about {0} in taxes and spends about {1} on upkeep (roads and rail {2}, police {3}, fire {4}, other {5}).',
                    'En un año la ciudad recauda unos {0} en impuestos y gasta unos {1} en mantenimiento (calles y vías {2}, policía {3}, bomberos {4}, otros {5}).',
                    money(est.taxes), money(est.totalCosts), money(est.costs.road), money(est.costs.police),

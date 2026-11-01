@@ -231,6 +231,25 @@ saved before v25 keep the 1989 answers for those questions.
   removed, home zones covered, funding, capacity in use) and whether it is working (no power, no rail link).
 - Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
 
+### v33: money you can read, automatic budgeting that copes, Rail and Highways bubbles
+
+- **Under Funds:** "Next year" (the forecast: a full year's taxes minus running costs at today's rates) and "Last year"
+  (what really happened). Neither counts building. Bug fix: the forecast left out the running costs of schools and
+  colleges, so it looked better than it was.
+- **Short of money in January:** the Budget window no longer opens by itself (automatic budgeting stays on unless the
+  player switches it off). The game raises the tax one point (up to 10%), then funds services as far as the money
+  goes, and says what it did; next January it tries the player's funding levels again. **Bankrupt** (game over) now
+  means that even so, roads or police would get less than half their funding. Cities saved before v33 get automatic
+  budgeting back on (until v33 a shortage switched it off for good).
+- **Deficit alert:** after a run of deficit years (2 in a row on fast speed, 3 on normal, 5 on slow; then every 5 more),
+  a banner like a disaster's, and fast speed drops to normal.
+- **Rail bubble** (working depots, share of home zones they cover; map: depot circles, homes no depot covers, depots
+  that don't work) and **Highways bubble** (highway tiles with little or no traffic, which cost 3x a road's upkeep;
+  road drawbridges a highway bridge would keep open).
+- History charts show the last 50 years; the highway and rail tile charts are gone (the road chart stays).
+- The policy report now gives road **tiles** and, separately, road **upkeep units** (a highway tile counts 3, a jammed
+  road 2, a bridge 5). Until v33 it called the upkeep units "road tiles".
+
 ### v32: game over, and a To do card that is really bubbles only
 
 - **Bankrupt:** every January the city pays its services and running costs. If the money in the bank plus that year's

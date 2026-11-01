@@ -54,6 +54,8 @@ export const NEED_STADIUM = "Stadium needed";
 export const NO_MONEY = "No money";
 // POLICY LAB v32: in January the city could not pay its services at the funding levels set in the budget
 export const CITY_BANKRUPT = "City bankrupt";
+// POLICY LAB v33: automatic budgeting raised the tax and/or cut funding because money was short
+export const BUDGET_AUTO_FIXED = "Budget fixed automatically";
 export const NOT_ENOUGH_POWER = "Not enough power";
 export const NUCLEAR_MELTDOWN = "Nuclear Meltdown";
 export const PLANE_CRASHED = "Plane crashed";
