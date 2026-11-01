@@ -341,7 +341,45 @@ var openGraduation = function(game, onClose) {
   body.append(keep);
 };
 
+// v32: game over. reason: 'bankrupt' (data: need, have, funds, taxes) or 'votedOut' (data: yes)
+var openGameOver = function(game, reason, data, onClose) {
+  var money = MiscUtils.formatMoney;
+  var o = overlay(reason === 'bankrupt' ? P('Game over: the city went bankrupt', 'Fin del juego: la ciudad quebró')
+                                        : P('Game over: the mayor was voted out', 'Fin del juego: el alcalde perdió el cargo'), onClose);
+  var body = o.body.addClass('plGameOver');
+  if (reason === 'bankrupt') {
+    body.append($('<p class="plGradLead"></p>').text(P('In January the city owed {0} for its services and running costs, but had only {1} ({2} in the bank and {3} in taxes).',
+                                                       'En enero la ciudad debía {0} por sus servicios y gastos de funcionamiento, pero solo tenía {1} ({2} en el banco y {3} en impuestos).',
+                                                       money(data.need || 0), money(Math.max(0, data.have || 0)), money(data.funds || 0), money(data.taxes || 0))));
+    body.append($('<p></p>').text(P('Common causes: more road and services than the taxes can pay for, a tax rate too low for the city\'s size, or many expensive buildings (hospitals, colleges, water plants) in a small city.',
+                                    'Causas frecuentes: más calles y servicios de los que pagan los impuestos, una tasa demasiado baja para el tamaño de la ciudad, o muchos edificios caros (hospitales, universidades, plantas de agua) en una ciudad pequeña.')));
+  } else {
+    body.append($('<p class="plGradLead"></p>').text(P('For two years in a row fewer than {0}% of residents approved of the mayor (last poll: {1}%).',
+                                                       'Durante dos años seguidos menos del {0}% de los residentes aprobó al alcalde (última encuesta: {1}%).',
+                                                       Rating.VOTED_OUT_BELOW, data.yes)));
+    body.append($('<p></p>').text(P('Residents judge the mayor mostly on crime, pollution, housing costs, taxes, traffic and jobs: the red bubbles.',
+                                    'Los residentes juzgan al alcalde sobre todo por la delincuencia, la contaminación, el costo de la vivienda, los impuestos, el tráfico y el empleo: las burbujas rojas.')));
+  }
+  body.append($('<p></p>').text(P('What now?', '¿Y ahora?')));
+  var actions = $('<div class="plGameOverActions"></div>');
+  var back = $('<button type="button" class="plPrimary"></button>').text(P('Go back in time', 'Volver atrás en el tiempo'));
+  back.on('click', function(e) {
+    e.preventDefault();
+    o.close();
+    game.openPanel(function(done) { openRewind(game, done); });
+  });
+  var start = $('<button type="button"></button>').text(P('Start screen (load a saved city or start a new one)', 'Pantalla de inicio (cargar una ciudad guardada o empezar una nueva)'));
+  start.on('click', function(e) { e.preventDefault(); window.location.reload(); });
+  var keep = $('<button type="button"></button>').text(P('Keep playing without a grade', 'Seguir jugando sin nota'));
+  keep.on('click', function(e) { e.preventDefault(); o.close(); });
+  actions.append(back, start, keep);
+  body.append(actions);
+  body.append($('<p class="plNote"></p>').text(P('Going back in time saves this city first, under Saved cities. The start screen does not: press Keep playing and then Save if you want to keep it.',
+                                                 'Volver atrás guarda primero esta ciudad, en Ciudades guardadas. La pantalla de inicio no: pulsa Seguir jugando y luego Guardar si quieres conservarla.')));
+};
+
 var CityPanels = {
+  openGameOver: openGameOver,
   openGraduation: openGraduation,
   openMistakes: openMistakes,
   openSavedCities: openSavedCities,

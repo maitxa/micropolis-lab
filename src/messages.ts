@@ -52,6 +52,8 @@ export const NEED_POLICE_STATION = "Police station needed";
 export const NEED_SEAPORT = "Seaport needed";
 export const NEED_STADIUM = "Stadium needed";
 export const NO_MONEY = "No money";
+// POLICY LAB v32: in January the city could not pay its services at the funding levels set in the budget
+export const CITY_BANKRUPT = "City bankrupt";
 export const NOT_ENOUGH_POWER = "Not enough power";
 export const NUCLEAR_MELTDOWN = "Nuclear Meltdown";
 export const PLANE_CRASHED = "Plane crashed";

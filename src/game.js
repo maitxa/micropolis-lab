@@ -291,6 +291,11 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     name: this.name
   };
   this.infoBar(this.simulation, initialValues);
+  // v32: game over when the city can't pay its services in January
+  this.simulation.budget.addEventListener(Messages.CITY_BANKRUPT, (function(d) {
+    var self = this;
+    window.setTimeout(function() { self.gameOver('bankrupt', d); }, 0);
+  }).bind(this));
   // v30: the city size icon and the next size up
   this.updateClassLine(initialValues.population);
   this.simulation.addEventListener(Messages.POPULATION_UPDATED, this.updateClassLine.bind(this));
@@ -482,6 +487,18 @@ Game.prototype.yearly = function(year) {
   var h = Policy.history = Policy.history || {months: [], years: []};
   if (Rating.yearly(this.simulation, this._status, h))
     this.showGraduation();
+  // v32: voted out after two yearly polls in a row below 20% (only once the city has 2,000 people)
+  var ev = this.simulation.evaluation, lc = this.simulation.lastCensus || {};
+  if (!h.gameOver && lc.resPop > 0 && (ev.cityPop || 0) >= 2000) {
+    h.lowPolls = ev.cityYes < Rating.VOTED_OUT_BELOW ? (h.lowPolls || 0) + 1 : 0;
+    if (h.lowPolls >= 2)
+      this.gameOver('votedOut', {yes: ev.cityYes});
+    else if (h.lowPolls === 1)
+      this.showBanner(I18n.p('Only {0}% of residents approve of the mayor', 'Solo el {0}% de los residentes aprueba al alcalde', ev.cityYes),
+                      I18n.p('If next year\'s poll is also below {0}%, you will be voted out and the game ends. Check the bubbles: the red ones are what residents complain about most.',
+                             'Si la encuesta del año que viene también está por debajo del {0}%, perderás el cargo y se acabará el juego. Mira las burbujas: las rojas son de lo que más se quejan los residentes.',
+                             Rating.VOTED_OUT_BELOW));
+  }
   this.updateGrade();
   var info = this.cityInfo();
   // a city joins the scoreboard once someone lives there (not every map that was only tried out)
@@ -696,6 +713,17 @@ Game.prototype.runAdvisor = function(newMonth) {
   $('#balance').text((bal > 0 ? '+' : bal < 0 ? '\u2212' : '') + MiscUtils.formatMoney(Math.abs(bal)))
                .toggleClass('neg', bal < 0).toggleClass('pos', bal > 0);
 
+  // POLICY LAB v32: warn (once a game year) when, at this rate, January's bills can't be paid: that ends the game
+  var funds = this.simulation.budget.totalFunds, lcw = this.simulation.lastCensus || {};
+  var yearNow = this.simulation.getDate().year;
+  if (newMonth && bal < 0 && funds + bal < 0 && lcw.resPop > 0 && !(Policy.history && Policy.history.gameOver) && this._moneyWarnYear !== yearNow) {
+    this._moneyWarnYear = yearNow;
+    this.showBanner(I18n.p('Money will run out: the city can\'t pay its bills next January', 'Se acabará el dinero: la ciudad no podrá pagar sus cuentas el próximo enero'),
+                    I18n.p('At this rate the city spends {0} a year more than it collects, and has only {1} left. If it can\'t pay its services in January, the game ends. Raise taxes, lower funding in the Budget window, or bulldoze road nobody uses.',
+                           'A este ritmo la ciudad gasta {0} al año más de lo que recauda y solo le quedan {1}. Si en enero no puede pagar sus servicios, se acaba el juego. Sube los impuestos, baja los fondos en la ventana de Presupuesto o demuele calles que nadie usa.',
+                           MiscUtils.formatMoney(-bal), MiscUtils.formatMoney(funds)));
+  }
+
   // POLICY LAB v23: shops that can't reach customers, outlined on the map all the time
   this.renderStuckShops(result.stuckShops || []);
 
@@ -751,14 +779,13 @@ Game.prototype.runAdvisor = function(newMonth) {
     }
   });
   this._todoIds = shown;
-  var showItems = shown.map(function(id) { return byId[id]; });
+  // v32: the To do card is bubbles only; the one list item left is the opening tips in a city with no zones yet (the
+  // rest of the advice is in the bubbles and in "What I did wrong")
+  var showItems = avail.filter(function(i) { return i.id === 'start'; });
 
   var list = $('#advisorList').empty();
   var self = this;
   var opened = this._adviceOpen = this._adviceOpen || {};  // items the player has opened stay open after a refresh
-  if (!showItems.length && result.items.length)
-    list.append($('<li class="adviceNone"></li>').text(I18n.p('Nothing else for now (you dismissed the rest; they come back in a few minutes if still true).',
-                                                               'Nada más por ahora (descartaste el resto; vuelven en unos minutos si siguen siendo ciertos).')));
   showItems.forEach(function(item) {
     var li = $('<li class="advice"></li>').addClass('tone-' + item.tone).data('adviceId', item.id);
     var head = $('<button type="button" class="adviceText" aria-expanded="false"></button>').text(item.text);
@@ -1810,7 +1837,7 @@ Game.prototype.processFrontEndMessage = function(message) {
 // POLICY LAB v30: power capacity in use, under the funds
 // POLICY LAB v31: the grade in the city box, and its panel
 Game.prototype.updateGrade = function() {
-  var r = Rating.compute(this.simulation, this._status, Policy.history);
+  var r = Policy.history && Policy.history.gameOver ? null : Rating.compute(this.simulation, this._status, Policy.history);
   $('#gradeLetter').text(r ? r.grade : '–').attr('class', r ? 'grade-' + r.grade : '');
   $('#gradePoints').text(r ? '(' + r.points + '/100)' : '');
   if ($('#gradePopup').is(':visible'))
@@ -1822,7 +1849,12 @@ Game.prototype.showGrade = function(refresh) {
   var r = Rating.compute(this.simulation, this._status, h), avg = Rating.average(h);
   var body = $('#gradeBody').empty();
   $('#gradeTitle').text(P('City rating', 'Calificación de la ciudad'));
-  if (!r) {
+  if (h.gameOver) {
+    body.append($('<p class="grNote"></p>').text(h.gameOver.reason === 'bankrupt'
+      ? P('Game over in {0}: the city went bankrupt. You are playing on without a grade.', 'Fin del juego en {0}: la ciudad quebró. Sigues jugando sin nota.', h.gameOver.year)
+      : P('Game over in {0}: the mayor was voted out. You are playing on without a grade.', 'Fin del juego en {0}: el alcalde perdió el cargo. Sigues jugando sin nota.', h.gameOver.year)));
+    r = null;
+  } else if (!r) {
     body.append($('<p class="grNote"></p>').text(P('The city gets a grade once people live in it.', 'La ciudad recibe una nota cuando vive gente en ella.')));
   } else {
     var top = $('<div class="grTop"></div>');
@@ -1845,6 +1877,8 @@ Game.prototype.showGrade = function(refresh) {
                                                    'Lo que más baja la nota: {0}. Notas: A desde 85 puntos, B desde 70, C desde 55, D desde 40.', r.weakest.name.toLowerCase())));
   }
   // graduation
+  if (h.gameOver)
+    return refresh ? undefined : this._placeGradePopup();
   body.append($('<h3 class="grHead"></h3>').text(P('Graduation', 'Graduación')));
   if (h.graduated) {
     body.append($('<p class="grNote"></p>').text(P('This city graduated in {0}.', 'Esta ciudad se graduó en {0}.', h.graduated)));
@@ -1859,12 +1893,45 @@ Game.prototype.showGrade = function(refresh) {
   body.append(ul);
   body.append($('<p class="grNote small"></p>').text(P('The population target depends on the preset (harder presets get a lower one) and the difficulty.',
                                                        'La población necesaria depende del perfil (los más difíciles tienen una menor) y de la dificultad.')));
-  if (refresh)
-    return;
+  if (!refresh)
+    this._placeGradePopup();
+};
+
+Game.prototype._placeGradePopup = function() {
   var popup = $('#gradePopup');
   var box = document.getElementById('infobar').getBoundingClientRect();
   var host = document.getElementById('canvasContainer').getBoundingClientRect();
   popup.css({left: (box.right - host.left + 10) + 'px', top: Math.max(4, box.top - host.top) + 'px'}).show();
+};
+
+// POLICY LAB v32: a warning banner (the disaster banner's place and look)
+Game.prototype.showBanner = function(title, why) {
+  var self = this, banner = $('#disasterBanner').empty();
+  banner.append($('<div class="dbTitle"></div>').text(title));
+  if (why)
+    banner.append($('<div class="dbWhy"></div>').text(why));
+  var close = $('<button type="button"></button>').text(I18n.p('Close', 'Cerrar'));
+  close.on('click', function(e) { e.preventDefault(); self.hideDisaster(); });
+  banner.append($('<div class="dbActions"></div>').append(close)).show();
+};
+
+// POLICY LAB v32: game over (reason 'bankrupt' or 'votedOut'). Shown once per city; afterwards the city has no grade.
+Game.prototype.gameOver = function(reason, data) {
+  var h = Policy.history = Policy.history || {months: [], years: []};
+  if (h.gameOver)
+    return;
+  h.gameOver = {reason: reason, year: this.simulation.getDate().year};
+  this.updateGrade();
+  var game = this;
+  var show = function() {
+    game.openPanel(function(done) { CityPanels.openGameOver(game, reason, data || {}, done); });
+  };
+  if (this.dialogOpen) {
+    // another window is open (e.g. the budget): show this as soon as it closes
+    var wait = window.setInterval(function() { if (!game.dialogOpen) { window.clearInterval(wait); show(); } }, 500);
+  } else {
+    show();
+  }
 };
 
 // POLICY LAB v31: the graduation screen

@@ -3144,3 +3144,11 @@ nav li {
 .plGraduation .plGradFacts dt { font-weight: 700; }
 .plGraduation .plGradFacts dd { margin: 0; }
 .plGraduation .plGradKeep { margin-top: 8px; }
+
+/* v32: game over */
+.plGameOver .plGameOverActions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+
+/* v32: banner buttons keep their own size (the page's general button rules made them full-width bars) */
+#disasterBanner button { width: auto; height: auto; line-height: 1.2; margin: 0; }
+.plGameOver p { margin: 0 0 10px 0; }
+.plGraduation p { margin: 0 0 10px 0; }

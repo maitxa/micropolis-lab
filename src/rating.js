@@ -37,6 +37,8 @@ var gradeOf = function(points) {
 };
 
 var YEARS_NEEDED = 5;
+// v32: the mayor is voted out after two yearly polls in a row below this approval (%)
+var VOTED_OUT_BELOW = 20;
 var APPROVAL_NEEDED = 70;
 // Population targets. 1989 baseline: 50,000 (the size at which the 1989 game calls a city a capital). The others in
 // proportion to the test cities after 20 years (v30 tests: baseline 21,100, conservative-populist 19,600, libertarian
@@ -125,7 +127,7 @@ var conditions = function(sim, statusList, history) {
 // graduation count on. Returns true the first time the city graduates.
 var yearly = function(sim, statusList, history) {
   var ly = lastYear(history);
-  if (!ly || ly.rated)
+  if (!ly || ly.rated || history.gameOver)
     return false;
   ly.rated = true;
   var r = compute(sim, statusList, history);
@@ -147,7 +149,8 @@ var Rating = {
   yearly: yearly,
   gradeOf: gradeOf,
   populationTarget: populationTarget,
-  YEARS_NEEDED: YEARS_NEEDED
+  YEARS_NEEDED: YEARS_NEEDED,
+  VOTED_OUT_BELOW: VOTED_OUT_BELOW
 };
 
 export { Rating };

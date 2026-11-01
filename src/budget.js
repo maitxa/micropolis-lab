@@ -365,6 +365,14 @@ Budget.prototype.collectTax = function(gameLevel, census) {
   this.taxBreakCost = fullTaxFund - this.taxFund;
 
   if (census.totalPop > 0) {
+    // POLICY LAB v32: bankruptcy. The city can't pay its running costs at the funding levels set in the budget, even
+    // with this year's taxes: the game is over (the original game quietly cut services instead).
+    var need = Math.round(this.roadMaintenanceBudget * this.roadPercent) + Math.round(this.fireMaintenanceBudget * this.firePercent) +
+               Math.round(this.policeMaintenanceBudget * this.policePercent) + Math.round(this.socialMaintenanceBudget * this.socialPercent) +
+               Math.round(this.housingMaintenanceBudget * this.housingPercent) + (this.utilityCost || 0);
+    var have = this.totalFunds + this.taxFund;
+    if (have < need)
+      this._emitEvent(Messages.CITY_BANKRUPT, {need: need, have: have, funds: this.totalFunds, taxes: this.taxFund});
     this.cashFlow = this.taxFund - (this.policeMaintenanceBudget + this.fireMaintenanceBudget + this.roadMaintenanceBudget +
                                     Math.round(this.socialMaintenanceBudget * this.socialPercent) +
                                     Math.round(this.housingMaintenanceBudget * this.housingPercent) + this.utilityCost);

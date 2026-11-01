@@ -231,6 +231,23 @@ saved before v25 keep the 1989 answers for those questions.
   removed, home zones covered, funding, capacity in use) and whether it is working (no power, no rail link).
 - Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
 
+### v32: game over, and a To do card that is really bubbles only
+
+- **Bankrupt:** every January the city pays its services and running costs. If the money in the bank plus that year's
+  taxes can't cover them at the funding levels set in the Budget window, the game is over (the 1989 game quietly cut
+  services instead). A red banner warns, once a game year, as soon as the yearly balance means January's bills can't
+  be paid.
+- **Voted out:** two yearly polls in a row below 20% approval (once the city has 2,000 people). A banner warns after
+  the first one.
+- The game-over screen offers Go back in time, the start screen, or Keep playing without a grade (the grade shows a
+  dash, and the city can no longer graduate).
+- The To do card now shows only the status bubbles (and the opening tips in a city with no zones yet). In v30 the old
+  advice list was still there under the bubbles, mostly hidden by the card's height. The detailed advice is in
+  "What I did wrong".
+- Opening guide: new sections on money, highways and trains, and the grade, graduation and game over; new pictures.
+- Developer tests: `npm test` runs again (the Jest config is now an ES module). 160 of 162 tests pass; the 2 failures
+  are in upstream micropolisJS's `Bounds` tests, which expect debug assertions that are switched off in this build.
+
 ### v31: city rating and graduation
 
 - **Grade (A-F)** in the city box, from 0-100 points: approval in the yearly poll (up to 30), the status bubbles (up to
