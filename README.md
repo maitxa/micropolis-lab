@@ -242,6 +242,8 @@ saved before v25 keep the 1989 answers for those questions.
 - **Take Picture** shows the picture with Save picture (PNG) and Print (the old link opened a new tab, which the
   published page can't do). Print uses the browser's print dialog, if the page is allowed to open it.
 - **Save** window: Export to a file (saves the city and offers a .json file to import elsewhere).
+- **Zoom** in steps of 25% between 50% and 200% (plus 25% and 300%). The in-between sizes are made by shrinking the
+  next larger enlarged tile set, so they stay sharp.
 
 ### v33: money you can read, automatic budgeting that copes, Rail and Highways bubbles
 

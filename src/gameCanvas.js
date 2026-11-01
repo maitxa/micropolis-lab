@@ -1057,7 +1057,7 @@ GameCanvas.prototype.getZoom = function() {
 };
 
 // POLICY LAB: zoom levels, from the whole map (25%) to close up (300%)
-GameCanvas.ZOOM_LEVELS = [0.25, 0.5, 1, 2, 3];
+GameCanvas.ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3];
 
 GameCanvas.prototype.zoomStep = function(step) {
   var levels = GameCanvas.ZOOM_LEVELS;

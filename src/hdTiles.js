@@ -29,7 +29,7 @@ var loadImage = function(src, onLoad, onError) {
 // A smaller copy of a 16-pixel tile set (for zooming out): each tile is redrawn at 16 x scale pixels, smoothed so
 // that small details average out instead of flickering
 var shrink = function(tileSet, scale) {
-  var w = Math.round(16 * scale);
+  var w = Math.round(16 * scale), src = tileSet.tileWidth || 16;
   var out = Object.create(TileSet.prototype);
   out.tileWidth = w;
   for (var t = 0; t < TILE_COUNT; t++) {
@@ -39,7 +39,7 @@ var shrink = function(tileSet, scale) {
     cx.imageSmoothingEnabled = true;
     cx.imageSmoothingQuality = 'high';
     if (tileSet[t])
-      cx.drawImage(tileSet[t], 0, 0, 16, 16, 0, 0, w, w);
+      cx.drawImage(tileSet[t], 0, 0, src, src, 0, 0, w, w);
     out[t] = c;
   }
   out.isValid = true;
@@ -55,8 +55,24 @@ var get = function(base, season, scale, callback) {
     callback(cache[small], base.sprites, 1);
     return;
   }
-  if (scale === 1 || SCALES.indexOf(scale) === -1) {
+  if (scale === 1) {
     callback(base[season] || base.normal, base.sprites, 1);
+    return;
+  }
+  // v34: in-between sizes (125%, 150%, 175%, or any size on a high-resolution screen): take the next larger enlarged
+  // set and shrink it to the size wanted, once
+  if (SCALES.indexOf(scale) === -1) {
+    var between = 'between:' + season + '@' + scale;
+    if (cache[between]) {
+      callback(cache[between].tiles, cache[between].sprites, cache[between].got);
+      return;
+    }
+    var from = SCALES.filter(function(s) { return s > scale; })[0] || SCALES[SCALES.length - 1];
+    get(base, season, from, function(tiles, sprites, got) {
+      var made = {tiles: shrink(tiles, scale), sprites: sprites, got: got};
+      cache[between] = made;
+      callback(made.tiles, made.sprites, made.got);
+    });
     return;
   }
 
