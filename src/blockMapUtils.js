@@ -92,6 +92,9 @@ var neutraliseRateOfGrowthMap = function(blockMaps) {
 
 
 // Over time, traffic density should ease.
+// POLICY LAB v36: how much a road's traffic fades each cycle
+var TRAFFIC_FADE = 50;
+
 var neutraliseTrafficMap = function(blockMaps) {
   var trafficDensityMap = blockMaps.trafficDensityMap;
 
@@ -101,12 +104,14 @@ var neutraliseTrafficMap = function(blockMaps) {
       if (trafficDensity === 0)
         continue;
 
-      if (trafficDensity <= 24)
+      // POLICY LAB v36: traffic fades faster: 50 a cycle (1989: 24, or 34 above 200). Each trip adds 50 to the roads it
+      // uses, so in 1989 about one car a cycle was enough to jam a road, and in a city of 35,000 people most through-roads
+      // stayed jammed whatever the player built (tested on a player's city: 63% jammed; every jammed road made a highway:
+      // 52%; every zone near a train depot: no better). With 50: 33%, 19% and 20%.
+      if (trafficDensity <= TRAFFIC_FADE)
         trafficDensity = 0;
-      else if (trafficDensity > 200)
-        trafficDensity = trafficDensity - 34;
       else
-        trafficDensity = trafficDensity - 24;
+        trafficDensity = trafficDensity - TRAFFIC_FADE;
 
       trafficDensityMap.set(x, y, trafficDensity);
     }

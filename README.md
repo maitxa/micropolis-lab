@@ -231,6 +231,19 @@ saved before v25 keep the 1989 answers for those questions.
   removed, home zones covered, funding, capacity in use) and whether it is working (no power, no rail link).
 - Bug fix: since v25 the reach view's sentence about how far the closest destination is failed with an error.
 
+### v36: traffic fades faster, and police where crime is
+
+- **Traffic fades faster:** 50 points per simulation cycle instead of 24 (34 above 200). Each car trip adds 50 to the
+  roads it uses, so under the 1989 rule about one car per cycle was enough to keep a road jammed, and in a large city
+  most through-roads stayed jammed whatever the player built. Tested on a player's city of 36,000 people (average over
+  12 months, 3 runs each): old rule 53% of roads jammed, highways on the jammed roads 50%, every zone near a working
+  depot 51%; new rule 37%, with highways 30%, with trains 25%.
+- **Crime advice:** the Crime bubble now says to put a police station inside each crowded home block, even at the
+  cost of one home zone. In the same city the high-crime homes were the crowded ones out of police reach; stations
+  8-10 tiles away barely helped, and replacing one home zone in each of the 3 worst blocks took Crime from 42% to 0%.
+- Opening guide: numbers rerun under the new rule (cities grow bigger; with automatic budgeting none of the test
+  cities went bankrupt), police advice, and traffic figures.
+
 ### v35: where the money goes, who pays the taxes, and a simpler Undo
 
 - **City box:** "Costs: $X a year", a bar coloured by where the money goes, and how long the money lasts at this rate

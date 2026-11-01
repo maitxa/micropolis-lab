@@ -155,8 +155,12 @@ var compute = function(sim, history) {
     push({id: 'crime', name: P('Crime', 'Delincuencia'), level: 'good', value: '',
           summary: P('No one lives in the city yet.', 'Todavía no vive nadie en la ciudad.'), lines: [], layer: 'crime'});
   } else {
-    var crimeFixes = [P('Build police stations where it is worst, and fund them fully.',
-                        'Construye estaciones de policía donde es peor, y dales todos los fondos.'),
+    // v36: in a big city crime is mostly crowding in dense home blocks out of police reach. A police station counts
+    // most in its own 8x8 square, so it has to be INSIDE the crowded block (tested on a player's city: stations on free
+    // land 8-10 tiles away barely helped; replacing one home zone in each of the 3 worst blocks took the Crime bubble
+    // from 42% to 0%).
+    var crimeFixes = [P('Put a police station inside each crowded home block where crime is high, even if it means bulldozing one home zone: a station works most in its own 8-tile square, and much less a few squares away. Fund police fully and give the station power.',
+                        'Pon una estación de policía dentro de cada manzana de viviendas abarrotada con mucha delincuencia, aunque tengas que demoler una zona de viviendas: una estación actúa sobre todo en su propio cuadro de 8 casillas, y mucho menos a unos cuadros de distancia. Da a la policía todos los fondos y electricidad a la estación.'),
                       P('Raise land value with parks, and keep pollution away from homes.',
                         'Sube el valor del suelo con parques, y mantén la contaminación lejos de las viviendas.')];
     push({id: 'crime', name: P('Crime', 'Delincuencia'), level: level(m.crimeHigh >= 0.25, m.crimeHigh >= 0.10),
