@@ -107,20 +107,69 @@ var average = function(history) {
   return {points: Math.round(avg), grade: gradeOf(avg), years: ys.length};
 };
 
-// The graduation conditions now: [{id, ok, text}]
+// The graduation conditions now: [{id, ok, level, name, text, need}]
+// v37: each also has a traffic-light level for the city box ('good' = met, 'watch' = close, 'urgent' = far) and a
+// sentence saying what is still needed. "Close": approval 55-69%, only orange bubbles left, a deficit under $500, or
+// at least 75% of the population target.
+var APPROVAL_CLOSE = 55, POP_CLOSE = 0.75, DEFICIT_CLOSE = 500;
 var conditions = function(sim, statusList, history) {
   var target = populationTarget(sim);
   var pop = sim.evaluation.cityPop || 0, yes = sim.evaluation.cityYes || 0;
   var list = statusList || [];
-  var notGood = list.filter(function(s) { return s.level !== 'good'; }).length;
-  var ly = lastYear(history);
+  var red = list.filter(function(s) { return s.level === 'urgent'; }), orange = list.filter(function(s) { return s.level === 'watch'; });
+  var notGood = red.length + orange.length;
+  var names = function(l) { return l.map(function(s) { return s.name; }).join(', '); };
+  var ly = lastYear(history), funds = sim.budget.totalFunds;
+  var moneyOk = !!ly && ly.v >= 0 && funds >= 0;
+  var lvl = function(ok, close) { return ok ? 'good' : close ? 'watch' : 'urgent'; };
+  var complaints = red.length ? names(red) : orange.length ? names(orange) : '';
   return [
-    {id: 'approval', ok: yes >= APPROVAL_NEEDED, text: P('Approval {0}% or more (now {1}%)', 'Aprobación del {0}% o más (ahora {1}%)', APPROVAL_NEEDED, yes)},
-    {id: 'bubbles', ok: list.length > 0 && notGood === 0, text: notGood ? P('Every bubble green ({0} not green)', 'Todas las burbujas en verde ({0} no lo están)', notGood)
-                                                                          : P('Every bubble green', 'Todas las burbujas en verde')},
-    {id: 'money', ok: !!ly && ly.v >= 0 && sim.budget.totalFunds >= 0, text: P('No deficit last year', 'Sin déficit el año pasado')},
-    {id: 'pop', ok: pop >= target, text: P('At least {0} people (now {1})', 'Al menos {0} habitantes (ahora {1})', fmt(target), fmt(pop))}
+    {id: 'approval', ok: yes >= APPROVAL_NEEDED, level: lvl(yes >= APPROVAL_NEEDED, yes >= APPROVAL_CLOSE), name: P('Approval', 'Aprobación'),
+     text: P('Approval {0}% or more (now {1}%)', 'Aprobación del {0}% o más (ahora {1}%)', APPROVAL_NEEDED, yes),
+     hint: P('Raise approval from {0}% to {1}%', 'Sube la aprobación del {0}% al {1}%', yes, APPROVAL_NEEDED),
+     need: yes >= APPROVAL_NEEDED ? P('Approval {0}%: enough (you need {1}%).', 'Aprobación {0}%: suficiente (necesitas {1}%).', yes, APPROVAL_NEEDED)
+                                  : P('Approval {0}%. You need {1}%.', 'Aprobación {0}%. Necesitas {1}%.', yes, APPROVAL_NEEDED) +
+                                    (complaints ? ' ' + P('People are unhappiest about the bubbles that are not green: {0}.', 'Lo que más molesta a la gente son las burbujas que no están en verde: {0}.', complaints)
+                                                : ' ' + P('Lower taxes and keep growing: approval follows the city\'s problems and taxes.', 'Baja los impuestos y sigue creciendo: la aprobación depende de los problemas de la ciudad y de los impuestos.'))},
+    {id: 'bubbles', ok: list.length > 0 && notGood === 0, level: lvl(list.length > 0 && notGood === 0, red.length === 0), name: P('Bubbles', 'Burbujas'),
+     text: notGood ? P('Every bubble green ({0} not green)', 'Todas las burbujas en verde ({0} no lo están)', notGood)
+                   : P('Every bubble green', 'Todas las burbujas en verde'),
+     need: !notGood ? P('Every bubble is green.', 'Todas las burbujas están en verde.')
+                    : (red.length ? P('Red: {0}.', 'En rojo: {0}.', names(red)) + ' ' : '') +
+                      (orange.length ? P('Orange: {0}.', 'En naranja: {0}.', names(orange)) + ' ' : '') +
+                      P('All of them have to be green. Click a bubble to see how to fix it.', 'Todas tienen que estar en verde. Haz clic en una burbuja para ver cómo arreglarla.')},
+    {id: 'money', ok: moneyOk, level: lvl(moneyOk, !!ly ? (ly.v > -DEFICIT_CLOSE && funds >= 0) : funds >= 0), name: P('Money', 'Dinero'),
+     text: P('No deficit last year', 'Sin déficit el año pasado'),
+     hint: funds < 0 ? P('Get out of debt', 'Sal de las deudas') : P('End the deficit: spend less or tax more', 'Acaba con el déficit: gasta menos o recauda más'),
+     need: !ly ? P('No full year yet: the city needs a year without a deficit.', 'Todavía no hay un año completo: la ciudad necesita un año sin déficit.')
+               : funds < 0 ? P('The city is in debt. You need savings and a year without a deficit.', 'La ciudad tiene deudas. Necesitas ahorros y un año sin déficit.')
+               : ly.v >= 0 ? P('Last year: a surplus of {0}. Good.', 'El año pasado: un superávit de {0}. Bien.', MiscUtils.formatMoney(ly.v))
+                           : P('Last year: a deficit of {0}. You need to take in at least as much as you spend (see Costs above).', 'El año pasado: un déficit de {0}. Necesitas recaudar al menos lo que gastas (mira los Gastos más arriba).', MiscUtils.formatMoney(-ly.v))},
+    {id: 'pop', ok: pop >= target, level: lvl(pop >= target, pop >= POP_CLOSE * target), name: P('People', 'Habitantes'),
+     text: P('At least {0} people (now {1})', 'Al menos {0} habitantes (ahora {1})', fmt(target), fmt(pop)),
+     hint: P('Grow the city: {0} more people', 'Haz crecer la ciudad: {0} habitantes más', fmt(Math.max(0, target - pop))),
+     need: pop >= target ? P('{0} people: enough (the target is {1}).', '{0} habitantes: suficiente (la meta es {1}).', fmt(pop), fmt(target))
+                         : P('{0} people. You need {1}: {2} more.', '{0} habitantes. Necesitas {1}: {2} más.', fmt(pop), fmt(target), fmt(target - pop))}
   ];
+};
+
+// v37: the one thing to work on next, in this order: a red bubble; a graduation condition that is far off (red light);
+// an orange bubble; a condition that is close (yellow light). {name, short, full, level}
+var nextStep = function(sim, statusList, history) {
+  var list = statusList || [];
+  var fixesOf = function(s) { return (s.fixes || []).filter(function(f) { return !!f; }); };
+  var shorten = function(t) { return t.replace(/\s*\([^)]*\)/g, '').split(/[:;,.](\s|$)/)[0]; };
+  var bubble = function(level) {
+    var b = list.filter(function(s) { return s.level === level && fixesOf(s).length; })[0];
+    return b ? {name: b.name, level: b.level, short: b.name + ': ' + shorten(fixesOf(b)[0]).replace(/^./, function(c) { return c.toLowerCase(); }),
+                full: b.name + ': ' + fixesOf(b)[0]} : null;
+  };
+  var conds = conditions(sim, statusList, history).filter(function(k) { return k.id !== 'bubbles'; });
+  var cond = function(level) {
+    var c = conds.filter(function(k) { return k.level === level; })[0];
+    return c ? {name: c.name, level: c.level, short: c.hint, full: c.need} : null;
+  };
+  return bubble('urgent') || cond('urgent') || bubble('watch') || cond('watch') || null;
 };
 
 // Called every January, after the year's record was added to history.years: stores the rating and moves the
@@ -146,6 +195,7 @@ var Rating = {
   compute: compute,
   average: average,
   conditions: conditions,
+  nextStep: nextStep,
   yearly: yearly,
   gradeOf: gradeOf,
   populationTarget: populationTarget,

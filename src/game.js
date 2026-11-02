@@ -432,6 +432,9 @@ function Game(gameMap, tileSet, snowTileSet, spriteSheet, difficulty, name) {
     if (e.keyCode === 13 || e.keyCode === 32) { e.preventDefault(); $(this).trigger('click'); }
   });
   $('#gradeClose').on('click', function(e) { e.preventDefault(); $('#gradePopup').hide(); });
+  // v37: hover (or focus) cards for the graduation lights, the grade battery and the next step
+  $('#infobar').on('mouseenter focusin', '.glTip', function() { game.showGlTip(this); })
+               .on('mouseleave focusout', '.glTip', function() { $('#glTipBox').hide(); });
   // Hints on the map
   this._hint = null;
   $('#hintPrev').on('click', (function(e) { e.preventDefault(); this.stepHint(-1); }).bind(this));
@@ -2018,10 +2021,66 @@ Game.prototype.processFrontEndMessage = function(message) {
 
 // POLICY LAB v30: power capacity in use, under the funds
 // POLICY LAB v31: the grade in the city box, and its panel
+// v37: the grade as a battery that fills with the points, coloured by the grade
+var GRADE_COLOURS = {A: '#2e8b4a', B: '#5f9a2a', C: '#d9a800', D: '#d9822b', F: '#c8412f'};
+var batterySvg = function(points, grade) {
+  var w = Math.round(22 * Math.max(0, Math.min(100, points)) / 100);
+  return '<svg width="30" height="13" viewBox="0 0 30 13"><rect x="0.75" y="0.75" width="25.5" height="11.5" rx="2.5" fill="#fff" stroke="#4d5f5b" stroke-width="1.5"/>' +
+         '<rect x="27" y="4" width="2.5" height="5" rx="1" fill="#4d5f5b"/>' +
+         (w ? '<rect x="2.5" y="2.5" width="' + w + '" height="8" rx="1.2" fill="' + (GRADE_COLOURS[grade] || '#888') + '"/>' : '') + '</svg>';
+};
+// small white icons inside the graduation lights
+var GL_ICONS = {
+  approval: '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4.6"/><path d="M4 7.2 Q6 9 8 7.2"/><path d="M4.4 4.6 V4.8 M7.6 4.6 V4.8"/></svg>',
+  bubbles: '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M1.5 2.5 H10.5 V8 H5.5 L3 10.2 V8 H1.5 Z"/></svg>',
+  money: '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8.3 3.6 Q7.6 2.6 6 2.6 Q3.8 2.6 3.8 4.2 Q3.8 5.6 6 6 Q8.2 6.4 8.2 7.8 Q8.2 9.4 6 9.4 Q4.4 9.4 3.7 8.4"/><path d="M6 1 V11"/></svg>',
+  pop: '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="3.4" r="2"/><path d="M2.2 11 Q2.2 6.6 6 6.6 Q9.8 6.6 9.8 11"/></svg>'
+};
+
 Game.prototype.updateGrade = function() {
-  var r = Policy.history && Policy.history.gameOver ? null : Rating.compute(this.simulation, this._status, Policy.history);
+  var P = I18n.p, h = Policy.history || {months: [], years: []};
+  var r = h.gameOver ? null : Rating.compute(this.simulation, this._status, h);
   $('#gradeLetter').text(r ? r.grade : '–').attr('class', r ? 'grade-' + r.grade : '');
-  $('#gradePoints').text(r ? '(' + r.points + '/100)' : '');
+  $('#gradePoints').text(r ? r.points + '/100' : '');
+  var bat = $('#gradeBattery');
+  if (r) {
+    bat.html(batterySvg(r.points, r.grade)).attr('data-tip-title', P('Grade {0}: {1} of 100 points', 'Nota {0}: {1} de 100 puntos', r.grade, r.points))
+       .attr('data-tip', r.parts.map(function(p) { return p.name + ': ' + Math.round(p.points) + '/' + p.max; }).join(' · ') + '. ' +
+                         P('Pulling it down most: {0}. Click for details.', 'Lo que más la baja: {0}. Haz clic para ver más.', r.weakest.name.toLowerCase()));
+  } else {
+    bat.empty();
+  }
+  // graduation lights, years in a row, next step
+  var lights = $('#gradLights').empty(), next = $('#nextStep').empty().removeClass('good watch urgent');
+  if (h.gameOver || !r) {
+    lights.hide();
+  } else {
+    lights.show();
+    Rating.conditions(this.simulation, this._status, h).forEach(function(k) {
+      var word = k.level === 'good' ? P('met', 'cumplido') : k.level === 'watch' ? P('close', 'cerca') : P('not yet', 'todavía no');
+      lights.append($('<span class="gl glTip" tabindex="0" role="img"></span>').addClass(k.level).html(GL_ICONS[k.id] || '')
+        .attr('aria-label', k.name + ': ' + word).attr('data-tip-title', k.name + ' (' + word + ')').attr('data-tip', k.need));
+    });
+    var streak = Math.min(Rating.YEARS_NEEDED, h.gradStreak || 0), yrs = $('<span class="glYears glTip" tabindex="0" role="img"></span>');
+    for (var i = 0; i < Rating.YEARS_NEEDED; i++)
+      yrs.append($('<i></i>').toggleClass('on', h.graduated ? true : i < streak));
+    yrs.toggleClass('done', !!h.graduated).attr('aria-label', P('Graduation: {0} of {1} years', 'Graduación: {0} de {1} años', h.graduated ? Rating.YEARS_NEEDED : streak, Rating.YEARS_NEEDED))
+       .attr('data-tip-title', h.graduated ? P('Graduated in {0}', 'Graduada en {0}', h.graduated) : P('Graduation: {0} of {1} years', 'Graduación: {0} de {1} años', streak, Rating.YEARS_NEEDED))
+       .attr('data-tip', h.graduated ? P('This city has graduated. You can keep playing.', 'Esta ciudad se ha graduado. Puedes seguir jugando.')
+                                     : P('A dot fills each January in which all four lights are green. You need {0} Januaries in a row; one missed year starts the count again.',
+                                         'Un punto se llena cada enero en que las cuatro luces están en verde. Necesitas {0} eneros seguidos; si fallas un año, la cuenta vuelve a empezar.', Rating.YEARS_NEEDED));
+    lights.append(yrs);
+    var ns = Rating.nextStep(this.simulation, this._status, h);
+    if (ns)
+      next.addClass(ns.level).append($('<b></b>').text(P('Next:', 'Ahora:') + ' '), document.createTextNode(ns.short))
+          .attr('data-tip-title', P('What to fix next', 'Qué arreglar ahora')).attr('data-tip', ns.full);
+  }
+  // the city box may have grown or shrunk a line: keep the menu under it
+  var ibh = $('#infobar').outerHeight();
+  if (ibh !== this._infobarH) {
+    this._infobarH = ibh;
+    this.layoutLeft();
+  }
   if ($('#gradePopup').is(':visible'))
     this.showGrade(true);
 };
@@ -2077,6 +2136,19 @@ Game.prototype.showGrade = function(refresh) {
                                                        'La población necesaria depende del perfil (los más difíciles tienen una menor) y de la dificultad.')));
   if (!refresh)
     this._placeGradePopup();
+};
+
+Game.prototype.showGlTip = function(el) {
+  var tip = $(el).attr('data-tip');
+  if (!tip)
+    return;
+  var box = $('#glTipBox').empty();
+  if ($(el).attr('data-tip-title'))
+    box.append($('<div class="gtTitle"></div>').text($(el).attr('data-tip-title')));
+  box.append($('<div></div>').text(tip));
+  var info = document.getElementById('infobar').getBoundingClientRect(), host = document.getElementById('canvasContainer').getBoundingClientRect();
+  var at = el.getBoundingClientRect();
+  box.css({left: (info.right - host.left + 10) + 'px', top: Math.max(4, at.top - host.top - 8) + 'px'}).show();
 };
 
 Game.prototype._placeGradePopup = function() {

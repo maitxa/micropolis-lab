@@ -3213,3 +3213,26 @@ nav li {
 #miscButtons button { display: block; width: 100%; height: auto; min-height: 0; padding: 0 4px; line-height: 1.2; font-size: 13px; margin: 0 0 1px 0; }
 #miscButtons.padding10 { padding-top: 7px; padding-bottom: 7px; }
 #miscButtons .inner > div { margin: 0; }
+
+/* POLICY LAB v37: graduation lights, the grade battery and the next step, in the city box */
+#gradeBattery { display: inline-block; vertical-align: -2px; margin: 0 3px 0 2px; }
+#gradeBattery svg { display: block; }
+#gradLights { display: flex; align-items: center; gap: 4px; padding: 1px 6px; white-space: nowrap; }
+#gradLights .gl { width: 17px; height: 17px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; cursor: help; box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.18); }
+#gradLights .gl svg { width: 11px; height: 11px; }
+#gradLights .gl.good { background: #2e8b4a; }
+#gradLights .gl.watch { background: #e0a400; color: #3a2a00; }
+#gradLights .gl.urgent { background: #c8412f; }
+#gradLights .gl:focus-visible, #nextStep:focus-visible { outline: 2px solid #1d5f8a; outline-offset: 1px; }
+#gradLights .glYears { display: inline-flex; gap: 2px; margin-left: 5px; padding-left: 6px; border-left: 1px solid #c9d1cf; cursor: help; }
+#gradLights .glYears i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #2e8b4a; display: inline-block; }
+#gradLights .glYears i.on { background: #2e8b4a; }
+#gradLights .glYears.done i { border-color: #b08a00; background: #d9a800; }
+#nextStep { margin: 0 6px 1px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; cursor: help; border-radius: 3px; }
+#nextStep b { font-weight: 700; }
+#nextStep.urgent b { color: #b3362b; } #nextStep.watch b { color: #9a6c00; } #nextStep.good b { color: #1e7a3a; }
+#nextStep:empty, #nextStep[hidden] { display: none; }
+#glTipBox { position: absolute; z-index: 7; max-width: 260px; padding: 7px 9px; font-family: var(--pl-ui); font-size: 12.5px; line-height: 1.35;
+  color: var(--pl-ink); background: #fcfcfb; border: 1px solid var(--pl-line); border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); }
+#glTipBox .gtTitle { font-weight: 700; margin-bottom: 2px; }

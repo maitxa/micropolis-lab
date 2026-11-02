@@ -244,6 +244,17 @@ saved before v25 keep the 1989 answers for those questions.
 - Opening guide: numbers rerun under the new rule (cities grow bigger; with automatic budgeting none of the test
   cities went bankrupt), police advice, and traffic figures.
 
+### v37: graduation at a glance
+
+- **Graduation lights** in the city box: one per graduation condition (approval, bubbles, money, people), green when
+  met, yellow when close (approval 55-69%, only orange bubbles left, a deficit under $500, at least 75% of the
+  population target), red when far. Hovering (or focusing) a light says what is still needed.
+- **Graduation years:** five dots that fill each January in which all four were met; one missed year empties them.
+- **Grade battery:** the grade's points (0-100) as a battery, coloured by the letter; hover for the four parts.
+- **Next step:** one line with the thing to fix next (a red bubble, then a condition far from met, then an orange
+  bubble, then a condition that is close), with the full advice on hover.
+- The menu under the city box moves when the box grows or shrinks a line.
+
 ### v35: where the money goes, who pays the taxes, and a simpler Undo
 
 - **City box:** "Costs: $X a year", a bar coloured by where the money goes, and how long the money lasts at this rate

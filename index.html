@@ -138,8 +138,12 @@
             <div id="powerLine" class="infoSmall" title="Power plant capacity in use (zones and wires each take one unit)"></div>
             <!-- POLICY LAB v31: the city's grade (click for the rating and graduation progress) -->
             <div id="gradeLine" class="infoSmall" tabindex="0" role="button" aria-controls="gradePopup" title="City rating and graduation: click for details">
-              <span class="gradeLabel">Grade:</span> <b id="gradeLetter">&ndash;</b> <span class="gradeScore" id="gradePoints"></span><span id="score" hidden>0</span>
+              <span class="gradeLabel">Grade:</span> <b id="gradeLetter">&ndash;</b> <span id="gradeBattery" class="glTip" aria-hidden="true"></span><span class="gradeScore" id="gradePoints"></span><span id="score" hidden>0</span>
             </div>
+            <!-- POLICY LAB v37: one light per graduation condition (green met, yellow close, red far), the Januaries in a
+                 row met so far, and the one thing to fix next; hover any of them for what is needed -->
+            <div id="gradLights" class="infoSmall"></div>
+            <div id="nextStep" class="infoTiny glTip" tabindex="0"></div>
             <!-- POLICY LAB v30: city size with its icon and population, and the next size up -->
             <div class="infoSmall classLine" title="City size and population">
               <span id="cclassIcon" aria-hidden="true"></span><span id="cclass">VILLAGE</span><span>:&nbsp;</span><span id="population">0</span>
@@ -189,6 +193,7 @@
         </div>
         <!-- v35: where the money goes (from the costs line in the city box) -->
         <div id="costPopup" style="display:none" role="tooltip"></div>
+        <div id="glTipBox" style="display:none" role="tooltip"></div>
         <div id="historyPopup" style="display:none" role="dialog" aria-label="City history">
           <div class="historyHead"><span>City history</span><button type="button" id="historyClose" aria-label="Close">&times;</button></div>
           <div id="historyCharts"></div>
