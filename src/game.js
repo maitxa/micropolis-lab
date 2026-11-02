@@ -2021,13 +2021,14 @@ Game.prototype.processFrontEndMessage = function(message) {
 
 // POLICY LAB v30: power capacity in use, under the funds
 // POLICY LAB v31: the grade in the city box, and its panel
-// v37: the grade as a battery that fills with the points, coloured by the grade
-var GRADE_COLOURS = {A: '#2e8b4a', B: '#5f9a2a', C: '#d9a800', D: '#d9822b', F: '#c8412f'};
-var batterySvg = function(points, grade) {
-  var w = Math.round(22 * Math.max(0, Math.min(100, points)) / 100);
+// v37: a battery in the city box. v38: it shows approval in the last poll (what graduation needs), not the grade's
+// points: green from the graduation level (65%), yellow when close (55%), red below. A tick marks the level needed.
+var batterySvg = function(pct, colour, mark) {
+  var w = Math.round(22 * Math.max(0, Math.min(100, pct)) / 100), mx = 2.5 + 22 * mark / 100;
   return '<svg width="30" height="13" viewBox="0 0 30 13"><rect x="0.75" y="0.75" width="25.5" height="11.5" rx="2.5" fill="#fff" stroke="#4d5f5b" stroke-width="1.5"/>' +
          '<rect x="27" y="4" width="2.5" height="5" rx="1" fill="#4d5f5b"/>' +
-         (w ? '<rect x="2.5" y="2.5" width="' + w + '" height="8" rx="1.2" fill="' + (GRADE_COLOURS[grade] || '#888') + '"/>' : '') + '</svg>';
+         (w ? '<rect x="2.5" y="2.5" width="' + w + '" height="8" rx="1.2" fill="' + colour + '"/>' : '') +
+         '<path d="M' + mx.toFixed(1) + ' 1.5 V11.5" stroke="#1e3436" stroke-width="1" stroke-dasharray="1.5 1"/></svg>';
 };
 // small white icons inside the graduation lights
 var GL_ICONS = {
@@ -2042,13 +2043,18 @@ Game.prototype.updateGrade = function() {
   var r = h.gameOver ? null : Rating.compute(this.simulation, this._status, h);
   $('#gradeLetter').text(r ? r.grade : '–').attr('class', r ? 'grade-' + r.grade : '');
   $('#gradePoints').text(r ? r.points + '/100' : '');
-  var bat = $('#gradeBattery');
+  var bat = $('#gradeBattery'), pct = $('#approvalPct');
+  $('#approvalLine').toggle(!!r);
   if (r) {
-    bat.html(batterySvg(r.points, r.grade)).attr('data-tip-title', P('Grade {0}: {1} of 100 points', 'Nota {0}: {1} de 100 puntos', r.grade, r.points))
-       .attr('data-tip', r.parts.map(function(p) { return p.name + ': ' + Math.round(p.points) + '/' + p.max; }).join(' · ') + '. ' +
-                         P('Pulling it down most: {0}. Click for details.', 'Lo que más la baja: {0}. Haz clic para ver más.', r.weakest.name.toLowerCase()));
+    var yes = this.simulation.evaluation.cityYes || 0, need = Rating.APPROVAL_NEEDED;
+    var col = yes >= need ? '#2e8b4a' : yes >= Rating.APPROVAL_CLOSE ? '#d9a800' : '#c8412f';
+    var tip = P('In the last yearly poll {0}% said the mayor is doing a good job. Graduation needs {1}% (the dotted mark).', 'En la última encuesta anual el {0}% dijo que el alcalde lo hace bien. La graduación necesita el {1}% (la marca punteada).', yes, need) + ' ' +
+              P('The poll comes once a year; the worst problems people name are in Evaluation.', 'La encuesta es una vez al año; los peores problemas que nombra la gente están en Evaluación.');
+    bat.html(batterySvg(yes, col, need)).attr('data-tip-title', P('Approval: {0}%', 'Aprobación: {0}%', yes)).attr('data-tip', tip);
+    pct.text(yes + '%').css('color', yes >= need ? '#1e7a3a' : yes >= Rating.APPROVAL_CLOSE ? '#8a6a00' : '#b3362b').attr('data-tip-title', P('Approval: {0}%', 'Aprobación: {0}%', yes)).attr('data-tip', tip);
   } else {
     bat.empty();
+    pct.text('');
   }
   // graduation lights, years in a row, next step
   var lights = $('#gradLights').empty(), next = $('#nextStep').empty().removeClass('good watch urgent');

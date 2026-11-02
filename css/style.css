@@ -3236,3 +3236,7 @@ nav li {
 #glTipBox { position: absolute; z-index: 7; max-width: 260px; padding: 7px 9px; font-family: var(--pl-ui); font-size: 12.5px; line-height: 1.35;
   color: var(--pl-ink); background: #fcfcfb; border: 1px solid var(--pl-line); border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); }
 #glTipBox .gtTitle { font-weight: 700; margin-bottom: 2px; }
+/* v38: approval battery line */
+#approvalLine { white-space: nowrap; }
+
+#approvalPct { cursor: help; }

@@ -321,9 +321,9 @@ var openGraduation = function(game, onClose) {
   var o = overlay(P('{0} graduated!', '¡{0} se graduó!', game.name || P('Your city', 'Tu ciudad')), onClose);
   var r = Rating.compute(sim, game._status, h), avg = Rating.average(h);
   var body = o.body.addClass('plGraduation');
-  body.append($('<p class="plGradLead"></p>').text(P('For {0} years in a row the city kept approval at 70% or more, every bubble green, no deficit, and at least {1} people.',
-                                                     'Durante {0} años seguidos la ciudad mantuvo una aprobación del 70% o más, todas las burbujas en verde, sin déficit y al menos {1} habitantes.',
-                                                     Rating.YEARS_NEEDED, fmt(Rating.populationTarget(sim)))));
+  body.append($('<p class="plGradLead"></p>').text(P('For {0} years in a row the city kept approval at {2}% or more, every bubble green, no deficit, and at least {1} people.',
+                                                     'Durante {0} años seguidos la ciudad mantuvo una aprobación del {2}% o más, todas las burbujas en verde, sin déficit y al menos {1} habitantes.',
+                                                     Rating.YEARS_NEEDED, fmt(Rating.populationTarget(sim)), Rating.APPROVAL_NEEDED)));
   var dl = $('<dl class="plGradFacts"></dl>');
   var fact = function(k, v) { dl.append($('<dt></dt>').text(k), $('<dd></dd>').text(v)); };
   fact(P('Year', 'Año'), h.graduated);

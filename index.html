@@ -138,8 +138,10 @@
             <div id="powerLine" class="infoSmall" title="Power plant capacity in use (zones and wires each take one unit)"></div>
             <!-- POLICY LAB v31: the city's grade (click for the rating and graduation progress) -->
             <div id="gradeLine" class="infoSmall" tabindex="0" role="button" aria-controls="gradePopup" title="City rating and graduation: click for details">
-              <span class="gradeLabel">Grade:</span> <b id="gradeLetter">&ndash;</b> <span id="gradeBattery" class="glTip" aria-hidden="true"></span><span class="gradeScore" id="gradePoints"></span><span id="score" hidden>0</span>
+              <span class="gradeLabel">Grade:</span> <b id="gradeLetter">&ndash;</b> <span class="gradeScore" id="gradePoints"></span><span id="score" hidden>0</span>
             </div>
+            <!-- POLICY LAB v38: approval in the last poll as a battery, with the level graduation needs marked -->
+            <div id="approvalLine" class="infoSmall"><span class="gradeLabel">Approval:</span> <span id="gradeBattery" class="glTip" aria-hidden="true"></span><b id="approvalPct" class="glTip" tabindex="0"></b></div>
             <!-- POLICY LAB v37: one light per graduation condition (green met, yellow close, red far), the Januaries in a
                  row met so far, and the one thing to fix next; hover any of them for what is needed -->
             <div id="gradLights" class="infoSmall"></div>

@@ -247,13 +247,20 @@ saved before v25 keep the 1989 answers for those questions.
 ### v37: graduation at a glance
 
 - **Graduation lights** in the city box: one per graduation condition (approval, bubbles, money, people), green when
-  met, yellow when close (approval 55-69%, only orange bubbles left, a deficit under $500, at least 75% of the
+  met, yellow when close (approval 55-64% since v38, only orange bubbles left, a deficit under $500, at least 75% of the
   population target), red when far. Hovering (or focusing) a light says what is still needed.
 - **Graduation years:** five dots that fill each January in which all four were met; one missed year empties them.
 - **Grade battery:** the grade's points (0-100) as a battery, coloured by the letter; hover for the four parts.
 - **Next step:** one line with the thing to fix next (a red bubble, then a condition far from met, then an orange
   bubble, then a condition that is close), with the full advice on hover.
 - The menu under the city box moves when the box grows or shrinks a line.
+
+### v38: approval battery, graduation at 65%
+
+- **Graduation needs 65% approval** (was 70%); the light turns yellow from 55%.
+- **The battery shows approval** in the last yearly poll, not the grade's points: graduation depends on approval, not
+  on points. It has its own line ("Approval: [battery] 61%"), green from 65%, yellow from 55%, red below, with a dotted
+  mark at 65%. The grade's points stay as a number next to the letter.
 
 ### v35: where the money goes, who pays the taxes, and a simpler Undo
 
@@ -324,7 +331,7 @@ saved before v25 keep the 1989 answers for those questions.
   40: green counts fully, orange half, red nothing), money (up to 15: surplus 15, deficit under $500 8, otherwise 0),
   and the game's own city score (up to 15). A from 85, B from 70, C from 55, D from 40. Click the grade for the parts,
   what pulls it down most, and the average of the last 10 years (a grade is recorded every January).
-- **Graduation:** a city graduates when, in five Januaries in a row, approval is 70% or more, every bubble is green,
+- **Graduation:** a city graduates when, in five Januaries in a row, approval is 65% or more (70% before v38), every bubble is green,
   last year had no deficit, and the population reaches the target. Targets: 1989 baseline 50,000 and libertarian
   50,000, conservative-populist 45,000, progressive 25,000 (in proportion to how big the test cities grew under each
   preset, never above the baseline); custom policies use the preset they started from. Medium difficulty: 80% of that,

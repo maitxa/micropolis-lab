@@ -13,7 +13,8 @@
  * Grades: A from 85, B from 70, C from 55, D from 40, F below. A grade is recorded every January, and the
  * 10-year average is the average of the last ten.
  *
- * Graduation: the city graduates when it has met all four conditions in five Januaries in a row: approval 70% or more,
+ * Graduation: the city graduates when it has met all four conditions in five Januaries in a row: approval 65% or more
+ * (70% until v38),
  * every bubble green, no deficit last year, and at least the population target. The target depends on the preset
  * (harder presets get a lower one, in proportion to how big the test cities grew under each preset) and on the
  * difficulty (medium 80%, hard 60%).
@@ -39,7 +40,7 @@ var gradeOf = function(points) {
 var YEARS_NEEDED = 5;
 // v32: the mayor is voted out after two yearly polls in a row below this approval (%)
 var VOTED_OUT_BELOW = 20;
-var APPROVAL_NEEDED = 70;
+var APPROVAL_NEEDED = 65;   // v38: was 70
 // Population targets. 1989 baseline: 50,000 (the size at which the 1989 game calls a city a capital). The others in
 // proportion to the test cities after 20 years (v30 tests: baseline 21,100, conservative-populist 19,600, libertarian
 // 24,700, progressive 10,900), never above the baseline, rounded to 5,000.
@@ -109,7 +110,7 @@ var average = function(history) {
 
 // The graduation conditions now: [{id, ok, level, name, text, need}]
 // v37: each also has a traffic-light level for the city box ('good' = met, 'watch' = close, 'urgent' = far) and a
-// sentence saying what is still needed. "Close": approval 55-69%, only orange bubbles left, a deficit under $500, or
+// sentence saying what is still needed. "Close": approval 55-64%, only orange bubbles left, a deficit under $500, or
 // at least 75% of the population target.
 var APPROVAL_CLOSE = 55, POP_CLOSE = 0.75, DEFICIT_CLOSE = 500;
 var conditions = function(sim, statusList, history) {
@@ -200,6 +201,8 @@ var Rating = {
   gradeOf: gradeOf,
   populationTarget: populationTarget,
   YEARS_NEEDED: YEARS_NEEDED,
+  APPROVAL_NEEDED: APPROVAL_NEEDED,
+  APPROVAL_CLOSE: APPROVAL_CLOSE,
   VOTED_OUT_BELOW: VOTED_OUT_BELOW
 };
 
